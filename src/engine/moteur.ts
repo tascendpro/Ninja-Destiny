@@ -313,7 +313,29 @@ function tirerDestin(s: GameState): void {
     const p = m.composantes ? (m.lignee?.[c.village] ?? 0) : 0;
     if (p > 0 && alea(s) < p) s.tirages.lignees.push(m.id);
   }
+  // Sang inconnu : un orphelin ou un enfant sans clan ne sait pas de qui il descend. Parfois, d'une lignée
+  // perdue : n'importe quelle nature héréditaire, Mokuton et Hyōton compris, latente jusqu'à son éveil.
+  const orphelin = c.origine === 'orphelin';
+  const sansClan = c.clan === 'sans_clan';
+  if (orphelin || sansClan) {
+    const chance = orphelin && sansClan ? CHANCE_SANG_INCONNU.les_deux : orphelin ? CHANCE_SANG_INCONNU.orphelin : CHANCE_SANG_INCONNU.sans_clan;
+    const tirage = alea(s);
+    const choix = alea(s);
+    const possibles = NATURES_HEREDITAIRES().filter((id) => !s.tirages.lignees.includes(id));
+    if (tirage < chance && possibles.length) {
+      const id = possibles[Math.floor(choix * possibles.length)];
+      s.tirages.lignees.push(id);
+      s.tirages.sangInconnu = id;
+    }
+  }
 }
+
+/** Chance de naître d'une lignée perdue, sans le savoir. */
+export const CHANCE_SANG_INCONNU = { orphelin: 0.15, sans_clan: 0.12, les_deux: 0.25 };
+
+/** Toutes les natures héréditaires : fusions de village et natures de clan (Mokuton, Hyōton). */
+export const NATURES_HEREDITAIRES = (): string[] =>
+  R.contenu.maitrises.filter((m) => m.composantes || ((m.id === 'mokuton' || m.id === 'hyoton') && m.kekkeiGenkai)).map((m) => m.id);
 
 /**
  * Démarre une partie. `imposes` force les tirages du destin : réservé aux tests et au débogage
@@ -368,9 +390,11 @@ export function nouvellePartie(creation: Creation, graine?: number, imposes?: Pa
   for (const t of clan.techniques) ajouter(t, aleaEntier(s, 20, 100) + bonusDiff);
   // Lignées de fusion : latentes jusqu'à l'éveil de leurs deux natures.
   for (const id of s.tirages.lignees) {
-    ajouter(id, aleaEntier(s, 60, 95));
+    // Une lignée perdue est toujours puissante : sans cela, le Mokuton ne s'éveillerait jamais.
+    ajouter(id, id === s.tirages.sangInconnu ? Math.max(R.maitrises[id].eveil?.potentielMin ?? 0, aleaEntier(s, 75, 100)) : aleaEntier(s, 60, 95));
     s.maitrises[id].source = 'heritage';
   }
+  if (s.tirages.sangInconnu) s.drapeaux['sang_inconnu'] = s.tirages.sangInconnu;
   // Jinchūriki : la bête est scellée depuis la naissance ; son chakra dort derrière le sceau.
   if (s.tirages.biju) {
     ajouter('chakra_biju', 80);

@@ -79,9 +79,14 @@ const ORDRE_KIND = { clan: 0, biju: 0, element: 1, jutsu: 2, base: 3, weapon_fam
 const ELEMENTS_BASE: ElementId[] = ['katon', 'suiton', 'fuuton', 'raiton', 'doton'];
 
 /** Nombre de natures de base qu'un ninja peut porter selon son rang. */
+/** Seul le Sharingan d'un Uchiha, qui copie les techniques, permet de porter plus de trois natures. */
+export function copieToutesNatures(s: GameState): boolean {
+  return s.creation.clan === 'uchiha' && !!s.maitrises['sharingan']?.awakened;
+}
+
 export function naturesMax(s: GameState): number {
   const r = rangIndex(s.rang);
-  if (r >= rangIndex('jonin')) return 5;
+  if (r >= rangIndex('jonin')) return copieToutesNatures(s) ? 5 : 3;
   if (r >= rangIndex('chunin')) return 3;
   if (r >= rangIndex('genin') && age(s) >= 12) return 2;
   return 1;
@@ -98,7 +103,7 @@ export function blocageNouvelleNature(s: GameState): string | undefined {
   if (possedees.length >= max) {
     if (max === 1) return 'Une deuxième nature s’apprend après l’Académie, à partir de 12 ans.';
     if (max === 2) return 'Une troisième nature exige le rang de chūnin.';
-    if (max === 3) return 'Au-delà de trois natures, il faut être jōnin.';
+    if (max === 3) return copieToutesNatures(s) ? 'Au-delà de trois natures, il faut être jōnin.' : 'Trois natures, c’est la limite d’un corps. Seul le Sharingan d’un Uchiha en copie davantage.';
     return 'Tu portes déjà toutes les natures.';
   }
   const faibles = possedees.filter((e) => (s.maitrises[`nature_${e}`]?.tier ?? 0) < 2);

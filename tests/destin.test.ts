@@ -61,13 +61,14 @@ describe('Tirages du destin', () => {
       }
     }
   });
-  it('une lignée de fusion n’apparaît que dans les villages qui la portent', () => {
+  it('une lignée de fusion n’apparaît que dans les villages qui la portent, sauf un sang inconnu', () => {
     for (const v of VILLAGES) {
       for (const t of echantillon(v, 600)) {
-        for (const l of t.lignees) expect(R.maitrises[l].lignee?.[v]).toBeGreaterThan(0);
+        for (const l of t.lignees) if (l !== t.sangInconnu) expect(R.maitrises[l].lignee?.[v]).toBeGreaterThan(0);
       }
     }
-    expect(echantillon('konoha', 600).every((t) => t.lignees.length === 0)).toBe(true);
+    // À Konoha, aucune lignée de village : seul un enfant sans clan peut descendre d'une lignée perdue.
+    expect(echantillon('konoha', 600).every((t) => t.lignees.every((l) => l === t.sangInconnu))).toBe(true);
   });
   it('le jinchūriki ignore tout au départ : chakra scellé, aucun secret connu', () => {
     const s = partie({ village: 'konoha', clan: 'sans_clan', element: 'katon' }, 1, { biju: 'kyubi' });

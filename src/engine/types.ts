@@ -909,6 +909,8 @@ export interface Tirages {
   biju?: string;
   /** Natures avancées héritées (lignées), encore latentes. */
   lignees: string[];
+  /** Orphelin ou sans clan : la lignée perdue dont on descend sans le savoir. */
+  sangInconnu?: string;
 }
 
 export interface GameState {

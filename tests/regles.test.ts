@@ -195,7 +195,9 @@ describe('Éveil et maîtrise', () => {
     const ctx = nouveauCtx();
     expect(copierTechnique(s, 'raiton_decharge', ctx)).toBe(true);
     expect(s.maitrises['raiton_decharge'].tier).toBe(1);
-    expect(s.maitrises['raiton_decharge'].bloquee).toBe(true); // affinité Katon, pas Raiton
+    // Le Sharingan d'un Uchiha copie jusqu'à la nature : Raiton s'éveille, la technique est exécutable.
+    expect(s.maitrises['nature_raiton']?.tier).toBe(1);
+    expect(s.maitrises['raiton_decharge'].bloquee).toBe(false);
     expect(copierTechnique(s, 'hyoton_miroirs', ctx)).toBe(false);
     expect(copierTechnique(s, 'raiton_lance', ctx)).toBe(false); // rang B, Sharingan palier 2
   });

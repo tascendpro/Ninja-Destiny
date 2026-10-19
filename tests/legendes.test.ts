@@ -7,6 +7,7 @@ import { ATTRIBUTS } from '../src/engine/types';
 import type { GameState } from '../src/engine/types';
 import { vueBingo } from '../src/engine/bingo';
 import { recitTechnique } from '../src/engine/epreuves';
+import { naturesMax } from '../src/engine/tempsLibre';
 
 const adulte = (graine = 5, force = 100): GameState => {
   const s = nouvellePartie(creation({ village: 'konoha', clan: 'sans_clan', element: 'katon' }), graine);
@@ -144,5 +145,33 @@ describe('Bingo Book, transformations et famille', () => {
     expect(t.drapeaux['quartier_choix']).toBe('enfant');
     expect(!!t.drapeaux['conjoint_blesse'] || !!t.drapeaux['conjoint_mort']).toBe(true);
     expect(t.scene.type === 'resultat' && t.scene.texte).not.toContain('{');
+  });
+});
+
+describe('Lignées perdues et limite des natures', () => {
+  it('un orphelin sans clan naît parfois d’une lignée perdue, Mokuton compris', () => {
+    const trouvees = new Set<string>();
+    for (let g = 1; g <= 600; g++) {
+      const s = nouvellePartie(creation({ village: 'konoha', clan: 'sans_clan', element: 'katon', origine: 'orphelin' }), g);
+      if (s.tirages.sangInconnu) {
+        trouvees.add(s.tirages.sangInconnu);
+        expect(s.maitrises[s.tirages.sangInconnu].potential).toBeGreaterThanOrEqual(R.maitrises[s.tirages.sangInconnu].eveil?.potentielMin ?? 0);
+      }
+    }
+    expect(trouvees.size).toBeGreaterThanOrEqual(6);
+    expect(trouvees.has('mokuton')).toBe(true);
+    const clan = nouvellePartie(creation({ village: 'konoha', clan: 'hyuga', element: 'katon' }), 7);
+    expect(clan.tirages.sangInconnu).toBeUndefined();
+  });
+
+  it('trois natures au plus, sauf pour un Uchiha au Sharingan éveillé', () => {
+    const s = adulte();
+    s.rang = 'jonin';
+    expect(naturesMax(s)).toBe(3);
+    const u = nouvellePartie(creation({ village: 'konoha', clan: 'uchiha', element: 'katon' }), 3);
+    u.rang = 'jonin';
+    expect(naturesMax(u)).toBe(3);
+    u.maitrises['sharingan'].awakened = true;
+    expect(naturesMax(u)).toBe(5);
   });
 });

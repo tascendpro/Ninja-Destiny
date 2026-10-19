@@ -434,7 +434,7 @@ export function apprendreTechnique(s: GameState, id: string, source: MasteryStat
     ctx.changements.push({ t: 'info', message: `Tu connais déjà ${def.nom}.` });
     return false;
   }
-  if (def.kekkeiGenkai && def.clan !== s.creation.clan) {
+  if (def.kekkeiGenkai && def.clan !== s.creation.clan && !porteLignee(s, def.clan)) {
     ctx.changements.push({ t: 'info', message: `${def.nom} est une technique héréditaire : elle ne s'apprend pas hors de sa lignée.` });
     return false;
   }
@@ -463,6 +463,12 @@ export function apprendreTechnique(s: GameState, id: string, source: MasteryStat
 
 /** Seuil de réserve de chakra qui permet d'apprendre une technique avant l'âge. */
 const RESERVE_PRECOCE: Record<RangTechnique, number> = { E: 0, D: 45, C: 75, B: 115, A: 170, S: 240 };
+
+/** Un sang inconnu peut porter la lignée d'un clan (Mokuton des Senju, Hyōton des Yuki) : ses techniques lui sont ouvertes. */
+export function porteLignee(s: GameState, clan?: string): boolean {
+  if (!clan) return false;
+  return s.tirages.lignees.some((id) => R.maitrises[id]?.clan === clan && s.maitrises[id]?.awakened);
+}
 
 /**
  * Âge minimal pour apprendre une technique. Le rang fixe l'âge normal ; une intelligence vive,
@@ -493,7 +499,7 @@ export function blocageApprentissage(s: GameState, id: string): string | undefin
   const t = def?.technique;
   if (!def || !t) return 'Technique inconnue.';
   if ((s.maitrises[id]?.tier ?? 0) >= 1) return 'Déjà apprise.';
-  if (def.clan && def.clan !== s.creation.clan) return 'Technique d’un autre clan.';
+  if (def.clan && def.clan !== s.creation.clan && !porteLignee(s, def.clan)) return 'Technique d’un autre clan.';
   if (t.drapeau && !drapeauVrai(s, t.drapeau)) return 'Ce pouvoir n’appartient pas à tes yeux.';
   if (t.categorie === 'combinaison' && t.elements) {
     const palier = paliersCombinaison(s);
@@ -549,6 +555,16 @@ export function copierTechnique(s: GameState, id: string, ctx: Ctx): boolean {
   ms.tier = 1;
   const a = age(s);
   const corpsPret = a >= AGE_RANG_TECHNIQUE[def.rang];
+  // Le Sharingan d'un Uchiha copie jusqu'à la nature elle-même : c'est ainsi qu'il porte toutes les natures.
+  if (def.element && corpsPret && !possedeElementTech(s, def.element) && s.creation.clan === 'uchiha') {
+    const nature = `nature_${def.element}`;
+    const nms = nouvelleMaitrise(R.maitrises[nature], 50 + s.attributs.controleChakra / 2, 'copie');
+    nms.awakened = true;
+    nms.tier = 1;
+    s.maitrises[nature] = nms;
+    s.drapeaux['natures_apprises'] = (Number(s.drapeaux['natures_apprises']) || 0) + 1;
+    ctx.changements.push({ t: 'info', message: `Ton Sharingan a lu jusqu’à la nature de son chakra : ${R.elements[def.element]?.nom} s’éveille en toi.` });
+  }
   const affinite = !def.element || possedeElementTech(s, def.element);
   ms.bloquee = !(corpsPret && affinite);
   s.maitrises[id] = ms;
