@@ -1747,6 +1747,12 @@ p.entree.inconnue {
   color: #b6aa98;
   max-width: 24rem;
 }
+.accueil-signature {
+  margin-top: 10px;
+  font-size: var(--t-s);
+  letter-spacing: 0.08em;
+  color: #8a7f70;
+}
 @media (min-width: 900px) {
   .accueil {
     align-items: center;
@@ -1761,6 +1767,9 @@ p.entree.inconnue {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     column-gap: 28px;
+  }
+  .accueil-signature {
+    grid-column: 2;
   }
   .tategaki {
     display: block;

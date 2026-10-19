@@ -78,6 +78,7 @@ export default function Accueil({
           {parties > 0 && `${parties} ${parties > 1 ? 'vies commencées' : 'vie commencée'} dans cet onglet. `}
           Ta partie dure tant que la page reste ouverte : la fermer l’efface.
         </p>
+        <p className="accueil-signature apparition d3">Créé par Tascend</p>
       </div>
     </main>
   );
