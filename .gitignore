@@ -4,5 +4,4 @@ out
 dist-standalone
 next-env.d.ts
 *.tsbuildinfo
-public/sons/*.mp3
 .claude
