@@ -167,7 +167,8 @@ export function diagnostiquer(): Probleme[] {
     verifierTexte(ev.texte, ou);
     verifierTexte(ev.titre, ou);
     for (const pr of ev.personnages ?? []) verifierPnj(pr, ou);
-    const lieux = ev.lieu.startsWith('$') ? VILLAGES.map((v) => (ev.lieu === '$village' ? v : `${v}_${ev.lieu.slice(1)}`)) : [ev.lieu];
+    // « $ici » reprend le lieu de la scène précédente : toujours un lieu connu.
+    const lieux = ev.lieu === '$ici' ? [] : ev.lieu.startsWith('$') ? VILLAGES.map((v) => (ev.lieu === '$village' ? v : `${v}_${ev.lieu.slice(1)}`)) : [ev.lieu];
     for (const l of lieux) if (!R.lieux[l]) err('lieu_inconnu', `${ou} : lieu inconnu ${l}.`);
     if (!ev.choix.length) err('sans_choix', `${ou} : aucun choix.`);
     if (ev.choix.length && ev.choix.every((c) => c.si && !c.verrou)) avert('choix_tous_conditionnels', `${ou} : tous les choix sont conditionnels.`);

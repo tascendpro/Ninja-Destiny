@@ -9,6 +9,19 @@ const base = { chapitre: 4, arc: 'heritage' as const };
 const ACTIF: Condition = { statut: 'actif' };
 const ROUTE: Condition = { statut: ['errant', 'deserteur'] };
 
+/** Fonder un foyer : un enfant naît dans l'année ; les dangers de la vie de famille sont planifiés. */
+const FONDER: Effect[] = [
+  { drapeau: 'famille_fondee' },
+  { hasard: [{ poids: 1, effets: [{ drapeau: 'enfant_genre', valeur: 'f' }] }, { poids: 1, effets: [{ drapeau: 'enfant_genre', valeur: 'm' }] }] },
+  { ethique: { compassion: 6 } },
+  { stat: 'attributs.controleEmotionnel', delta: 3 },
+  { journal: 'Tu fondes une famille.', importance: 3 },
+  { succes: 'foyer' },
+  { planifier: 'f_premiers_pas', dansJours: 500 },
+  { planifier: 'f_quartier', dansJours: 1100 },
+  { planifier: 'f_enlevement', dansJours: 1900 },
+];
+
 const SUITE_JONIN: Effect[] = [
   { planifier: 'c4_eleves', dansJours: 300 },
   { planifier: 'c4_lame', dansJours: 800 },
@@ -20,6 +33,8 @@ const SUITE_JONIN: Effect[] = [
   { planifier: 'c4_village_kumo', dansJours: 2500 },
   { planifier: 'c4_village_iwa', dansJours: 2500 },
   { planifier: 'c4_examen_eleves', dansJours: 3000 },
+  { planifier: 'cm_deux_camarades', dansJours: 1500 },
+  { planifier: 'cm_eleves', dansJours: 2200 },
 ];
 
 /** L'arme légendaire attachée à chaque village. */
@@ -196,9 +211,15 @@ export const CHAPITRE4: EventDef[] = [
     choix: [
       {
         id: 'fonder',
-        texte: 'Fonder une famille',
-        effets: [{ drapeau: 'famille_fondee' }, { ethique: { compassion: 6 } }, { stat: 'attributs.controleEmotionnel', delta: 3 }, { journal: 'Tu fondes une famille.', importance: 3 }, { succes: 'foyer' }],
-        resultat: 'Une petite maison au bord du village. Un an plus tard, des pleurs d’enfant la nuit. Tu découvres une peur que la guerre ne t’avait jamais donnée : celle de ne pas revenir.',
+        texte: 'Fonder une famille avec elle',
+        effets: [{ drapeau: 'conjoint_genre', valeur: 'f' }, ...FONDER],
+        resultat: 'Une petite maison au bord du village, et {conjointNom} qui rit de ta façon de plier le linge comme un parchemin de mission. Un an plus tard, des pleurs la nuit : {enfantNom}. Tu découvres une peur que la guerre ne t’avait jamais donnée : celle de ne pas revenir.',
+      },
+      {
+        id: 'fonder_lui',
+        texte: 'Fonder une famille avec lui',
+        effets: [{ drapeau: 'conjoint_genre', valeur: 'm' }, ...FONDER],
+        resultat: 'Une petite maison au bord du village, et {conjointNom} qui rit de ta façon de plier le linge comme un parchemin de mission. Un an plus tard, des pleurs la nuit : {enfantNom}. Tu découvres une peur que la guerre ne t’avait jamais donnée : celle de ne pas revenir.',
       },
       {
         id: 'mission',

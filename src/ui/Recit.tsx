@@ -5,6 +5,7 @@ import type { GameState, LieuDef, Presentation } from '../engine/types';
 import { accorder } from '../engine/texte';
 import { R } from '../engine/registre';
 import { vueCombat, vueEvenement, lieuCourant } from '../engine/moteur';
+import type { VueAttaque } from '../engine/moteur';
 import { duoPossible, genererActivites, periodeMax } from '../engine/tempsLibre';
 import type { Activite } from '../engine/tempsLibre';
 import { libelleDuree, libellePeriode, saisonDe } from '../engine/calendrier';
@@ -161,7 +162,9 @@ export default function Recit({
                 </button>
                 {ch.attaques && (
                   <div className="attaques" role="group" aria-label="Attaques spéciales">
-                    <span className="attaques-titre">Ou avec une attaque spéciale :</span>
+                    <span className="attaques-titre">
+                      Ou avec une attaque spéciale <FormeCombat forme={ch.forme} allies={ch.allies} /> :
+                    </span>
                     {ch.attaques.map((at) => (
                       <button
                         key={at.id}
@@ -177,6 +180,7 @@ export default function Recit({
                           {at.avantage === 'faible' && <b className="risque-eleve"> · élément défavorable</b>}
                           <span className={RISQUE_CLASSE[at.risque]}> · {precis ? `${at.chance} %` : `risque ${at.risque}`}</span>
                         </span>
+                        <DetailAttaque at={at} precis={precis} p={p} />
                       </button>
                     ))}
                   </div>
@@ -337,7 +341,9 @@ function TempsLibre({
     sort: acts.find((a) => a.id === programme.sort && a.disponible),
     discipline: acts.find((a) => a.id === programme.discipline && a.disponible),
   };
-  const double = duoPossible(etat);
+  // Programme double seulement si une technique ET une discipline peuvent encore progresser ; sinon, un seul choix, lancé directement.
+  const ameliorable = (g: 'sort' | 'discipline') => acts.some((a) => a.groupe === g && a.disponible && !a.alerte);
+  const double = duoPossible(etat) && ameliorable('sort') && ameliorable('discipline');
   const clic = (id: string) => {
     const a = acts.find((x) => x.id === id);
     // Avant le bandeau : un seul entraînement à la fois, lancé directement.
@@ -360,8 +366,9 @@ function TempsLibre({
   const liste = parCategorie[cat] ?? [];
   const achatsHorsPortee = cat === 'forge' ? liste.filter((a) => a.id.startsWith('forge:acheter:') && !a.disponible) : [];
   const sansAchats = liste.filter((a) => !achatsHorsPortee.includes(a));
-  // Ce qui ne peut pas progresser (en rouge) descend tout en bas de la liste.
-  const bloquees = cat === 'entrainement' || cat === 'techniques' ? sansAchats.filter((a) => !a.disponible) : [];
+  // Tout ce qui est en rouge descend en bas, quelle que soit la catégorie : ce qui est impossible pour l'instant,
+  // et ce qui bute sur un mur (âge, maître, expérience) que l'entraînement seul ne franchira pas.
+  const bloquees = sansAchats.filter((a) => !a.disponible || !!a.alerte);
   const principales = sansAchats.filter((a) => !bloquees.includes(a));
 
   return (
@@ -415,10 +422,10 @@ function TempsLibre({
         )}
         {bloquees.length > 0 && (
           <div className="sous-groupe bloquees">
-            <h3>Impossible de progresser pour l’instant</h3>
+            <h3>Bloqué ou impossible à améliorer pour l’instant</h3>
             <ul className="activites">
               {bloquees.map((a) => (
-                <LigneActivite key={a.id} a={a} p={p} onActivite={clic} />
+                <LigneActivite key={a.id} a={a} p={p} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
               ))}
             </ul>
           </div>
@@ -457,6 +464,32 @@ function TempsLibre({
 
 // ── Combat en manches ──────────────────────────────────────────
 
+const LIBELLE_PORTEE: Record<VueAttaque['portee'], string> = { cible: 'une cible', zone: 'zone', large: 'tout le terrain' };
+
+/** Duel ou escouade, et qui se trouve dans la mêlée. */
+function FormeCombat({ forme, allies }: { forme?: 'duel' | 'escouade'; allies?: boolean }) {
+  if (!forme) return null;
+  return (
+    <span className="forme-combat">
+      {forme === 'duel' ? '· en duel' : '· contre une escouade'}
+      {allies && ', des alliés dans la mêlée'}
+    </span>
+  );
+}
+
+/** Ce que fait la technique sur ce terrain, sa portée, et le risque de toucher un des tiens. */
+function DetailAttaque({ at, precis, p }: { at: VueAttaque; precis: boolean; p: Presentation }) {
+  return (
+    <>
+      {at.recit && <span className="attaque-recit">{accorder(at.recit, p)}</span>}
+      <span className="attaque-portee">
+        Portée : {LIBELLE_PORTEE[at.portee]}
+        {at.risqueAllie > 0 && <b className="risque-eleve"> · {precis ? `${at.risqueAllie} % de toucher un allié` : 'peut toucher un allié'}</b>}
+      </span>
+    </>
+  );
+}
+
 function Combat({ etat, onManche }: { etat: GameState; onManche: (id: string) => void }) {
   const v = vueCombat(etat);
   const p = etat.creation.presentation;
@@ -487,7 +520,36 @@ function Combat({ etat, onManche }: { etat: GameState; onManche: (id: string) =>
             <p key={i}>{accorder(l, p)}</p>
           ))}
         </div>
-        <p className="combat-aide">L’adversaire n’est pas tombé. Choisis ta prochaine attaque : chaque coup porté compte, chaque riposte encaissée te coûte.</p>
+        {v.adversaire ? (
+          <div className="priorite-adverse" role="group" aria-label="L’adversaire attaque">
+            <p className="priorite-titre">
+              <b>Il prend l’initiative : {v.adversaire.nom}</b>
+              {v.adversaire.element && <span className="forme-combat"> · {v.adversaire.element}</span>}
+            </p>
+            <p className="attaque-recit">{accorder(v.adversaire.recit, p)}</p>
+            <div className="attaques combat-attaques">
+              <button className="attaque" onClick={() => onManche('esquiver')}>
+                <span className="attaque-nom">Esquiver</span>
+                <span className="attaque-meta">
+                  Sûr, mais tu ne touches pas. Réussie, elle ouvre sa garde{precis ? ` · ${v.adversaire.esquive} %` : ''}
+                  {v.adversaire.permutation && <b className="risque-faible"> · ta permutation aide</b>}
+                </span>
+              </button>
+              <button className="attaque" data-sceau="返" onClick={() => onManche('contrer')}>
+                <span className="attaque-nom">Contre-attaquer</span>
+                <span className="attaque-meta">
+                  Frapper dans son attaque : compte comme un coup porté, mais raté, il fait très mal{precis ? ` · ${v.adversaire.contre} %` : ''}
+                  {v.adversaire.natureFavorable && <b className="risque-faible"> · ton {v.adversaire.natureFavorable} domine sa nature</b>}
+                </span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+        <p className="combat-aide">
+          {v.ouverture ? 'Ton esquive a ouvert sa garde : ta prochaine attaque en profite. ' : 'L’adversaire n’est pas tombé. '}
+          Choisis ta prochaine attaque : chaque coup porté compte, chaque riposte encaissée te coûte. <FormeCombat forme={v.forme} allies={v.allies} />
+        </p>
         <div className="attaques combat-attaques" role="group" aria-label="Attaques de la manche">
           <button className="attaque" onClick={() => onManche('simple')}>
             <span className="attaque-nom">Attaque simple</span>
@@ -505,6 +567,7 @@ function Combat({ etat, onManche }: { etat: GameState; onManche: (id: string) =>
                 {at.avantage === 'faible' && <b className="risque-eleve"> · élément défavorable</b>}
                 <span className={RISQUE_CLASSE[at.risque]}> · {precis ? `${at.chance} %` : `risque ${at.risque}`}</span>
               </span>
+              <DetailAttaque at={at} precis={precis} p={p} />
             </button>
           ))}
         </div>
@@ -523,6 +586,8 @@ function Combat({ etat, onManche }: { etat: GameState; onManche: (id: string) =>
               </button>
             ))}
           </div>
+        )}
+          </>
         )}
       </article>
     </div>

@@ -88,7 +88,7 @@ export function poursuivre(depart: GameState, graine: number, maxPas = 1500): Ra
         s = choisir(s, ch.id);
       } else if (s.scene.type === 'combat') {
         const v = vueCombat(s)!;
-        const ids = ['simple', ...v.attaques.map((a) => a.id)];
+        const ids = v.adversaire ? ['esquiver', 'contrer'] : ['simple', ...v.attaques.map((a) => a.id)];
         s = manche(s, ids[pick(ids.length)]);
       } else if (s.scene.type === 'resultat' || s.scene.type === 'bilan') {
         s = continuer(s);

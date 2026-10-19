@@ -47,6 +47,7 @@ export const LIEUX: LieuDef[] = [
   { id: 'foret_feu', nom: 'Forêt du Pays du Feu', pays: 'Pays du Feu', scene: 'foret', x: 600, y: 470, danger: 1, description: 'Des arbres si grands que la lumière y arrive verte.' },
   { id: 'frontiere_herbe', nom: 'Frontière du Pays de l’Herbe', pays: 'Pays de l’Herbe', scene: 'frontiere', x: 400, y: 285, danger: 3, description: 'Une plaine disputée où chaque guerre a laissé ses tombes.' },
   { id: 'desert_vent', nom: 'Grand désert du Vent', pays: 'Pays du Vent', scene: 'desert', x: 150, y: 560, danger: 2, description: 'Des dunes qui bougent plus vite que les cartes.' },
+  { id: 'ame', nom: 'Amegakure', pays: 'Pays de la Pluie', scene: 'ruines', x: 330, y: 330, danger: 3, description: 'Un village de tours d’acier sous une pluie qui ne cesse jamais. On y parle d’un dieu, et d’un ange de papier.' },
   { id: 'cite_ensevelie', nom: 'Shōsa, la cité ensevelie', pays: 'Pays du Vent', scene: 'ruines', x: 90, y: 400, danger: 3, description: 'Une cité de verriers engloutie par le sable il y a soixante ans.' },
   { id: 'cotes_brume', nom: 'Côtes de la Brume', pays: 'Pays de l’Eau', scene: 'cotes', x: 800, y: 540, danger: 2, description: 'Des récifs noirs où dorment des navires et des lames.' },
   { id: 'montagnes_foudre', nom: 'Col de la Foudre', pays: 'Pays de la Foudre', scene: 'montagne', x: 700, y: 210, danger: 3, description: 'Un col où l’orage ne s’arrête jamais.' },

@@ -1,10 +1,10 @@
 // Combats et épreuves — section 11. Aucun combat n'est gagné d'avance ; tout se calcule côté moteur.
 
-import type { AttributId, CheckDef, GameState, Issue, Outcome } from './types';
+import type { AttributId, CheckDef, FormeCombat, GameState, Issue, MasteryDef, MasteryState, Outcome, PorteeTechnique, RangTechnique, TechniqueAdverse } from './types';
 import { R } from './registre';
 import { Ctx, ajouterJournal, clamp } from './etat';
 import { alea } from './rng';
-import { applyCombatExperience, tierEffectif } from './maitrise';
+import { applyCombatExperience, exigence, tierEffectif } from './maitrise';
 import { getWeaponModifiers, idFamille, usureArme } from './armes';
 import { noterMerite } from './progression';
 
@@ -36,19 +36,107 @@ function maitrisesDuTest(s: GameState, t: CheckDef): Record<string, number> {
   return res;
 }
 
+const ORDRE_RANG: Record<RangTechnique, number> = { E: 0, D: 1, C: 2, B: 3, A: 4, S: 5 };
+
+/** Le rang de l'adversaire, lu dans la difficulté du combat : D (genin), C, B, A (jōnin d'élite). */
+export function rangAdversaire(t: CheckDef): number {
+  return t.difficulte <= 44 ? 1 : t.difficulte <= 52 ? 2 : t.difficulte <= 60 ? 3 : 4;
+}
+
+/** Degré de maîtrise d'une technique : son palier, plus l'avancée de l'entraînement vers le suivant (0 à 1). */
+function degreTechnique(def: MasteryDef, ms: MasteryState): number {
+  if (ms.tier >= 5) return 5;
+  const requis = exigence(def, (ms.tier + 1) as 1 | 2 | 3 | 4 | 5).jours;
+  return ms.tier + (requis > 0 ? Math.min(1, ms.trainingDays / requis) : 0);
+}
+
 /**
- * Attaque spéciale : bonus d'une technique connue sur un combat. La puissance croît avec le palier ;
- * une nature forte contre celle de l'adversaire ajoute un avantage, une nature faible le retire.
+ * Attaque spéciale : bonus d'une technique connue sur un combat.
+ * - La maîtrise compte fort : palier et entraînement en cours font passer une technique de 70 % à 170 % de sa puissance.
+ * - Face à un adversaire de rang supérieur, une technique simple perd de son effet (un quart par rang d'écart) ;
+ *   une technique d'un rang au-dessus de l'adversaire gagne un peu.
+ * - Une nature forte contre celle de l'adversaire ajoute un avantage, une nature faible le retire,
+ *   d'autant plus nettement que la nature est maîtrisée.
  */
 export function bonusTechnique(s: GameState, techId: string, t: CheckDef): number {
   const def = R.maitrises[techId];
   const ms = s.maitrises[techId];
   if (!def?.technique || !ms || ms.tier < 1) return 0;
-  let b = def.technique.puissance * (0.7 + 0.15 * ms.tier);
+  let b = def.technique.puissance * (0.45 + 0.25 * degreTechnique(def, ms));
+  const ecart = ORDRE_RANG[def.rang ?? 'C'] - rangAdversaire(t);
+  b *= ecart < 0 ? Math.max(0.4, 1 + 0.25 * ecart) : 1 + 0.1 * ecart;
   const av = avantageTechnique(techId, t.elementAdverse);
-  if (av === 'fort') b += 8;
-  if (av === 'faible') b -= 8;
+  if (av) {
+    const els = def.technique.elements ?? (def.element ? [def.element] : []);
+    const nature = Math.max(0, ...els.map((e) => s.maitrises[`nature_${e}`]?.tier ?? 0));
+    b += (av === 'fort' ? 1 : -1) * (8 + 1.5 * nature);
+  }
+  b += BONUS_PORTEE[t.forme ?? 'duel'][porteeTechnique(techId)];
   return Math.round(b);
+}
+
+/** Une technique de zone balaie un groupe mais se dilue en duel ; une technique ciblée fait l'inverse. */
+const BONUS_PORTEE: Record<FormeCombat, Record<PorteeTechnique, number>> = {
+  duel: { cible: 3, zone: 0, large: -3 },
+  escouade: { cible: -2, zone: 4, large: 8 },
+};
+
+export function porteeTechnique(techId: string): PorteeTechnique {
+  return R.contenu.recitsTechniques[techId]?.portee ?? 'cible';
+}
+
+/** L'arme que prend le Susanoo : elle naît de la nature de chakra choisie à la naissance. */
+const ARME_SUSANOO: Record<string, string> = {
+  katon: 'une épée de flammes noires, longue comme un pont',
+  raiton: 'un arc tendu de foudre, dont chaque flèche est un éclair',
+  fuuton: 'deux sabres de vent qui hurlent en tournant',
+  suiton: 'un arc d’eau, dont les flèches sifflent comme des lances de pluie',
+  doton: 'une hallebarde de roche et un bouclier large comme un rempart',
+};
+
+/**
+ * Ce que devient la technique sur le terrain, selon la forme du combat et, pour les transformations,
+ * selon le palier atteint (le Susanoo naît squelette avant d'avoir un corps, puis une arme).
+ */
+export function recitTechnique(s: GameState, techId: string, t: CheckDef): string | undefined {
+  const rec = R.contenu.recitsTechniques[techId];
+  if (!rec) return undefined;
+  const forme = t.forme ?? 'duel';
+  const tier = s.maitrises[techId]?.tier ?? 1;
+  const palier = (rec.paliers ?? []).filter((p) => p.min <= tier).sort((a, b) => b.min - a.min)[0];
+  const texte = palier ? palier[forme] : rec[forme];
+  return texte.replace('{armeSusanoo}', ARME_SUSANOO[s.creation.element] ?? ARME_SUSANOO.katon);
+}
+
+/**
+ * Risque de toucher un allié : seulement si des alliés sont dans la mêlée, et pour une technique de zone.
+ * Une technique bien maîtrisée se contrôle : le risque fond avec le palier (jusqu'à 30 % du risque de départ).
+ */
+export function risqueAllie(s: GameState, techId: string, t: CheckDef): number {
+  const portee = porteeTechnique(techId);
+  const def = R.maitrises[techId];
+  const ms = s.maitrises[techId];
+  if (!t.allies || portee === 'cible' || !def || !ms) return 0;
+  const base = portee === 'large' ? 0.22 : 0.12;
+  return base * Math.max(0.3, 1 - 0.15 * (degreTechnique(def, ms) - 1));
+}
+
+/** Malus de la manche quand la technique a touché un des tiens. */
+export const MALUS_TIR_AMI = 12;
+
+/** La ligne du récit quand un allié est touché : par nature, sinon par famille de technique. */
+export function texteTirAmi(techId: string): string {
+  const def = R.maitrises[techId];
+  const el = def?.technique?.elements?.[0] ?? def?.element;
+  const tirs = R.contenu.tirsAmis;
+  return (el && tirs[el]) || tirs[def?.technique?.categorie ?? ''] || tirs.defaut;
+}
+
+/** Le test d'un combat, complété par sa forme (duel ou escouade, alliés présents). */
+export function avecAffrontement(evId: string, choixId: string, t: CheckDef): CheckDef {
+  if (t.type !== 'combat' || t.forme) return t;
+  const a = R.contenu.affrontements[`${evId}/${choixId}`];
+  return { ...t, forme: a?.forme ?? 'duel', allies: t.allies ?? a?.allies, verdict: t.verdict ?? a?.verdict };
 }
 
 /**
@@ -107,7 +195,7 @@ export function evaluerEpreuve(s: GameState, t: CheckDef): EvaluationEpreuve {
   return { score: Math.round(score), seuil, proba, risque, principal };
 }
 
-export function resoudreEpreuve(s: GameState, t: CheckDef, ctx: Ctx): { issue: Issue; outcome: Outcome; mort: boolean } {
+export function resoudreEpreuve(s: GameState, t: CheckDef, ctx: Ctx): { issue: Issue; outcome: Outcome; mort: boolean; capture: boolean } {
   const { proba } = evaluerEpreuve(s, t);
   const r = alea(s);
   let issue: Issue;
@@ -128,9 +216,12 @@ export function resoudreEpreuve(s: GameState, t: CheckDef, ctx: Ctx): { issue: I
   if (t.type === 'combat') {
     applyCombatExperience(s, Object.keys(maitrisesDuTest(s, t)), ctx);
     if (t.arme || t.maitrises?.arme) usureArme(s, issue === 'echec' ? 8 : issue === 'critique' ? 2 : 4, ctx);
-    if (issue === 'echec') return { issue, outcome, mort: blessureDeCombat(s, t, r, proba, ctx) };
+    if (issue === 'echec') {
+      const sort = blessureDeCombat(s, t, r, proba, ctx);
+      return { issue, outcome, mort: sort === 'mort', capture: sort === 'capture' };
+    }
   }
-  return { issue, outcome, mort: false };
+  return { issue, outcome, mort: false, capture: false };
 }
 
 /** Nombre de manches d'un combat : explicite, sinon deux pour un combat mortel difficile. */
@@ -155,8 +246,67 @@ export function resoudreManche(s: GameState, t: CheckDef, ctx: Ctx, protege = fa
   return { issue: 'riposte', degats };
 }
 
+// ── Initiative de l'adversaire ──
+
+/** Chance que l'adversaire prenne l'initiative d'une manche : plus il est fort et nombreux, plus souvent ; l'agilité la lui dispute. */
+export function chancePriorite(s: GameState, t: CheckDef): number {
+  const p = 0.22 + 0.07 * (rangAdversaire(t) - 1) + (t.forme === 'escouade' ? 0.08 : 0) - (s.attributs.agilite - 45) / 250;
+  return clamp(p, 0.12, 0.6);
+}
+
+/** La technique qu'il lance : de sa nature si on la connaît, jamais au-dessus de son rang ; les plus fortes plus souvent. */
+export function tirerTechniqueAdverse(s: GameState, t: CheckDef): string {
+  const rang = rangAdversaire(t);
+  const pool = R.contenu.techniquesAdverses.filter((a) => a.rang <= rang && (!a.element || a.element === t.elementAdverse));
+  const total = pool.reduce((n, a) => n + a.rang, 0);
+  let r = alea(s) * total;
+  for (const a of pool) {
+    r -= a.rang;
+    if (r < 0) return a.id;
+  }
+  return pool[pool.length - 1].id;
+}
+
+export function techniqueAdverse(id: string): TechniqueAdverse | undefined {
+  return R.contenu.techniquesAdverses.find((a) => a.id === id);
+}
+
+export type Defense = 'esquiver' | 'contrer';
+
+/** Une nature que tu maîtrises domine-t-elle celle de sa technique (ton eau contre son feu) ? */
+export function natureQuiDomine(s: GameState, element?: string): string | undefined {
+  if (!element) return undefined;
+  return R.contenu.elements.find((e) => e.fortContre === element && (s.maitrises[`nature_${e.id}`]?.tier ?? 0) >= 1)?.id;
+}
+
+/**
+ * La manche où il attaque le premier. Esquiver se joue sur l'agilité et l'œil (la permutation aide) : sûr, mais on ne touche pas.
+ * Contrer, c'est frapper dans son attaque : plus dur, mais un contre réussi compte comme un coup porté, et raté, il coûte cher.
+ */
+export function testDefense(s: GameState, t: CheckDef, advId: string, mode: Defense): CheckDef {
+  const adv = techniqueAdverse(advId);
+  const puissance = adv?.puissance ?? 8;
+  if (mode === 'esquiver') {
+    const permutation = (s.maitrises['kawarimi']?.tier ?? 0) >= 1 ? 6 : 0;
+    return { ...t, attributs: { agilite: 2, perception: 1 }, maitrises: { taijutsu: 0.5 }, arme: false, modificateur: (t.modificateur ?? 0) + permutation - puissance * 0.5 };
+  }
+  const nature = natureQuiDomine(s, adv?.element) ? 6 : 0;
+  return { ...t, modificateur: (t.modificateur ?? 0) - 6 - puissance * 0.6 + nature };
+}
+
+export function resoudreDefense(s: GameState, t: CheckDef, advId: string, mode: Defense, ctx: Ctx): { issue: IssueManche; degats: number } {
+  const { proba } = evaluerEpreuve(s, testDefense(s, t, advId, mode));
+  if (alea(s) < proba) return { issue: mode === 'esquiver' ? 'esquive' : 'touche', degats: 0 };
+  const adv = techniqueAdverse(advId);
+  const facteur = s.creation.difficulte === 'recit' ? 0.6 : s.creation.difficulte === 'legende' ? 1.3 : 1;
+  const degats = Math.round(((t.letal ? 9 : 5) * (mode === 'esquiver' ? 1.2 : 1.6) + (adv?.puissance ?? 8) * 0.3) * facteur);
+  s.jauges.sante = clamp(s.jauges.sante - degats, 1, 100);
+  ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -degats });
+  return { issue: 'riposte', degats };
+}
+
 /** Fin d'un combat en manches : l'issue vient du nombre de coups portés ; l'échec garde son prix (blessure, mort possible). */
-export function conclureCombat(s: GameState, t: CheckDef, touches: number, ripostes: number, total: number, ctx: Ctx): { issue: Issue; outcome: Outcome; mort: boolean } {
+export function conclureCombat(s: GameState, t: CheckDef, touches: number, ripostes: number, total: number, ctx: Ctx): { issue: Issue; outcome: Outcome; mort: boolean; capture: boolean } {
   // Chaque coup porté compte un point, chaque riposte encaissée en retire un demi.
   const score = touches - ripostes * 0.5;
   let issue: Issue;
@@ -168,38 +318,46 @@ export function conclureCombat(s: GameState, t: CheckDef, touches: number, ripos
   applyCombatExperience(s, Object.keys(maitrisesDuTest(s, t)), ctx);
   if (t.arme || t.maitrises?.arme) usureArme(s, issue === 'echec' ? 8 : issue === 'critique' ? 2 : 4, ctx);
   if (issue === 'succes' || issue === 'critique') noterMerite(s, 'combat');
-  if (issue !== 'echec') return { issue, outcome, mort: false };
+  if (issue !== 'echec') return { issue, outcome, mort: false, capture: false };
   // Un échec sans aucun coup porté est un échec profond.
   const { proba } = evaluerEpreuve(s, t);
   const r = touches === 0 ? 0.5 + alea(s) * 0.5 : alea(s);
-  return { issue, outcome, mort: blessureDeCombat(s, t, Math.max(r, proba), proba, ctx) };
+  const sort = blessureDeCombat(s, t, Math.max(r, proba), proba, ctx);
+  return { issue, outcome, mort: sort === 'mort', capture: sort === 'capture' };
 }
 
 /** Probabilité qu'un échec dans un combat mortel tue, selon la difficulté choisie. */
-export const CHANCE_MORT: Record<string, number> = { recit: 0.12, shinobi: 0.3, legende: 0.45 };
+export const CHANCE_MORT: Record<string, number> = { recit: 0.18, shinobi: 0.45, legende: 0.6 };
+/** Contre une escouade, un échec qui ne tue pas peut finir en captivité. */
+export const CHANCE_CAPTURE: Record<string, number> = { recit: 0.15, shinobi: 0.22, legende: 0.25 };
+
+/** Ce qu'un combat mortel raté laisse : rien de plus que des blessures, la captivité, ou la mort. */
+export type SortDuVaincu = 'mort' | 'capture' | undefined;
 
 /**
  * Un combat raté laisse des traces. Un combat mortel raté peut tuer : la mort n'est jamais
  * décidée par le seul hasard (il faut avoir échoué), mais elle peut frapper à tout moment.
+ * Face à un groupe, celui qui tombe sans mourir peut être emmené.
  */
-function blessureDeCombat(s: GameState, t: CheckDef, r: number, proba: number, ctx: Ctx): boolean {
+function blessureDeCombat(s: GameState, t: CheckDef, r: number, proba: number, ctx: Ctx): SortDuVaincu {
   // Profondeur de l'échec : 0 au seuil, 1 pour le pire tirage possible.
   const profondeur = clamp((r - proba) / Math.max(0.01, 1 - proba), 0, 1);
-  if (t.letal) {
-    const chance = CHANCE_MORT[s.creation.difficulte] ?? 0.3;
-    if (profondeur > 1 - chance) {
-      const avant = s.jauges.sante;
-      s.jauges.sante = 0;
-      ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -avant });
-      s.drapeaux['mort_au_combat'] = true;
-      ajouterJournal(s, 'Un coup de trop. Tu ne te relèves pas.', 3);
-      return true;
-    }
+  const mort = CHANCE_MORT[s.creation.difficulte] ?? 0.45;
+  if (t.letal && profondeur > 1 - mort) {
+    const avant = s.jauges.sante;
+    s.jauges.sante = 0;
+    ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -avant });
+    s.drapeaux['mort_au_combat'] = true;
+    ajouterJournal(s, 'Un coup de trop. Tu ne te relèves pas.', 3);
+    return 'mort';
   }
   const degats = Math.round((t.letal ? 14 : 6) + profondeur * (t.letal ? 22 : 10));
   const facteur = s.creation.difficulte === 'recit' ? 0.6 : s.creation.difficulte === 'legende' ? 1.3 : 1;
   const d = Math.round(degats * facteur);
   s.jauges.sante = clamp(s.jauges.sante - d, 0, 100);
   ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -d });
-  return s.jauges.sante <= 0;
+  if (s.jauges.sante <= 0) return 'mort';
+  const capture = CHANCE_CAPTURE[s.creation.difficulte] ?? 0.22;
+  if (t.letal && t.forme === 'escouade' && profondeur > 1 - mort - capture) return 'capture';
+  return undefined;
 }

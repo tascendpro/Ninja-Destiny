@@ -13,6 +13,7 @@ import Recit from './Recit';
 import Tableau from './Tableau';
 import Journal from './Journal';
 import Encyclopedie from './Encyclopedie';
+import BingoBook from './BingoBook';
 import Fin from './Fin';
 import Menu from './Menu';
 import type { Reglages } from './Menu';
@@ -22,12 +23,13 @@ import { gravite } from './fiche';
 import { remonter } from './defilement';
 
 type Ecran = 'accueil' | 'creation' | 'jeu' | 'savoir';
-type Onglet = 'recit' | 'ninja' | 'journal' | 'savoir';
+type Onglet = 'recit' | 'ninja' | 'journal' | 'bingo' | 'savoir';
 
 const NAV: { id: Onglet; kanji: string; nom: string }[] = [
   { id: 'recit', kanji: '話', nom: 'Récit' },
   { id: 'ninja', kanji: '忍', nom: 'Ninja' },
   { id: 'journal', kanji: '記', nom: 'Journal' },
+  { id: 'bingo', kanji: '賞', nom: 'Bingo' },
   { id: 'savoir', kanji: '書', nom: 'Savoir' },
 ];
 
@@ -323,13 +325,11 @@ export default function Game() {
               appliquer((s) => activite(s, `equiper:${id}`));
               setToast(`${R.armes[id]?.nom} en main.`);
             }}
-            onRepartir={(rep) => {
-              appliquer((s) => repartir(s, rep));
-              setToast('Points répartis.');
-            }}
+            onRepartir={(rep) => appliquer((s) => repartir(s, rep))}
           />
         )}
         {onglet === 'journal' && <Journal etat={etat} />}
+        {onglet === 'bingo' && <BingoBook etat={etat} />}
         {onglet === 'savoir' && <Encyclopedie etat={etat} meta={meta} />}
       </main>
       <nav className="nav" aria-label="Navigation">

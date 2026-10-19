@@ -21,10 +21,29 @@ describe('Combats en plusieurs manches', () => {
     const v = vueCombat(t)!;
     expect(v.manche).toBe(1);
     expect(v.journal[0]).toContain('Poing ferré');
-    t = manche(t, 'simple');
-    t = manche(t, v.attaques[0]?.id ?? 'simple');
+    // Quand l'adversaire prend l'initiative, on ne peut qu'esquiver ou contrer.
+    const jouer = (x: typeof t, attaque: string) => manche(x, vueCombat(x)!.adversaire ? 'esquiver' : attaque);
+    t = jouer(t, 'simple');
+    t = jouer(t, vueCombat(t)!.attaques[0]?.id ?? 'simple');
     expect(t.scene.type).toBe('resultat');
     expect(t.scene.type === 'resultat' && t.scene.texte).toContain('Manche 3');
+  });
+  it('quand l’adversaire prend l’initiative, sa technique s’esquive ou se contre, et rien d’autre', () => {
+    const s = nouvellePartie(creation({ village: 'konoha', clan: 'uchiha', element: 'katon' }), 4);
+    s.jour = s.naissance + 14 * 360;
+    s.rang = 'genin';
+    s.scene = { type: 'evenement', id: 'c2_tournoi' };
+    let t = choisir(s, 'frontal');
+    expect(t.scene.type).toBe('combat');
+    if (t.scene.type !== 'combat') return;
+    t.scene.priorite = 'adv_katon_boule';
+    const v = vueCombat(t)!;
+    expect(v.adversaire?.nom).toContain('Boule de feu');
+    expect(v.adversaire!.esquive).toBeGreaterThan(0);
+    expect(v.adversaire!.contre).toBeLessThan(v.adversaire!.esquive + 30);
+    expect(() => manche(t, 'simple')).toThrow();
+    const apres = manche(t, 'contrer');
+    expect(apres.scene.type === 'combat' ? apres.scene.journal.at(-1) : '').toContain('Boule de feu');
   });
 });
 

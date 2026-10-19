@@ -34,7 +34,33 @@ export const JETONS_CONNUS = [
   'element',
   'arme',
   'age',
+  'conjoint',
+  'Conjoint',
+  'conjointNom',
+  'conjoint_il',
+  'conjoint_e',
+  'enfant',
+  'Enfant',
+  'enfantNom',
+  'enfant_il',
+  'Enfant_il',
+  'enfant_e',
+  'enfant_le',
 ];
+
+/** La famille fondée au chapitre 4 : genres choisis ou tirés (drapeaux), prénoms stables tirés des noms du village. */
+function famille(s: GameState): { conjointF: boolean; enfantF: boolean; conjointNom: string; enfantNom: string } {
+  const conjointF = s.drapeaux['conjoint_genre'] !== 'm';
+  const enfantF = s.drapeaux['enfant_genre'] === 'f';
+  const noms = R.contenu.noms[s.creation.village];
+  const pick = (l: string[] | undefined, k: number) => (l?.length ? l[Math.abs(k) % l.length] : '');
+  return {
+    conjointF,
+    enfantF,
+    conjointNom: pick(conjointF ? noms?.f : noms?.m, s.naissance * 7 + 3),
+    enfantNom: pick(enfantF ? noms?.f : noms?.m, s.naissance * 13 + 11),
+  };
+}
 
 function accord(s: GameState): { e: string; il: string } {
   const p = s.creation.presentation;
@@ -127,6 +153,30 @@ export function valeurJeton(s: GameState, jeton: string): string | undefined {
       return s.armeEquipee ? R.armes[s.armeEquipee]?.nom : 'tes mains nues';
     case 'age':
       return String(Math.floor((s.jour - s.naissance) / 360));
+    case 'conjoint':
+      return famille(s).conjointF ? 'ta femme' : 'ton mari';
+    case 'Conjoint':
+      return famille(s).conjointF ? 'Ta femme' : 'Ton mari';
+    case 'conjointNom':
+      return famille(s).conjointNom;
+    case 'conjoint_il':
+      return famille(s).conjointF ? 'elle' : 'il';
+    case 'conjoint_e':
+      return famille(s).conjointF ? 'e' : '';
+    case 'enfant':
+      return famille(s).enfantF ? 'ta fille' : 'ton fils';
+    case 'Enfant':
+      return famille(s).enfantF ? 'Ta fille' : 'Ton fils';
+    case 'enfantNom':
+      return famille(s).enfantNom;
+    case 'enfant_il':
+      return famille(s).enfantF ? 'elle' : 'il';
+    case 'Enfant_il':
+      return famille(s).enfantF ? 'Elle' : 'Il';
+    case 'enfant_e':
+      return famille(s).enfantF ? 'e' : '';
+    case 'enfant_le':
+      return famille(s).enfantF ? 'la' : 'le';
     default:
       return undefined;
   }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { creation } from './aide';
 import { nouvellePartie } from '../src/engine/moteur';
 import { blocageApprentissage } from '../src/engine/maitrise';
-import { avantageTechnique, bonusTechnique } from '../src/engine/epreuves';
+import { avantageTechnique, bonusTechnique, risqueAllie } from '../src/engine/epreuves';
 import { genererActivites, faireActivite } from '../src/engine/tempsLibre';
 import { nouveauCtx } from '../src/engine/etat';
 import { R } from '../src/engine/registre';
@@ -72,5 +72,57 @@ describe('Combinaisons de natures', () => {
     s.maitrises['suiton_bulles'] = { ...s.maitrises['ninjutsu'], id: 'suiton_bulles', kind: 'jutsu', awakened: true, tier: 1 };
     const t = { type: 'combat', difficulte: 50, elementAdverse: 'doton' } as unknown as CheckDef;
     expect(bonusTechnique(s, 'combo_eau_foudre', t)).toBeGreaterThan(bonusTechnique(s, 'suiton_bulles', t) + 15);
+  });
+});
+
+describe('Chances des attaques spéciales', () => {
+  const avec = (id: string, tier: number, trainingDays = 0) => {
+    const s = base();
+    s.maitrises[id] = { ...s.maitrises['ninjutsu'], id, kind: 'jutsu', awakened: true, tier: tier as 1, trainingDays };
+    return s;
+  };
+  const combat = (difficulte: number, elementAdverse?: string) => ({ type: 'combat', difficulte, elementAdverse }) as unknown as CheckDef;
+
+  it('une technique mieux maîtrisée frappe plus fort, et l’entraînement en cours compte déjà', () => {
+    const t = combat(50);
+    expect(bonusTechnique(avec('suiton_prison', 3), 'suiton_prison', t)).toBeGreaterThan(bonusTechnique(avec('suiton_prison', 1), 'suiton_prison', t) + 5);
+    expect(bonusTechnique(avec('tai_poing', 2, 9999), 'tai_poing', t)).toBeGreaterThan(bonusTechnique(avec('tai_poing', 2), 'tai_poing', t));
+  });
+  it('une technique simple perd de son effet face à un adversaire de haut rang', () => {
+    const s = avec('suiton_bulles', 2);
+    expect(bonusTechnique(s, 'suiton_bulles', combat(64))).toBeLessThan(bonusTechnique(s, 'suiton_bulles', combat(40)));
+  });
+  it('l’avantage de nature pèse plus quand la nature est maîtrisée', () => {
+    const s = avec('suiton_bulles', 1);
+    nature(s, 'suiton', 1);
+    const faible = bonusTechnique(s, 'suiton_bulles', combat(40, 'katon'));
+    nature(s, 'suiton', 4);
+    expect(bonusTechnique(s, 'suiton_bulles', combat(40, 'katon'))).toBeGreaterThan(faible);
+    expect(bonusTechnique(s, 'suiton_bulles', combat(40, 'doton'))).toBeLessThan(bonusTechnique(s, 'suiton_bulles', combat(40)));
+  });
+});
+
+describe('Récits de combat', () => {
+  it('chaque attaque spéciale a son récit en duel et contre une escouade', () => {
+    const sans = R.contenu.maitrises.filter((m) => m.technique?.offensive && !R.contenu.recitsTechniques[m.id]).map((m) => m.id);
+    expect(sans).toEqual([]);
+  });
+  it('chaque combat du jeu est classé (duel ou escouade), et la table ne cite que des combats existants', () => {
+    const combats = R.contenu.evenements.flatMap((ev) => ev.choix.filter((c) => c.test?.type === 'combat').map((c) => `${ev.id}/${c.id}`));
+    expect(combats.filter((k) => !R.contenu.affrontements[k])).toEqual([]);
+    expect(Object.keys(R.contenu.affrontements).filter((k) => !combats.includes(k))).toEqual([]);
+  });
+  it('une technique de zone frappe mieux une escouade, et ne menace les alliés que s’ils sont là', () => {
+    const s = base();
+    s.maitrises['katon_tempete'] = { ...s.maitrises['ninjutsu'], id: 'katon_tempete', kind: 'jutsu', awakened: true, tier: 1, trainingDays: 0 };
+    const duel = { type: 'combat', difficulte: 50, forme: 'duel' } as unknown as CheckDef;
+    const groupe = { ...duel, forme: 'escouade' } as CheckDef;
+    expect(bonusTechnique(s, 'katon_tempete', groupe)).toBeGreaterThan(bonusTechnique(s, 'katon_tempete', duel));
+    expect(risqueAllie(s, 'katon_tempete', groupe)).toBe(0);
+    const avecAllies = { ...groupe, allies: true } as CheckDef;
+    const debutant = risqueAllie(s, 'katon_tempete', avecAllies);
+    expect(debutant).toBeGreaterThan(0);
+    s.maitrises['katon_tempete'].tier = 4;
+    expect(risqueAllie(s, 'katon_tempete', avecAllies)).toBeLessThan(debutant);
   });
 });

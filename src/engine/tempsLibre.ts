@@ -169,6 +169,9 @@ export function genererActivites(s: GameState): Activite[] {
     const aPortee: Activite[] = [];
     for (const def of R.contenu.maitrises) {
       if (!def.technique || (s.maitrises[def.id]?.tier ?? 0) >= 1) continue;
+      // Une technique de maître reste un secret tant qu'on ne l'a pas rencontré.
+      const ens = def.technique.enseignee;
+      if (typeof ens === 'object' && !s.drapeaux[ens.drapeau]) continue;
       const blocage = blocageApprentissage(s, def.id);
       const proche = blocage && /^(Rang|Exige|Réserve)/.test(blocage) && !blocage.includes('autre clan');
       if (blocage && !proche) continue;

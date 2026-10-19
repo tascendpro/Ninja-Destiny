@@ -805,9 +805,67 @@ const MAITRISES_BASE: MasteryDef[] = [
   { id: 'shosen', nom: 'Paume mystique', kind: 'jutsu', rang: 'C', description: 'Technique de soin de base des ninjas médicaux.', paliers: PALIERS_TECHNIQUE, cout: 'Contrôle du chakra extrême.' },
 ];
 
+// Les trois Sannin : chacun n'enseigne qu'une chose, et seulement à qui il a choisi.
+// Elles se reçoivent lors d'une rencontre (événements « sannin »), puis se travaillent pendant le temps libre.
+const TECHNIQUES_SANNIN: MasteryDef[] = [
+  T(
+    'marque_maudite',
+    'Marque maudite du Ciel',
+    'B',
+    'Trois virgules noires dans le cou, mordues par Orochimaru. La marque te transforme : peau grise, chakra décuplé. Chaque usage la nourrit, et elle te réclame.',
+    { ...off('transformation', 22, 10, [], { drapeau: 'marque_maudite', maitre: 'Orochimaru' }, 8) },
+    {
+      paliers: P(
+        ['Endormie', 'La marque n’a pas encore pris.'],
+        ['Niveau 1', 'Des flammes noires courent sur ta peau ; ta force double, ta raison vacille.'],
+        ['Niveau 1 contrôlé', 'Tu appelles la marque et tu la renvoies, quand tu le décides.'],
+        ['Niveau 2', 'Peau grise, ailes de chair : tu deviens autre chose, le temps d’un combat.'],
+        ['Niveau 2 contrôlé', 'La transformation obéit. Le prix, lui, reste le même.'],
+        ['Maîtrise du sceau', 'La marque est à toi. Ou toi à elle : tu ne sais plus.'],
+      ),
+      sansPlafondAge: true,
+    },
+  ),
+  T(
+    'mode_ermite',
+    'Mode ermite',
+    'A',
+    'L’énergie naturelle, appelée par l’immobilité parfaite, enseignée par Jiraiya et les crapauds du mont Myōboku. Les yeux cernés d’orange, tu sens tout, et chacun de tes coups porte la force de la montagne.',
+    { ...off('transformation', 28, 24, [{ maitrise: 'ninjutsu', palierMin: 3 }], { drapeau: 'maitre_jiraiya', maitre: 'Jiraiya' }) },
+    {
+      paliers: P(
+        ['Inconnu', 'Pas encore appris.'],
+        ['Immobilité', 'Tu rassembles l’énergie naturelle, mais il te faut de longues minutes immobile.'],
+        ['Équilibre', 'Assez d’énergie naturelle pour combattre, sans te changer en crapaud.'],
+        ['Ermite', 'Tu entres en mode ermite en quelques secondes, et tu sens chaque chakra autour de toi.'],
+        ['Grand ermite', 'Tu combats en mode ermite aussi longtemps qu’il le faut.'],
+        ['Sage', 'La nature combat avec toi. Les crapauds parlent de toi.'],
+      ),
+    },
+  ),
+  T(
+    'byakugo',
+    'Sceau de Byakugō',
+    'A',
+    'Le losange violet sur le front de Tsunade : des années de chakra accumulées goutte à goutte dans un sceau, libérées d’un coup. Tes blessures se referment pendant que tu frappes, et ta force fend la roche.',
+    { ...off('medical', 24, 20, [{ maitrise: 'shosen', palierMin: 2 }], { drapeau: 'maitre_tsunade', maitre: 'Tsunade' }), soin: 18 },
+    {
+      paliers: P(
+        ['Inconnu', 'Pas encore appris.'],
+        ['Accumulation', 'Le losange apparaît à peine ; tu y verses ton chakra chaque jour.'],
+        ['Réserve', 'Assez de chakra stocké pour un combat. Tes plaies se ferment pendant que tu frappes.'],
+        ['Libération', 'Le losange s’ouvre et des marques violettes courent sur ton corps.'],
+        ['Création-Renaissance', 'Tes cellules se régénèrent plus vite qu’on ne peut les détruire.'],
+        ['Centenaire', 'Le sceau de toute une vie : tu ne tombes plus.'],
+      ),
+    },
+  ),
+];
+
 export const MAITRISES: MasteryDef[] = [
   ...MAITRISES_BASE.map((m) => (TECHNIQUES_EXISTANTES[m.id] ? { ...m, technique: TECHNIQUES_EXISTANTES[m.id] } : m)),
   ...TECHNIQUES,
   ...TECHNIQUES_COMBINEES,
   ...TECHNIQUES_YEUX,
+  ...TECHNIQUES_SANNIN,
 ];

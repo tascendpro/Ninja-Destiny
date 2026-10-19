@@ -11,12 +11,14 @@ import type {
   ChoiceDef,
   Creation,
   EventDef,
+  FormeCombat,
   GameState,
   Issue,
   LieuDef,
   MasteryTier,
   NpcDef,
   NpcState,
+  PorteeTechnique,
   Tirages,
   VillageId,
 } from './types';
@@ -33,7 +35,29 @@ import { avancerTemps } from './temps';
 import { choisirSuivant, entrerEvenement, resoudreLieu } from './selection';
 import { repartirPoints } from './progression';
 import { CONSOMMABLES, stock, utiliserConsommable } from './consommables';
-import { attaqueDisponible, attaquesSpeciales, avantageTechnique, bonusTechnique, conclureCombat, evaluerEpreuve, nombreManches, resoudreEpreuve, resoudreManche } from './epreuves';
+import {
+  MALUS_TIR_AMI,
+  attaqueDisponible,
+  attaquesSpeciales,
+  avantageTechnique,
+  avecAffrontement,
+  bonusTechnique,
+  chancePriorite,
+  conclureCombat,
+  evaluerEpreuve,
+  natureQuiDomine,
+  resoudreDefense,
+  techniqueAdverse,
+  testDefense,
+  tirerTechniqueAdverse,
+  nombreManches,
+  porteeTechnique,
+  recitTechnique,
+  resoudreEpreuve,
+  resoudreManche,
+  risqueAllie,
+  texteTirAmi,
+} from './epreuves';
 import type { IssueManche, NiveauRisque } from './epreuves';
 import { interpoler, resoudreTexte } from './texte';
 import { faireActivite } from './tempsLibre';
@@ -519,7 +543,25 @@ export interface VueChoix {
   principal?: AttributId;
   duree?: string;
   /** Attaques spéciales proposées sur ce combat (identifiant « choix@technique »). */
-  attaques?: { id: string; technique: string; nom: string; chakra: number; risque: NiveauRisque; chance: number; avantage?: 'fort' | 'faible' }[];
+  attaques?: (VueAttaque & { technique: string })[];
+  /** Duel ou escouade, et alliés dans la mêlée. */
+  forme?: FormeCombat;
+  allies?: boolean;
+}
+
+/** Une attaque spéciale telle qu'on la propose : chances, récit selon la forme du combat, risque pour les alliés. */
+export interface VueAttaque {
+  id: string;
+  nom: string;
+  chakra: number;
+  chance: number;
+  risque: NiveauRisque;
+  avantage?: 'fort' | 'faible';
+  portee: PorteeTechnique;
+  /** Ce que fait la technique sur ce terrain-là (duel ou escouade). */
+  recit?: string;
+  /** Chance de toucher un allié, en pourcentage (0 sans allié ou pour une technique ciblée). */
+  risqueAllie: number;
 }
 
 /** Comment une attaque spéciale entre dans le récit, selon sa famille. */
@@ -534,11 +576,28 @@ const VERBE_ATTAQUE: Record<string, string> = {
   biju: 'Tu laisses monter',
   combinaison: 'Tu mêles tes deux natures et tu libères',
   dojutsu: 'Tes yeux s’embrasent :',
+  transformation: 'Tu te transformes :',
 };
 
 /** Le combat tel qu'il se joue avec une attaque spéciale : bonus de la technique ajouté au modificateur. */
 function testAvecTechnique(s: GameState, t: CheckDef, tech: string): CheckDef {
   return { ...t, modificateur: (t.modificateur ?? 0) + bonusTechnique(s, tech, t) };
+}
+
+function vueAttaque(s: GameState, tech: string, t: CheckDef, modificateur = 0): VueAttaque {
+  const base = testAvecTechnique(s, t, tech);
+  const e = evaluerEpreuve(s, { ...base, modificateur: (base.modificateur ?? 0) + modificateur });
+  return {
+    id: tech,
+    nom: R.maitrises[tech].nom,
+    chakra: R.maitrises[tech].technique!.chakra,
+    chance: Math.round(e.proba * 100),
+    risque: e.risque,
+    avantage: avantageTechnique(tech, t.elementAdverse),
+    portee: porteeTechnique(tech),
+    recit: recitTechnique(s, tech, t),
+    risqueAllie: Math.round(risqueAllie(s, tech, t) * 100),
+  };
 }
 
 export function choixVisibles(s: GameState, ev: EventDef): VueChoix[] {
@@ -547,25 +606,14 @@ export function choixVisibles(s: GameState, ev: EventDef): VueChoix[] {
   for (const c of ev.choix) {
     const ok = evaluer(c.si, s);
     if (!ok && !c.verrou) continue;
+    const test = c.test ? avecAffrontement(ev.id, c.id, c.test) : undefined;
     // Les attaques spéciales se greffent sur le premier choix de combat de la scène.
     const attaques =
-      ok && c.test?.type === 'combat' && !attaquesPlacees
-        ? attaquesSpeciales(s, c.test).map((tech) => {
-            const def = R.maitrises[tech];
-            const ev2 = evaluerEpreuve(s, testAvecTechnique(s, c.test!, tech));
-            return {
-              id: `${c.id}@${tech}`,
-              technique: tech,
-              nom: def.nom,
-              chakra: def.technique!.chakra,
-              risque: ev2.risque,
-              chance: Math.round(ev2.proba * 100),
-              avantage: avantageTechnique(tech, c.test!.elementAdverse),
-            };
-          })
+      ok && test?.type === 'combat' && !attaquesPlacees
+        ? attaquesSpeciales(s, test).map((tech) => ({ ...vueAttaque(s, tech, test), id: `${c.id}@${tech}`, technique: tech }))
         : undefined;
     if (attaques?.length) attaquesPlacees = true;
-    const evalTest = ok && c.test ? evaluerEpreuve(s, c.test) : undefined;
+    const evalTest = ok && test ? evaluerEpreuve(s, test) : undefined;
     res.push({
       id: c.id,
       texte: interpoler(c.texte, s),
@@ -578,6 +626,8 @@ export function choixVisibles(s: GameState, ev: EventDef): VueChoix[] {
       principal: evalTest?.principal,
       duree: c.duree ? libelleDuree(c.duree) : undefined,
       attaques: attaques?.length ? attaques : undefined,
+      forme: attaques?.length ? test?.forme : undefined,
+      allies: attaques?.length ? test?.allies : undefined,
     });
   }
   if (!res.some((c) => c.disponible)) res.push({ id: CHOIX_PASSER.id, texte: CHOIX_PASSER.texte, disponible: true });
@@ -594,8 +644,25 @@ function lancerTechnique(s: GameState, test: CheckDef, tech: string, ctx: Ctx): 
     s.jauges.sante = clamp(s.jauges.sante - t.sante, 1, 100);
     ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -t.sante });
   }
+  if (t.soin) {
+    s.jauges.sante = clamp(s.jauges.sante + t.soin, 1, 100);
+    ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: t.soin });
+  }
+  // Certains pouvoirs se souviennent de chaque usage (la marque maudite réclame son dû).
+  s.drapeaux[`usages_${tech}`] = (Number(s.drapeaux[`usages_${tech}`]) || 0) + 1;
+  // Le risque se calcule avant l'expérience gagnée par ce lancer : c'est le risque affiché au joueur.
+  const risque = risqueAllie(s, tech, test);
   applyCombatExperience(s, [tech, ...(def.element ? [`nature_${def.element}`] : []), ...(t.requis ?? []).map((x) => x.maitrise)], ctx);
-  return { test: testAvecTechnique(s, test, tech), prelude: `${VERBE_ATTAQUE[t.categorie]} ${def.nom}. ` };
+  const recit = recitTechnique(s, tech, test);
+  let prelude = recit ? `${def.nom}. ${recit} ` : `${VERBE_ATTAQUE[t.categorie]} ${def.nom}. `;
+  let renforce = testAvecTechnique(s, test, tech);
+  // Dans la mêlée, une technique de zone peut toucher un des tiens : le coup y perd sa force.
+  if (risque > 0 && alea(s) < risque) {
+    renforce = { ...renforce, modificateur: (renforce.modificateur ?? 0) - MALUS_TIR_AMI };
+    prelude += `${texteTirAmi(tech)} `;
+    s.drapeaux['tirs_amis'] = (Number(s.drapeaux['tirs_amis']) || 0) + 1;
+  }
+  return { test: renforce, prelude };
 }
 
 /** Une manche se raconte en une phrase ; l'ordre varie d'une manche à l'autre. */
@@ -610,6 +677,31 @@ function finaliserChoix(s: GameState, ev: EventDef, choixId: string, libelle: st
   verifierFin(s);
   verifierSucces(s, ctx);
   s.scene = { type: 'resultat', evenementId: ev.id, titre: interpoler(ev.titre, s), choix: libelle, texte, changements: ctx.changements, suite, issue };
+}
+
+/** Scènes génériques qui suivent un combat mortel : la captivité, ou le sort de l'adversaire vaincu. */
+export const SCENE_CAPTURE = 'x_capture';
+export const SCENE_VERDICT = 'x_verdict';
+
+/**
+ * Après un combat mortel : capturé·e, on est emmené·e (le statut d'avant est gardé pour le retour) ;
+ * vainqueur d'un combat où l'adversaire reste à ta merci, on décide de son sort.
+ * Rien ne se passe si l'issue du combat mène déjà ailleurs (suite, fin de partie).
+ */
+function apresCombat(s: GameState, test: CheckDef, issue: Issue, capture: boolean, suite: string | undefined, ctx: Ctx): { suite?: string; texte: string } {
+  if (suite || s.fin || s.statut === 'mort') return { suite, texte: '' };
+  if (capture && s.statut !== 'capture') {
+    s.drapeaux['statut_avant_capture'] = s.statut;
+    s.statut = 'capture';
+    ctx.changements.push({ t: 'info', message: 'Capturé·e.' });
+    ajouterJournal(s, 'Vaincu·e et emmené·e par l’ennemi.', 3);
+    return { suite: SCENE_CAPTURE, texte: '\n\nQuelque chose te frappe à la nuque. Quand tu rouvres les yeux, tes mains sont liées et le sol défile sous toi : on te porte comme un sac.' };
+  }
+  if (test.verdict && (issue === 'succes' || issue === 'critique')) {
+    s.drapeaux['verdict_forme'] = test.forme ?? 'duel';
+    return { suite: SCENE_VERDICT, texte: '' };
+  }
+  return { suite, texte: '' };
 }
 
 function texteMort(prelude: string): string {
@@ -646,9 +738,9 @@ function choisirMut(s: GameState, choixId: string): void {
   let suite = ch.suite;
   let issue: Issue | undefined;
   if (ch.test) {
-    let test = ch.test;
+    let test = avecAffrontement(ev.id, ch.id, ch.test);
     let prelude = '';
-    if (tech) ({ test, prelude } = lancerTechnique(s, ch.test, tech, ctx));
+    if (tech) ({ test, prelude } = lancerTechnique(s, test, tech, ctx));
     const r = resoudreEpreuve(s, test, ctx);
     issue = r.issue;
     if (r.mort) {
@@ -659,6 +751,11 @@ function choisirMut(s: GameState, choixId: string): void {
       appliquerEffets(s, r.outcome.effets, ctx);
       texte = prelude + resoudreTexte(r.outcome.texte, s);
       suite = r.outcome.suite ?? suite;
+      if (test.type === 'combat') {
+        const apres = apresCombat(s, test, r.issue, r.capture, suite, ctx);
+        texte += apres.texte;
+        suite = apres.suite;
+      }
     }
   } else {
     appliquerEffets(s, ch.effets, ctx);
@@ -685,13 +782,7 @@ function enchainement(s: GameState, precedente: string | undefined, tech: string
 }
 const BONUS_ENCHAINEMENT = 12;
 
-export interface VueAttaqueCombat {
-  id: string;
-  nom: string;
-  chakra: number;
-  chance: number;
-  risque: NiveauRisque;
-  avantage?: 'fort' | 'faible';
+export interface VueAttaqueCombat extends VueAttaque {
   enchainement?: string;
 }
 
@@ -708,12 +799,18 @@ export function vueCombat(s: GameState): {
   simple: number;
   attaques: VueAttaqueCombat[];
   objets: { id: string; nom: string; effet: string; stock: number; chance: number }[];
+  forme: FormeCombat;
+  allies: boolean;
+  /** L'adversaire a l'initiative : sa technique, et tes chances d'esquiver ou de contrer. */
+  adversaire?: VuePriorite;
+  /** Ta dernière esquive a ouvert sa garde. */
+  ouverture: boolean;
 } | undefined {
   if (s.scene.type !== 'combat') return undefined;
   const sc = s.scene;
   const ev = R.evenements[sc.evenementId];
   const ch = ev.choix.find((c) => c.id === sc.choixId)!;
-  const t = ch.test!;
+  const t = avecAffrontement(ev.id, ch.id, ch.test!);
   const precedente = sc.techniques.at(-1);
   return {
     titre: interpoler(ev.titre, s),
@@ -727,15 +824,8 @@ export function vueCombat(s: GameState): {
     simple: Math.round(evaluerEpreuve(s, t).proba * 100),
     attaques: attaquesSpeciales(s, t, 6).map((tech) => {
       const ench = enchainement(s, precedente, tech);
-      const base = testAvecTechnique(s, t, tech);
-      const e = evaluerEpreuve(s, ench ? { ...base, modificateur: (base.modificateur ?? 0) + BONUS_ENCHAINEMENT } : base);
       return {
-        id: tech,
-        nom: R.maitrises[tech].nom,
-        chakra: R.maitrises[tech].technique!.chakra,
-        chance: Math.round(e.proba * 100),
-        risque: e.risque,
-        avantage: avantageTechnique(tech, t.elementAdverse),
+        ...vueAttaque(s, tech, t, ench ? BONUS_ENCHAINEMENT : 0),
         enchainement: ench ? `${R.elements[ench[0]]?.nom} → ${R.elements[ench[1]]?.nom}` : undefined,
       };
     }),
@@ -746,6 +836,36 @@ export function vueCombat(s: GameState): {
       stock: stock(s, c.id),
       chance: Math.round(evaluerEpreuve(s, { ...t, modificateur: (t.modificateur ?? 0) + c.bonus }).proba * 100),
     })),
+    forme: t.forme ?? 'duel',
+    allies: !!t.allies,
+    adversaire: sc.priorite ? vuePriorite(s, t, sc.priorite) : undefined,
+    ouverture: !!sc.ouverture,
+  };
+}
+
+export interface VuePriorite {
+  nom: string;
+  recit: string;
+  element?: string;
+  esquive: number;
+  contre: number;
+  /** La permutation (kawarimi) aide à esquiver. */
+  permutation: boolean;
+  /** Ta nature qui domine la sienne aide à contrer. */
+  natureFavorable?: string;
+}
+
+function vuePriorite(s: GameState, t: CheckDef, advId: string): VuePriorite {
+  const adv = techniqueAdverse(advId)!;
+  const nat = natureQuiDomine(s, adv.element);
+  return {
+    nom: adv.nom,
+    recit: adv[t.forme ?? 'duel'],
+    element: adv.element ? R.elements[adv.element]?.nom : undefined,
+    esquive: Math.round(evaluerEpreuve(s, testDefense(s, t, advId, 'esquiver')).proba * 100),
+    contre: Math.round(evaluerEpreuve(s, testDefense(s, t, advId, 'contrer')).proba * 100),
+    permutation: (s.maitrises['kawarimi']?.tier ?? 0) >= 1,
+    natureFavorable: nat ? R.elements[nat]?.nom : undefined,
   };
 }
 
@@ -756,17 +876,45 @@ function jouerManche(s: GameState, action?: string): void {
   sc.resultats ??= [];
   const ev = R.evenements[sc.evenementId];
   const ch = ev.choix.find((c) => c.id === sc.choixId)!;
-  const base = ch.test!;
+  const base = avecAffrontement(ev.id, ch.id, ch.test!);
+  const ctx = nouveauCtx();
+  // L'adversaire a pris l'initiative : on ne peut qu'esquiver ou contrer sa technique.
+  if (sc.priorite) {
+    if (action !== 'esquiver' && action !== 'contrer') throw new Error('L’adversaire attaque : esquive ou contre.');
+    const adv = techniqueAdverse(sc.priorite)!;
+    const r = resoudreDefense(s, base, sc.priorite, action, ctx);
+    const ligne = LIGNES_DEFENSE[action][r.issue]!;
+    if (r.issue === 'touche') sc.touches++;
+    if (r.issue === 'riposte') sc.ripostes++;
+    sc.resultats.push(r.issue);
+    sc.manche++;
+    sc.journal.push(`Manche ${sc.manche}. ${adv.nom} ! ${adv[base.forme ?? 'duel']} ${ligne}`);
+    sc.priorite = undefined;
+    sc.ouverture = r.issue === 'esquive';
+    if (sc.manche < sc.total) {
+      prendreInitiative(s, base);
+      return;
+    }
+    conclureManches(s, ev, ch, base, ctx);
+    return;
+  }
   const objet = action?.startsWith('objet:') ? action.slice(6) : undefined;
   const tech = objet ? undefined : action;
   if (tech && (!attaqueDisponible(s, tech) || !attaquesSpeciales(s, base, 6).includes(tech))) throw new Error('Attaque spéciale indisponible.');
-  const ctx = nouveauCtx();
   let test = base;
   let prelude = '';
   let protege = false;
+  // Une esquive réussie a ouvert sa garde : l'attaque qui suit en profite.
+  if (sc.ouverture) {
+    test = { ...test, modificateur: (test.modificateur ?? 0) + BONUS_OUVERTURE };
+    prelude = 'Sa garde est ouverte. ';
+    sc.ouverture = false;
+  }
   if (tech) {
     const ench = enchainement(s, sc.techniques.at(-1), tech);
-    ({ test, prelude } = lancerTechnique(s, base, tech, ctx));
+    const lance = lancerTechnique(s, test, tech, ctx);
+    test = lance.test;
+    prelude += lance.prelude;
     if (ench) {
       test = { ...test, modificateur: (test.modificateur ?? 0) + BONUS_ENCHAINEMENT };
       prelude = `Enchaînement ! Ton ${R.elements[ench[0]]?.nom} nourrit ton ${R.elements[ench[1]]?.nom}. ${prelude}`;
@@ -775,8 +923,8 @@ function jouerManche(s: GameState, action?: string): void {
     sc.techniques.push(tech);
   } else if (objet) {
     const c = utiliserConsommable(s, objet, ctx);
-    test = { ...base, modificateur: (base.modificateur ?? 0) + c.bonus };
-    prelude = `${c.recit} `;
+    test = { ...test, modificateur: (test.modificateur ?? 0) + c.bonus };
+    prelude += `${c.recit} `;
     protege = !!c.protege;
   }
   const r = resoudreManche(s, test, ctx, protege);
@@ -786,10 +934,40 @@ function jouerManche(s: GameState, action?: string): void {
   if (r.issue === 'riposte') sc.ripostes++;
   sc.resultats.push(r.issue);
   sc.manche++;
-  sc.journal.push(`Manche ${sc.manche}. ${prelude || 'Tu attaques sans technique, au plus simple. '}${ligne}`);
-  if (sc.manche < sc.total) return;
+  sc.journal.push(`Manche ${sc.manche}. ${tech || objet ? prelude : `${prelude}Tu attaques sans technique, au plus simple. `}${ligne}`);
+  if (sc.manche < sc.total) {
+    prendreInitiative(s, base);
+    return;
+  }
+  conclureManches(s, ev, ch, base, ctx);
+}
 
-  // Dernière manche : l'issue du combat dépend de l'ensemble.
+const BONUS_OUVERTURE = 8;
+
+/** Ce qui arrive quand on esquive ou qu'on contre sa technique. */
+const LIGNES_DEFENSE: Record<'esquiver' | 'contrer', Partial<Record<IssueManche, string>>> = {
+  esquiver: {
+    esquive: 'Tu plonges hors de portée au dernier instant. Le coup passe, et sa garde reste ouverte.',
+    riposte: 'Tu bondis, trop tard d’un souffle. Le coup te prend de plein fouet.',
+  },
+  contrer: {
+    touche: 'Tu ne recules pas : tu passes à travers son attaque et frappes au cœur de sa technique. Il ne l’avait pas prévu.',
+    riposte: 'Tu tentes de frapper dans son attaque. Elle est plus forte que toi, et tu l’encaisses en entier.',
+  },
+};
+
+/** Avant chaque nouvelle manche : l'adversaire prend-il l'initiative ? Jamais juste après une esquive réussie. */
+function prendreInitiative(s: GameState, t: CheckDef): void {
+  if (s.scene.type !== 'combat') return;
+  const sc = s.scene;
+  if (sc.ouverture) return;
+  if (alea(s) < chancePriorite(s, t)) sc.priorite = tirerTechniqueAdverse(s, t);
+}
+
+/** Dernière manche : l'issue du combat dépend de l'ensemble. */
+function conclureManches(s: GameState, ev: EventDef, ch: ChoiceDef, base: CheckDef, ctx: Ctx): void {
+  if (s.scene.type !== 'combat') return;
+  const sc = s.scene;
   const fin = nouveauCtx();
   fin.changements.push(...ctx.changements);
   const res = conclureCombat(s, base, sc.touches, sc.ripostes, sc.total, fin);
@@ -803,6 +981,9 @@ function jouerManche(s: GameState, action?: string): void {
     appliquerEffets(s, res.outcome.effets, fin);
     texte = `${recit}\n\n${resoudreTexte(res.outcome.texte, s)}`;
     suite = res.outcome.suite ?? suite;
+    const apres = apresCombat(s, base, res.issue, res.capture, suite, fin);
+    texte += apres.texte;
+    suite = apres.suite;
   }
   if (ch.duree) avancerTemps(s, ch.duree, fin);
   const noms = Array.from(new Set(sc.techniques)).map((t) => R.maitrises[t].nom);

@@ -225,6 +225,12 @@ export interface CheckDef {
   causeMort?: string;
   /** Combat en plusieurs manches (une technique par manche). Par défaut : 2 pour un combat mortel difficile. */
   manches?: number;
+  /** Duel ou combat contre une escouade (renseigné par la table des affrontements). */
+  forme?: FormeCombat;
+  /** Des alliés ou des civils se trouvent dans la mêlée : les techniques de zone peuvent les toucher. */
+  allies?: boolean;
+  /** Un adversaire reste à ta merci après la victoire : l'achever, l'épargner ou le ramener. */
+  verdict?: boolean;
   critique?: Outcome;
   succes: Outcome;
   partiel?: Outcome;
@@ -331,7 +337,61 @@ export interface MasteryDef {
   nonEntrainable?: boolean;
 }
 
-export type CategorieTechnique = 'ninjutsu' | 'taijutsu' | 'genjutsu' | 'armes' | 'medical' | 'fuinjutsu' | 'fusion' | 'biju' | 'combinaison' | 'dojutsu';
+export type CategorieTechnique = 'ninjutsu' | 'taijutsu' | 'genjutsu' | 'armes' | 'medical' | 'fuinjutsu' | 'fusion' | 'biju' | 'combinaison' | 'dojutsu' | 'transformation';
+
+export type FormeCombat = 'duel' | 'escouade';
+/** Portée d'une technique : une cible, une zone, ou tout le champ de bataille. */
+export type PorteeTechnique = 'cible' | 'zone' | 'large';
+
+/** Ce que devient une technique sur le terrain, selon qu'on affronte un seul adversaire ou un groupe. */
+export interface RecitTechnique {
+  portee: PorteeTechnique;
+  duel: string;
+  escouade: string;
+  /** Les transformations changent avec la maîtrise : le récit du plus haut palier atteint remplace celui de base. */
+  paliers?: { min: number; duel: string; escouade: string }[];
+}
+
+/** Une technique d'adversaire, lancée quand il prend l'initiative d'une manche. */
+export interface TechniqueAdverse {
+  id: string;
+  nom: string;
+  /** Rang minimal de l'adversaire pour la connaître : 1 (genin) à 4 (jōnin d'élite). */
+  rang: 1 | 2 | 3 | 4;
+  puissance: number;
+  element?: ElementId;
+  duel: string;
+  escouade: string;
+}
+
+/** Une fiche du Bingo Book : un ninja recherché, ou l'un des grands ninjas de l'époque. */
+export interface FicheBingo {
+  id: string;
+  nom: string;
+  surnom: string;
+  village: string;
+  rang: 'S' | 'A' | 'B';
+  /** Prime en ryō (0 : aucun village n'en a fixé). */
+  prime: number;
+  liste: 'recherches' | 'legendes';
+  affiliation?: string;
+  description: string;
+  techniques: string[];
+  /** La consigne officielle des villages face à ce ninja. */
+  consigne: string;
+  /** Fiche scellée tant que la condition n'est pas remplie. */
+  si?: Condition;
+  /** Mentions ajoutées par ton histoire (rencontré, vaincu, maître…). */
+  notes?: { si: Condition; texte: string }[];
+}
+
+/** La forme d'un combat (clé « événement/choix »). */
+export interface Affrontement {
+  forme: FormeCombat;
+  allies?: boolean;
+  /** Après une victoire, l'adversaire est à ta merci (missions, contrats, chasses). */
+  verdict?: boolean;
+}
 
 export interface TechniqueDef {
   categorie: CategorieTechnique;
@@ -341,6 +401,8 @@ export interface TechniqueDef {
   chakra: number;
   /** Santé perdue à chaque usage (techniques qui abîment le corps). */
   sante?: number;
+  /** Santé rendue à chaque usage (sceau de régénération). */
+  soin?: number;
   /** Utilisable comme attaque spéciale en combat. */
   offensive: boolean;
   /** Maîtrises requises pour l'apprendre (ex. nature_katon palier 1, famille_kenjutsu palier 2). */
@@ -567,6 +629,16 @@ export interface Contenu {
   noms: Record<VillageId, { m: string[]; f: string[] }>;
   /** Arme offerte à la remise du bandeau, par clan puis par village. */
   armesHeritage: { clan: Record<string, string>; village: Record<VillageId, string> };
+  /** Récit de chaque attaque spéciale, en duel et contre une escouade. */
+  recitsTechniques: Record<string, RecitTechnique>;
+  /** Duel ou escouade, alliés présents ou non, pour chaque combat (clé « événement/choix »). */
+  affrontements: Record<string, Affrontement>;
+  /** Ce qui arrive quand une technique de zone touche un allié, par nature ou par famille (« defaut » sinon). */
+  tirsAmis: Record<string, string>;
+  /** Techniques lancées par les adversaires quand ils ont la priorité. */
+  techniquesAdverses: TechniqueAdverse[];
+  /** Le Bingo Book : ninjas recherchés et grands ninjas. */
+  bingo: FicheBingo[];
 }
 
 // ── Mondes ───────────────────────────────────────────────────
@@ -816,6 +888,10 @@ export type Scene =
       techniques: string[];
       chakra: number;
       sante: number;
+      /** L'adversaire a pris l'initiative : la technique qu'il lance, à esquiver ou contrer. */
+      priorite?: string;
+      /** Une esquive réussie ouvre sa garde : la manche suivante est à toi, avec un avantage. */
+      ouverture?: boolean;
     };
 
 export type Action =

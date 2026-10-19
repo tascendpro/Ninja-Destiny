@@ -10,6 +10,11 @@ export function resoudreLieu(s: GameState, lieu: string): string {
   if (lieu.startsWith('$')) {
     const v = s.creation.village;
     const suffixe = lieu.slice(1);
+    // « Ici » : là où s'est jouée la scène précédente (une suite qui ne change pas de décor).
+    if (suffixe === 'ici') {
+      const ici = s.drapeaux['lieu_scene'];
+      return typeof ici === 'string' ? ici : resoudreLieu(s, '$village');
+    }
     // Loin du village, « chez soi » c'est la route où l'on se trouve.
     if ((s.statut === 'errant' || s.statut === 'deserteur') && ['village', 'maison', 'terrain'].includes(suffixe)) {
       const ici = s.drapeaux['lieu_errance'];
@@ -93,7 +98,9 @@ export function entrerEvenement(s: GameState, id: string): void {
   s.scene = { type: 'evenement', id };
   const vu = s.evenementsVus[id];
   s.evenementsVus[id] = { n: (vu?.n ?? 0) + 1, dernier: s.jour };
-  decouvrir(s, `lieu:${resoudreLieu(s, ev.lieu)}`);
+  const lieu = resoudreLieu(s, ev.lieu);
+  s.drapeaux['lieu_scene'] = lieu;
+  decouvrir(s, `lieu:${lieu}`);
   for (const ref of ev.personnages ?? []) {
     const pid = resoudrePnj(s, ref);
     if (pid && s.pnj[pid]) {

@@ -27,6 +27,11 @@ import { CHAPITRE5 } from './evenements/chapitre5';
 import { CHAPITRE5_VOIE } from './evenements/chapitre5_voie';
 import { DESTINS } from './evenements/destins';
 import { MARGES } from './evenements/marges';
+import { AFFRONTEMENTS, RECITS_TECHNIQUES, TECHNIQUES_ADVERSES, TIRS_AMIS } from './recitsTechniques';
+import { CONSEQUENCES } from './evenements/consequences';
+import { LEGENDES } from './evenements/legendes';
+import { ADULTE, MISSIONS_ADULTES } from './evenements/adulte';
+import { BINGO } from './bingo';
 
 export const CONTENU: Contenu = {
   version: '2.2.0',
@@ -42,8 +47,8 @@ export const CONTENU: Contenu = {
   metiers: METIERS,
   pnj: PNJ,
   lieux: LIEUX,
-  evenements: [...ORIGINES, ...EVENEMENTS_CLANS, ...ACADEMIE, ...GENIN, ...EVENEMENTS_MISSIONS, ...YUNAGI, ...ALEATOIRES, ...SECRETS, ...EVENEMENTS_BIJU, ...ERRANCE, ...CHAPITRE2, ...CHAPITRE3, ...CHAPITRE4, ...ALEATOIRES_ADULTES, ...CHAPITRE5_VOIE, ...CHAPITRE5, ...DESTINS, ...MARGES],
-  missions: [...MISSIONS, ...MISSIONS_C2, ...MISSIONS_C3, ...MISSIONS_C4],
+  evenements: [...ORIGINES, ...EVENEMENTS_CLANS, ...ACADEMIE, ...GENIN, ...EVENEMENTS_MISSIONS, ...YUNAGI, ...ALEATOIRES, ...SECRETS, ...EVENEMENTS_BIJU, ...ERRANCE, ...CHAPITRE2, ...CHAPITRE3, ...CHAPITRE4, ...ALEATOIRES_ADULTES, ...CHAPITRE5_VOIE, ...CHAPITRE5, ...DESTINS, ...MARGES, ...CONSEQUENCES, ...LEGENDES, ...ADULTE],
+  missions: [...MISSIONS, ...MISSIONS_C2, ...MISSIONS_C3, ...MISSIONS_C4, ...MISSIONS_ADULTES],
   fins: FINS,
   succes: SUCCES,
   bijus: BIJUS,
@@ -53,4 +58,9 @@ export const CONTENU: Contenu = {
   roles: ROLES,
   noms: NOMS,
   armesHeritage: ARMES_HERITAGE,
+  recitsTechniques: RECITS_TECHNIQUES,
+  affrontements: AFFRONTEMENTS,
+  tirsAmis: TIRS_AMIS,
+  techniquesAdverses: TECHNIQUES_ADVERSES,
+  bingo: BINGO,
 };

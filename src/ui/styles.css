@@ -245,7 +245,7 @@ p {
   bottom: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   background: color-mix(in srgb, var(--encre-2) 95%, transparent);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -1518,6 +1518,85 @@ p {
 .entree {
   border-bottom: 1px solid var(--trait-doux);
 }
+/* Bingo Book : des fiches comme des avis de recherche. */
+.fiche-bingo {
+  margin: 14px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--trait);
+  border-left: 4px solid var(--brume);
+  border-radius: var(--rayon-s);
+  background: color-mix(in srgb, var(--papier) 4%, transparent);
+}
+.fiche-bingo.rang-S {
+  border-left-color: var(--danger);
+}
+.fiche-bingo.rang-A {
+  border-left-color: var(--vermillon-clair);
+}
+.fiche-bingo.toi {
+  border-color: var(--or);
+  border-left-color: var(--or);
+}
+.fb-tete {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.fb-rang {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--mincho);
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+.rang-S .fb-rang {
+  color: var(--danger);
+}
+.rang-A .fb-rang {
+  color: var(--vermillon-clair);
+}
+.fb-nom {
+  margin: 0;
+  font-size: var(--t-m);
+}
+.fb-surnom {
+  margin: 0;
+  font-style: italic;
+  color: var(--brume);
+}
+.fb-meta,
+.fb-techniques {
+  font-size: var(--t-s);
+  color: var(--brume);
+}
+.fb-prime {
+  font-family: var(--mincho);
+  font-weight: 800;
+  font-size: var(--t-m);
+  color: var(--or);
+  margin: 6px 0;
+}
+.fb-consigne {
+  font-weight: 700;
+  color: var(--danger);
+  font-size: var(--t-s);
+}
+.fb-note {
+  font-size: var(--t-s);
+  font-style: italic;
+  border-left: 2px solid var(--or);
+  padding-left: 8px;
+}
+.fb-exploits {
+  margin: 8px 0;
+  padding-left: 18px;
+  font-size: var(--t-s);
+}
 .entree summary {
   cursor: pointer;
   list-style: none;
@@ -2025,8 +2104,44 @@ p.entree.inconnue {
   font-size: var(--t-xs);
   color: var(--brume);
 }
-.attaque-meta b {
+.attaque-meta b,
+.attaque-portee b {
   font-weight: 500;
+}
+/* Avec leur récit, les attaques tiennent sur deux colonnes au plus, une seule sur téléphone. */
+.attaques .attaque {
+  flex: 1 1 260px;
+  max-width: 100%;
+}
+.attaque-recit {
+  margin-top: 3px;
+  font-size: var(--t-xs);
+  font-style: italic;
+  line-height: 1.45;
+}
+.attaque-portee {
+  font-size: var(--t-xs);
+  color: var(--brume);
+}
+.priorite-adverse {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border-radius: var(--rayon-s);
+}
+.priorite-titre {
+  margin: 0;
+  font-size: var(--t-s);
+}
+.priorite-adverse .attaques {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+.forme-combat {
+  color: var(--brume);
+  font-style: italic;
 }
 .attaque.scelle::after {
   content: attr(data-sceau);
@@ -2432,7 +2547,7 @@ p.entree.inconnue {
   }
 }
 .nav {
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
 }
 @media (min-width: 1024px) {
   .nav {

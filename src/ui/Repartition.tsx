@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import type { AttributId, GameState } from '../engine/types';
 import { ATTRIBUTS } from '../engine/types';
 import { coutPoint, coutRepartition, gainsAnnuels } from '../engine/progression';
@@ -21,16 +20,15 @@ const USAGE: Record<AttributId, string> = {
 };
 
 /**
- * Répartition des points de stat gagnés aux anniversaires. Les points s'ajoutent d'abord en brouillon,
- * puis une seule validation les enregistre (une seule décision dans l'historique).
+ * Répartition des points de stat gagnés aux anniversaires. Chaque « + » est enregistré tout de suite :
+ * un brouillon à valider se perdait quand on passait à autre chose sans cliquer sur « Valider ».
  */
 export default function Repartition({ etat, onRepartir, compact = false }: { etat: GameState; onRepartir: (rep: Partial<Record<AttributId, number>>) => void; compact?: boolean }) {
-  const [brouillon, setBrouillon] = useState<Partial<Record<AttributId, number>>>({});
-  const cout = coutRepartition(etat, brouillon);
-  const reste = etat.pointsStat - cout;
-  const enCours = Object.values(brouillon).some((n) => (n ?? 0) > 0);
-  const valeur = (a: AttributId) => etat.attributs[a] + (brouillon[a] ?? 0);
-  const ajouter = (a: AttributId, d: number) => setBrouillon((b) => ({ ...b, [a]: Math.max(0, (b[a] ?? 0) + d) }));
+  const reste = etat.pointsStat;
+  const valeur = (a: AttributId) => etat.attributs[a];
+  const ajouter = (a: AttributId) => {
+    if (coutRepartition(etat, { [a]: 1 }) <= etat.pointsStat) onRepartir({ [a]: 1 });
+  };
   const prochain = gainsAnnuels(etat, age(etat) + 1);
   const dernier = etat.anniversaires.at(-1);
 
@@ -41,12 +39,11 @@ export default function Repartition({ etat, onRepartir, compact = false }: { eta
       </h2>
       <p className={`points-bourse${etat.pointsStat > 0 ? ' actif' : ''}`}>
         <strong>{reste}</strong> {reste > 1 ? 'points à répartir' : 'point à répartir'}
-        <small> · 1 point par niveau jusqu’à 60, 2 jusqu’à 80, 3 au-delà</small>
+        <small> · 1 point par niveau jusqu’à 60, 2 jusqu’à 80, 3 au-delà · chaque ajout est définitif</small>
       </p>
       <ul className="repartition-liste">
         {ATTRIBUTS.map((a) => {
           const v = valeur(a);
-          const plus = brouillon[a] ?? 0;
           const c = coutPoint(v);
           return (
             <li key={a}>
@@ -54,7 +51,6 @@ export default function Repartition({ etat, onRepartir, compact = false }: { eta
                 <span className="r-nom">{ATTRIBUT_LIBELLE[a]}</span>
                 <span className="r-val">
                   {v}
-                  {plus > 0 && <b> +{plus}</b>}
                   <small>{qualificatif(v)}</small>
                 </span>
               </div>
@@ -64,10 +60,13 @@ export default function Repartition({ etat, onRepartir, compact = false }: { eta
               {!compact && <p className="r-usage">{USAGE[a]}</p>}
               {etat.pointsStat > 0 && (
                 <div className="r-boutons">
-                  <button className="btn-mini" onClick={() => ajouter(a, -1)} disabled={plus === 0} aria-label={`Retirer un point en ${ATTRIBUT_LIBELLE[a]}`}>
-                    −
-                  </button>
-                  <button className="btn-mini" onClick={() => ajouter(a, 1)} disabled={c > reste || v >= 100} aria-label={`Ajouter un point en ${ATTRIBUT_LIBELLE[a]}`}>
+                  <button
+                    className="btn-mini"
+                    onClick={() => ajouter(a)}
+                    disabled={c > reste || v >= 100}
+                    title={c > reste ? `Au-delà de ${v < 80 ? 60 : 80}, un niveau coûte ${c} points : il t’en faut plus.` : undefined}
+                    aria-label={`Ajouter un point en ${ATTRIBUT_LIBELLE[a]}`}
+                  >
                     +{c > 1 ? ` (${c} pts)` : ''}
                   </button>
                 </div>
@@ -76,16 +75,6 @@ export default function Repartition({ etat, onRepartir, compact = false }: { eta
           );
         })}
       </ul>
-      {enCours && (
-        <div className="rangee r-actions">
-          <button className="btn-principal" onClick={() => (onRepartir(brouillon), setBrouillon({}))}>
-            Valider ({cout} {cout > 1 ? 'points' : 'point'})
-          </button>
-          <button className="btn-secondaire" onClick={() => setBrouillon({})}>
-            Annuler
-          </button>
-        </div>
-      )}
       <details className="r-sources">
         <summary>D’où viennent les points</summary>
         <p>
