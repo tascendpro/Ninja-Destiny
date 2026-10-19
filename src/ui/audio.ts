@@ -41,7 +41,14 @@ export class Ambiance {
       this.genere(true);
       return;
     }
-    if (this.lecteur && this.lecteur.dataset.url === url) return;
+    if (this.lecteur && this.lecteur.dataset.url === url) {
+      // Lecture bloquée au chargement (autoplay refusé) : on la relance au premier geste.
+      if (this.lecteur.paused) {
+        void this.lecteur.play().catch(() => undefined);
+        this.fondreEntree(this.lecteur);
+      }
+      return;
+    }
     this.genere(false);
     try {
       const ancien = this.lecteur;
