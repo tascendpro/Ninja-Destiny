@@ -1,0 +1,9 @@
+Dépose ici la musique du jeu sous le nom : theme.mp3
+
+Elle joue en boucle partout (accueil, récit, temps libre, combats…), dès le premier toucher.
+Le bouton ♪ de l'accueil et le bouton « Son » de la barre du bas la coupent.
+
+Pour d'autres pistes (combat, deuil, fin…), ajoute d'autres fichiers ici et renseigne-les
+dans src/ui/musiques.ts (ex. combat: '/sons/combat.mp3').
+
+Sans fichier, le jeu joue son ambiance générée (vent, carillon).
