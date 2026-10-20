@@ -33,11 +33,11 @@ export function exigence(def: MasteryDef, palier: 1 | 2 | 3 | 4 | 5): ExigencePa
 }
 
 /** Âge minimum pour apprendre une technique d'un rang donné (section 6). */
-export const AGE_RANG_TECHNIQUE: Record<RangTechnique, number> = { E: 0, D: 6, C: 12, B: 14, A: 18, S: 25 };
+export const AGE_RANG_TECHNIQUE: Record<RangTechnique, number> = { E: 0, D: 6, C: 12, B: 14, A: 18, S: 25, SS: 30 };
 
 /** Rang maximal copiable par le Sharingan selon son palier. */
 export const RANG_COPIE_PAR_PALIER: Record<number, RangTechnique | undefined> = { 0: undefined, 1: undefined, 2: 'C', 3: 'B', 4: 'A', 5: 'S' };
-const ORDRE_RANGS: RangTechnique[] = ['E', 'D', 'C', 'B', 'A', 'S'];
+const ORDRE_RANGS: RangTechnique[] = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
 
 export function nouvelleMaitrise(def: MasteryDef, potential: number, source: MasteryState['source'] = 'creation'): MasteryState {
   const eveillable = !!def.eveil;
@@ -169,6 +169,7 @@ export function progresser(p: Porteur, id: string): number[] {
   while (canAdvanceTier(p, id) && garde++ < 6) {
     const ms = p.maitrises[id];
     ms.tier = (ms.tier + 1) as MasteryTier;
+    ms.palierDepuis = p.jour;
     franchis.push(ms.tier);
   }
   return franchis;
@@ -257,6 +258,7 @@ function eveiller(ms: MasteryState, jour: number, ageAns: number): void {
   ms.awakenedAtAge = ageAns;
   // Un éveil donne toujours le palier 1, jamais davantage.
   ms.tier = 1;
+  ms.palierDepuis = jour;
 }
 
 export interface ResultatEveil {
@@ -434,7 +436,7 @@ export function apprendreTechnique(s: GameState, id: string, source: MasteryStat
     ctx.changements.push({ t: 'info', message: `Tu connais déjà ${def.nom}.` });
     return false;
   }
-  if (def.kekkeiGenkai && def.clan !== s.creation.clan && !porteLignee(s, def.clan)) {
+  if (def.kekkeiGenkai && def.clan && def.clan !== s.creation.clan && !porteLignee(s, def.clan)) {
     ctx.changements.push({ t: 'info', message: `${def.nom} est une technique héréditaire : elle ne s'apprend pas hors de sa lignée.` });
     return false;
   }
@@ -462,7 +464,7 @@ export function apprendreTechnique(s: GameState, id: string, source: MasteryStat
 }
 
 /** Seuil de réserve de chakra qui permet d'apprendre une technique avant l'âge. */
-const RESERVE_PRECOCE: Record<RangTechnique, number> = { E: 0, D: 45, C: 75, B: 115, A: 170, S: 240 };
+const RESERVE_PRECOCE: Record<RangTechnique, number> = { E: 0, D: 45, C: 75, B: 115, A: 170, S: 240, SS: 320 };
 
 /** Un sang inconnu peut porter la lignée d'un clan (Mokuton des Senju, Hyōton des Yuki) : ses techniques lui sont ouvertes. */
 export function porteLignee(s: GameState, clan?: string): boolean {

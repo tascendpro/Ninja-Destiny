@@ -391,6 +391,29 @@ export const CHAPITRE4: EventDef[] = [
           },
         },
       },
+      {
+        id: 'eau',
+        texte: 'Laisser la barque et traverser jusqu’à la tour en marchant sur l’eau',
+        si: { maitrise: 'suimen', palierMin: 1 },
+        verrou: 'Il faudrait savoir marcher sur l’eau.',
+        indice: 'Les sentinelles surveillent les barques, pas la mer.',
+        test: {
+          type: 'competence',
+          difficulte: 54,
+          letal: true,
+          causeMort: 'noyé·e en traversant vers le fort de l’îlot',
+          attributs: { controleChakra: 2, discretion: 2 },
+          maitrises: { suimen: 2, kinobori: 1 },
+          succes: {
+            texte: 'Tu cours sur la mer noire, entre les rochers, là où aucune barque ne passe. Tu remontes la tour par l’extérieur, les pieds collés à la pierre. La jeune fille s’accroche à ton dos, et vous redescendez tous les deux sur l’eau.',
+            effets: [{ mission: 's_otage', statut: 'reussie' }, { stat: 'attributs.controleChakra', delta: 2 }, { stat: 'social.reputation', delta: 4 }],
+          },
+          echec: {
+            texte: 'La houle te fait perdre l’équilibre à mi-chemin. Tu nages jusqu’au fort, gelé·e, et c’est à mains nues que tu ouvres la porte de la tour.',
+            effets: [{ mission: 's_otage', statut: 'reussie' }, { stat: 'jauges.sante', delta: -25 }],
+          },
+        },
+      },
     ],
   },
   {

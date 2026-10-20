@@ -6,6 +6,7 @@ import { age } from './calendrier';
 import { Ctx, ajouterJournal, clamp } from './etat';
 import { eveilsAutomatiques, progressionPnj } from './maitrise';
 import { anniversaire } from './progression';
+import { perteAnnuelle } from './pertes';
 
 function croissanceAnnuelle(s: GameState, nouvelAge: number, ctx: Ctx): void {
   // Le corps grandit seul ; tout le reste se gagne (points de stat, voir progression.ts).
@@ -24,6 +25,7 @@ function croissanceAnnuelle(s: GameState, nouvelAge: number, ctx: Ctx): void {
   }
   ajouterJournal(s, `Tu as ${nouvelAge} ans.`, 1);
   anniversaire(s, nouvelAge, ctx);
+  perteAnnuelle(s, ctx);
 }
 
 export function avancerTemps(s: GameState, jours: number, ctx: Ctx): void {

@@ -46,6 +46,9 @@ export const JETONS_CONNUS = [
   'Enfant_il',
   'enfant_e',
   'enfant_le',
+  'mortRecente',
+  'mortRecente_e',
+  'mortRecenteCause',
 ];
 
 /** La famille fondée au chapitre 4 : genres choisis ou tirés (drapeaux), prénoms stables tirés des noms du village. */
@@ -177,6 +180,15 @@ export function valeurJeton(s: GameState, jeton: string): string | undefined {
       return famille(s).enfantF ? 'e' : '';
     case 'enfant_le':
       return famille(s).enfantF ? 'la' : 'le';
+    case 'mortRecente':
+    case 'mortRecente_e':
+    case 'mortRecenteCause': {
+      const id = s.drapeaux['mort_recente'];
+      const d = typeof id === 'string' ? defPnj(s, id) : undefined;
+      if (jeton === 'mortRecente_e') return d?.genre === 'f' ? 'e' : '';
+      if (jeton === 'mortRecenteCause') return (typeof id === 'string' && s.pnj[id]?.cause) || 'tombé·e au loin';
+      return d?.nom ?? 'un proche';
+    }
     default:
       return undefined;
   }

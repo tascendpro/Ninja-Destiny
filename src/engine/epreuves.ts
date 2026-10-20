@@ -36,7 +36,7 @@ function maitrisesDuTest(s: GameState, t: CheckDef): Record<string, number> {
   return res;
 }
 
-const ORDRE_RANG: Record<RangTechnique, number> = { E: 0, D: 1, C: 2, B: 3, A: 4, S: 5 };
+const ORDRE_RANG: Record<RangTechnique, number> = { E: 0, D: 1, C: 2, B: 3, A: 4, S: 5, SS: 6 };
 
 /** Le rang de l'adversaire, lu dans la difficulté du combat : D (genin), C, B, A (jōnin d'élite). */
 export function rangAdversaire(t: CheckDef): number {
@@ -157,13 +157,54 @@ export function avantageTechnique(techId: string, adverse?: string): 'fort' | 'f
 export function attaqueDisponible(s: GameState, techId: string): boolean {
   const def = R.maitrises[techId];
   const ms = s.maitrises[techId];
-  return !!def?.technique?.offensive && !!ms && ms.tier >= 1 && !ms.bloquee && s.jauges.chakra >= def.technique.chakra && s.jauges.sante > (def.technique.sante ?? 0);
+  if (!def?.technique?.offensive || !ms || ms.tier < 1 || ms.bloquee) return false;
+  if (usagesRestants(s, techId) === 0) return false;
+  return s.jauges.chakra >= def.technique.chakra && s.jauges.sante > (def.technique.sante ?? 0);
 }
 
-/** Les attaques spéciales proposées sur un combat : les plus fortes d'abord, trois au plus. */
-export function attaquesSpeciales(s: GameState, t: CheckDef, max = 3): string[] {
+/** Usages restants d'une technique comptée (undefined : sans limite). */
+export function usagesRestants(s: GameState, techId: string): number | undefined {
+  const max = R.maitrises[techId]?.technique?.limite?.usages;
+  if (max === undefined) return undefined;
+  return Math.max(0, max - (Number(s.drapeaux[`usages_${techId}`]) || 0));
+}
+
+/** Une transformation (un état), plutôt qu'une attaque ? */
+export function estTransformation(techId: string): boolean {
+  return !!R.maitrises[techId]?.technique?.posture;
+}
+
+/** Bonus d'une transformation, qui croît avec son palier. */
+export function bonusPosture(s: GameState, techId: string): { attaque: number; defense: number } {
+  const p = R.maitrises[techId]?.technique?.posture;
+  if (!p) return { attaque: 0, defense: 0 };
+  const f = 0.8 + 0.1 * (s.maitrises[techId]?.tier ?? 1);
+  return { attaque: Math.round(p.attaque * f), defense: Math.round(p.defense * f) };
+}
+
+/** Le récit d'entrée en transformation : celui du plus haut palier atteint, une variante différente à chaque fois. */
+export function entreeTransformation(s: GameState, techId: string, tour: number): string {
+  const p = R.maitrises[techId]?.technique?.posture;
+  if (!p) return '';
+  const tier = s.maitrises[techId]?.tier ?? 1;
+  const groupe = p.entree.filter((g) => g.min <= tier).sort((a, b) => b.min - a.min)[0] ?? p.entree[0];
+  const texte = groupe.textes[Math.abs(tour) % groupe.textes.length];
+  return texte.replace('{armeSusanoo}', ARME_SUSANOO[s.creation.element] ?? ARME_SUSANOO.katon);
+}
+
+/**
+ * Les attaques spéciales proposées sur un combat : les plus fortes d'abord. Une technique réservée à une
+ * transformation n'apparaît que sous cette transformation ; les transformations, elles, se proposent à part en combat.
+ */
+export function attaquesSpeciales(s: GameState, t: CheckDef, max = 3, transformation?: string, sansPostures = false): string[] {
   return Object.keys(s.maitrises)
     .filter((id) => attaqueDisponible(s, id))
+    .filter((id) => {
+      const exige = R.maitrises[id].technique!.exigeTransformation;
+      if (exige && !(transformation && exige.includes(transformation))) return false;
+      if (estTransformation(id) && (sansPostures || id === transformation)) return false;
+      return true;
+    })
     .map((id) => ({ id, b: bonusTechnique(s, id, t) }))
     .sort((a, b) => b.b - a.b || a.id.localeCompare(b.id))
     .slice(0, max)
@@ -246,6 +287,56 @@ export function resoudreManche(s: GameState, t: CheckDef, ctx: Ctx, protege = fa
   return { issue: 'riposte', degats };
 }
 
+// ── Dōjutsu : des yeux qui se paient en chakra ──
+
+/** Coût de base par manche, selon le palier (index = palier), et ce que l'œil apporte par palier. */
+const DOJUTSU: Record<string, { cout: number[]; attaque: number; defense: number; verbe: string }> = {
+  sharingan: { cout: [0, 3, 5, 7, 8, 9], attaque: 2, defense: 4, verbe: 'Tes yeux virent au rouge ; les tomoe tournent.' },
+  byakugan: { cout: [0, 2, 3, 4, 5, 6], attaque: 2, defense: 3, verbe: 'Les veines se gonflent autour de tes yeux : tu vois à travers tout.' },
+  mangekyo: { cout: [0, 10, 11, 12, 13, 14], attaque: 4, defense: 5, verbe: 'Le kaléidoscope s’ouvre dans tes yeux. Ils saignent un peu.' },
+  rinnegan: { cout: [0, 12, 13, 14, 15, 16], attaque: 5, defense: 5, verbe: 'Les anneaux concentriques s’allument dans ton regard.' },
+};
+
+export function estDojutsu(id: string): boolean {
+  return id in DOJUTSU;
+}
+
+/**
+ * Ce qu'un dōjutsu coûte par manche : il grimpe à chaque nouveau palier, puis le corps s'y habitue avec les années
+ * passées au même palier (jusqu'à 30 % du coût), et un corps d'enfant le paie plus cher.
+ */
+export function coutDojutsu(s: GameState, id: string): number {
+  const d = DOJUTSU[id];
+  const ms = s.maitrises[id];
+  if (!d || !ms?.awakened || ms.tier < 1) return 0;
+  const base = d.cout[ms.tier] ?? d.cout[d.cout.length - 1];
+  const depuis = ms.palierDepuis ?? ms.awakenedAtDay ?? s.jour;
+  const annees = Math.max(0, (s.jour - depuis) / 360);
+  const habitude = Math.max(0.3, 1 - 0.25 * annees);
+  const a = Math.floor((s.jour - s.naissance) / 360);
+  const corps = a < 12 ? 1.3 : a < 16 ? 1.1 : 1;
+  return Math.max(1, Math.round(base * habitude * corps));
+}
+
+export function bonusDojutsu(s: GameState, id: string): { attaque: number; defense: number } {
+  const d = DOJUTSU[id];
+  const tier = s.maitrises[id]?.tier ?? 0;
+  if (!d || tier < 1) return { attaque: 0, defense: 0 };
+  return { attaque: d.attaque * tier, defense: d.defense * tier };
+}
+
+export function texteDojutsu(id: string): string {
+  return DOJUTSU[id]?.verbe ?? '';
+}
+
+/** Les yeux qu'on peut activer : éveillés, pas bloqués (un Mangekyō aveugle ne s'active plus). */
+export function dojutsuDisponibles(s: GameState): string[] {
+  return Object.keys(DOJUTSU).filter((id) => {
+    const ms = s.maitrises[id];
+    return !!ms?.awakened && ms.tier >= 1 && !ms.bloquee && s.jauges.chakra >= coutDojutsu(s, id);
+  });
+}
+
 // ── Initiative de l'adversaire ──
 
 /** Chance que l'adversaire prenne l'initiative d'une manche : plus il est fort et nombreux, plus souvent ; l'agilité la lui dispute. */
@@ -271,7 +362,13 @@ export function techniqueAdverse(id: string): TechniqueAdverse | undefined {
   return R.contenu.techniquesAdverses.find((a) => a.id === id);
 }
 
-export type Defense = 'esquiver' | 'contrer';
+export type Defense = 'esquiver' | 'contrer' | 'permutation';
+
+/** La permutation coûte un peu de chakra ; il faut la connaître. */
+export const CHAKRA_PERMUTATION = 4;
+export function permutationPossible(s: GameState): boolean {
+  return (s.maitrises['kawarimi']?.tier ?? 0) >= 1 && s.jauges.chakra >= CHAKRA_PERMUTATION;
+}
 
 /** Une nature que tu maîtrises domine-t-elle celle de sa technique (ton eau contre son feu) ? */
 export function natureQuiDomine(s: GameState, element?: string): string | undefined {
@@ -290,16 +387,20 @@ export function testDefense(s: GameState, t: CheckDef, advId: string, mode: Defe
     const permutation = (s.maitrises['kawarimi']?.tier ?? 0) >= 1 ? 6 : 0;
     return { ...t, attributs: { agilite: 2, perception: 1 }, maitrises: { taijutsu: 0.5 }, arme: false, modificateur: (t.modificateur ?? 0) + permutation - puissance * 0.5 };
   }
+  // La permutation : une bûche prend le coup à ta place. Plus sûre qu'une esquive, et chaque palier la rend plus nette.
+  if (mode === 'permutation') {
+    return { ...t, attributs: { agilite: 1, perception: 1, controleChakra: 1 }, maitrises: { kawarimi: 2 }, arme: false, modificateur: (t.modificateur ?? 0) + 10 - puissance * 0.4 };
+  }
   const nature = natureQuiDomine(s, adv?.element) ? 6 : 0;
   return { ...t, modificateur: (t.modificateur ?? 0) - 6 - puissance * 0.6 + nature };
 }
 
 export function resoudreDefense(s: GameState, t: CheckDef, advId: string, mode: Defense, ctx: Ctx): { issue: IssueManche; degats: number } {
   const { proba } = evaluerEpreuve(s, testDefense(s, t, advId, mode));
-  if (alea(s) < proba) return { issue: mode === 'esquiver' ? 'esquive' : 'touche', degats: 0 };
+  if (alea(s) < proba) return { issue: mode === 'contrer' ? 'touche' : 'esquive', degats: 0 };
   const adv = techniqueAdverse(advId);
   const facteur = s.creation.difficulte === 'recit' ? 0.6 : s.creation.difficulte === 'legende' ? 1.3 : 1;
-  const degats = Math.round(((t.letal ? 9 : 5) * (mode === 'esquiver' ? 1.2 : 1.6) + (adv?.puissance ?? 8) * 0.3) * facteur);
+  const degats = Math.round(((t.letal ? 9 : 5) * (mode === 'contrer' ? 1.6 : mode === 'permutation' ? 1 : 1.2) + (adv?.puissance ?? 8) * 0.3) * facteur);
   s.jauges.sante = clamp(s.jauges.sante - degats, 1, 100);
   ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -degats });
   return { issue: 'riposte', degats };
@@ -326,6 +427,21 @@ export function conclureCombat(s: GameState, t: CheckDef, touches: number, ripos
   return { issue, outcome, mort: sort === 'mort', capture: sort === 'capture' };
 }
 
+/** Chance qu'une permutation bien maîtrisée transforme un coup mortel en coup sur une bûche (palier 2 et plus). */
+export function chancePermutation(s: GameState): number {
+  const tier = s.maitrises['kawarimi']?.tier ?? 0;
+  return tier >= 2 ? Math.min(0.5, 0.1 * tier) : 0;
+}
+
+function sauveParPermutation(s: GameState, ctx: Ctx): boolean {
+  const chance = chancePermutation(s);
+  if (chance <= 0 || alea(s) >= chance) return false;
+  s.drapeaux['permutations_salvatrices'] = (Number(s.drapeaux['permutations_salvatrices']) || 0) + 1;
+  ctx.changements.push({ t: 'info', message: 'Permutation ! Le coup qui devait te tuer frappe une bûche. Tu t’en sors, en sang.' });
+  ajouterJournal(s, 'Une permutation au dernier instant t’a sauvé la vie.', 2);
+  return true;
+}
+
 /** Probabilité qu'un échec dans un combat mortel tue, selon la difficulté choisie. */
 export const CHANCE_MORT: Record<string, number> = { recit: 0.18, shinobi: 0.45, legende: 0.6 };
 /** Contre une escouade, un échec qui ne tue pas peut finir en captivité. */
@@ -343,6 +459,13 @@ function blessureDeCombat(s: GameState, t: CheckDef, r: number, proba: number, c
   // Profondeur de l'échec : 0 au seuil, 1 pour le pire tirage possible.
   const profondeur = clamp((r - proba) / Math.max(0.01, 1 - proba), 0, 1);
   const mort = CHANCE_MORT[s.creation.difficulte] ?? 0.45;
+  // La permutation, réflexe de survie : au dernier instant, le coup mortel frappe une bûche.
+  if (t.letal && profondeur > 1 - mort && sauveParPermutation(s, ctx)) {
+    const d = Math.round(18 * (s.creation.difficulte === 'recit' ? 0.6 : s.creation.difficulte === 'legende' ? 1.3 : 1));
+    s.jauges.sante = clamp(s.jauges.sante - d, 1, 100);
+    ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -d });
+    return undefined;
+  }
   if (t.letal && profondeur > 1 - mort) {
     const avant = s.jauges.sante;
     s.jauges.sante = 0;

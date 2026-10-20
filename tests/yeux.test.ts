@@ -85,6 +85,8 @@ describe('Combats : enchaînements et sacoche', () => {
     expect(s.annonce).toMatch(/sacoche/);
     s.scene = { type: 'evenement', id: 'c2_tournoi' };
     s = choisir(s, 'frontal');
+    // L'adversaire peut frapper le premier : on se défend d'abord.
+    while (s.scene.type === 'combat' && vueCombat(s)!.adversaire) s = manche(s, 'esquiver');
     expect(vueCombat(s)!.objets.map((o) => o.id)).toContain('parchemin_explosif');
     s = manche(s, 'objet:parchemin_explosif');
     expect(s.consommables['parchemin_explosif']).toBe(0);

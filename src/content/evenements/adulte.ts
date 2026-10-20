@@ -469,6 +469,27 @@ export const ADULTE: EventDef[] = [
         },
       },
       {
+        id: 'mur',
+        texte: 'Escalader la tour par la façade, de nuit, en marchant sur le mur',
+        si: { maitrise: 'kinobori', palierMin: 1 },
+        verrou: 'Il faudrait savoir marcher sur les murs.',
+        indice: 'Marche sur les arbres : personne ne surveille une façade verticale.',
+        test: {
+          type: 'competence',
+          difficulte: 44,
+          attributs: { discretion: 2, agilite: 1 },
+          maitrises: { kinobori: 2 },
+          succes: {
+            texte: 'Tu montes la façade comme on monte un escalier, les pieds collés à la pierre par le chakra. La fenêtre du deuxième étage n’est même pas fermée. Tu copies les plans et tu redescends par le même chemin, tête en bas, sans un bruit.',
+            effets: [{ mission: 'a4_espionnage', statut: 'reussie' }, { stat: 'attributs.discretion', delta: 2 }, { secret: 'plans_voisins' }],
+          },
+          echec: {
+            texte: 'Ton chakra glisse sur une pierre mouillée. Tu te rattrapes au rebord, mais une tuile tombe dans la cour. Tu fuis par les toits, sans les plans.',
+            effets: [{ mission: 'a4_espionnage', statut: 'echouee' }, { stat: 'jauges.sante', delta: -10 }],
+          },
+        },
+      },
+      {
         id: 'temoin',
         texte: 'Une servante t’a vu fouiller. L’éliminer avant qu’elle parle',
         effets: [{ mission: 'a4_espionnage', statut: 'reussie' }, { ethique: { compassion: -14 } }, { stat: 'social.reputationOmbre', delta: 6 }, { drapeau: 'servante_tuee' }, { journal: 'Tu as tué une servante innocente pour protéger ta mission.', importance: 2 }],
@@ -505,6 +526,26 @@ export const ADULTE: EventDef[] = [
           causeMort: 'tué·e par les gardes d’un ministre',
           succes: { texte: 'Tu attends une heure de plus. Les gardes changent, l’un d’eux lève les yeux vers le toit. Tu frappes avant lui, puis le ministre, en silence. Sa fille dort dans la pièce d’à côté. Elle ne saura qu’au matin.', effets: [{ mission: 's4_assassinat', statut: 'reussie' }, { stat: 'social.reputationOmbre', delta: 6 }] },
           echec: { texte: 'L’heure de trop. Les gardes t’ont vu. Tu t’enfuis par les toits, blessé·e, mission manquée.', effets: [{ mission: 's4_assassinat', statut: 'echouee' }, { blessure: { id: 'toits', nom: 'Flèches des gardes', gravite: 2, jours: 40 } }] },
+        },
+      },
+      {
+        id: 'plafond',
+        texte: 'Entrer par le plafond, accroché·e aux poutres, et attendre qu’elle sorte',
+        si: { maitrise: 'kinobori', palierMin: 1 },
+        verrou: 'Il faudrait savoir marcher sur les murs et les plafonds.',
+        test: {
+          type: 'competence',
+          difficulte: 48,
+          attributs: { discretion: 2, controleEmotionnel: 1 },
+          maitrises: { kinobori: 2 },
+          succes: {
+            texte: 'Tu te glisses par le toit et tu attends, collé·e aux poutres, au-dessus de leurs têtes. Quand la fillette repart se coucher, tu descends. Personne ne te voit arriver, personne ne te voit repartir.',
+            effets: [{ mission: 's4_assassinat', statut: 'reussie' }, { stat: 'social.reputationOmbre', delta: 6 }, { stat: 'attributs.discretion', delta: 2 }],
+          },
+          echec: {
+            texte: 'Une poutre craque sous ton chakra mal réparti. Le ministre lève les yeux et crie. Tu fuis par le toit, mission manquée.',
+            effets: [{ mission: 's4_assassinat', statut: 'echouee' }, { stat: 'social.suspicion', delta: 4 }],
+          },
         },
       },
       {
@@ -771,6 +812,27 @@ export const ADULTE: EventDef[] = [
         },
       },
       {
+        id: 'eau',
+        texte: 'Revenir par la mer en marchant sur l’eau, et sortir tout le monde par les quais',
+        si: { maitrise: 'suimen', palierMin: 1 },
+        verrou: 'Il faudrait savoir marcher sur l’eau.',
+        indice: 'Personne ne garde le côté de la mer : aucun ninja normal n’y marche.',
+        test: {
+          type: 'competence',
+          difficulte: 52,
+          attributs: { discretion: 1, controleChakra: 2, agilite: 1 },
+          maitrises: { suimen: 2 },
+          succes: {
+            texte: 'Tu ressors par une meurtrière côté mer, tu cours sur les vagues jusqu’à l’entrée, tu ramasses {@coequipierB} au passage, et tu reviens par les quais ouvrir les cellules. Les huit prisonniers marchent derrière toi sur une eau qui tient à peine sous leurs pieds.',
+            effets: [{ mission: 's4_forteresse', statut: 'reussie' }, { relation: '@coequipierB', delta: { amitie: 10, respect: 10 } }, { stat: 'social.reputation', delta: 6 }],
+          },
+          echec: {
+            texte: 'Une vague trop forte brise ta concentration ; tu tombes à l’eau, et quand tu ressors, l’alarme a tout changé.',
+            effets: [{ mission: 's4_forteresse', statut: 'echouee' }, { si: { pnj: '@coequipierB', etat: ['vivant', 'blesse'] }, alors: [{ pnjEtat: '@coequipierB', etat: 'blesse' }] }, { drapeau: 'prisonniers_executes' }],
+          },
+        },
+      },
+      {
         id: 'camarade',
         texte: 'Retourner chercher {@coequipierB}',
         si: B_VIVANT,
@@ -804,6 +866,26 @@ export const ADULTE: EventDef[] = [
         texte: 'Tout faire sauter maintenant',
         effets: [{ mission: 'a4_sabotage', statut: 'reussie' }, { ethique: { compassion: -12 } }, { stat: 'social.reputationOmbre', delta: 6 }, { drapeau: 'dockers_tues' }],
         resultat: 'Le ciel s’allume jusqu’à la mer. La guerre qu’ils préparaient n’aura pas lieu cette année. Le lendemain, dans le port, on compte les morts à voix haute.',
+      },
+      {
+        id: 'poutres',
+        texte: 'Poser les parchemins depuis les poutres, sans réveiller personne',
+        si: { maitrise: 'kinobori', palierMin: 1 },
+        verrou: 'Il faudrait savoir marcher sur les plafonds.',
+        test: {
+          type: 'competence',
+          difficulte: 46,
+          attributs: { discretion: 2, intellect: 1 },
+          maitrises: { kinobori: 2 },
+          succes: {
+            texte: 'Tu passes de poutre en poutre au-dessus des dockers endormis et tu poses tes parchemins là où l’explosion ne touchera que le stock. Puis tu fais sonner l’alarme toi-même. Ils sortent en courant. Les entrepôts sautent, vides.',
+            effets: [{ mission: 'a4_sabotage', statut: 'reussie' }, { ethique: { compassion: 6, honneur: 4 } }, { stat: 'attributs.discretion', delta: 2 }],
+          },
+          echec: {
+            texte: 'Un docker se réveille et te voit au plafond. Il hurle. Tu dois fuir avant d’avoir fini.',
+            effets: [{ mission: 'a4_sabotage', statut: 'echouee' }],
+          },
+        },
       },
       {
         id: 'reveiller',

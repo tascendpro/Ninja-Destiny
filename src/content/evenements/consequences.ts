@@ -249,6 +249,28 @@ export const CONSEQUENCES: EventDef[] = [
         },
       },
       {
+        id: 'permutation',
+        texte: 'Une permutation avec la bûche du foyer, au moment où le garde se retourne',
+        si: { maitrise: 'kawarimi', palierMin: 1 },
+        verrou: 'Il faudrait connaître la permutation.',
+        indice: 'Ta permutation te sort des liens sans les défaire.',
+        test: {
+          type: 'competence',
+          difficulte: 44,
+          attributs: { agilite: 2, controleChakra: 1 },
+          maitrises: { kawarimi: 3 },
+          succes: {
+            texte: 'Le garde se retourne vers une bûche ligotée. Toi, tu es déjà derrière lui, puis dehors, puis loin.',
+            effets: [...RETOUR, { drapeau: 'evade' }, { succes: 'evade' }, { journal: 'Tu t’es évadé·e de captivité par une permutation.', importance: 2 }],
+          },
+          echec: {
+            texte: 'La corde trempée de chakra brouille ta technique : tu te retrouves à moitié dehors, le garde sur toi. On te ramène, on te frappe, et on t’enchaîne plus solidement.',
+            effets: [{ blessure: { id: 'permutation_ratee', nom: 'Coups des gardes', gravite: 2, jours: 30 } }],
+            suite: 'x_capture_nuit',
+          },
+        },
+      },
+      {
         id: 'secours',
         texte: 'Tenir, et faire confiance à ton village',
         si: VILLAGE_DERRIERE,

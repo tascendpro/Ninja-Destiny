@@ -5,8 +5,10 @@ import type { EntreeEncyclopedie, GameState } from '../engine/types';
 import { R } from '../engine/registre';
 import type { Meta } from '../engine/sauvegarde';
 import { accorder } from '../engine/texte';
+import Rouleaux from './Rouleaux';
 
-const CATEGORIES: { id: EntreeEncyclopedie['categorie'] | 'secret'; nom: string }[] = [
+const CATEGORIES: { id: EntreeEncyclopedie['categorie'] | 'secret' | 'rouleaux'; nom: string }[] = [
+  { id: 'rouleaux', nom: 'Rouleaux des techniques' },
   { id: 'village', nom: 'Villages' },
   { id: 'clan', nom: 'Clans' },
   { id: 'pouvoir', nom: 'Pouvoirs' },
@@ -32,6 +34,7 @@ export default function Encyclopedie({ etat, meta }: { etat: GameState | null; m
   }
 
   const entrees = R.contenu.encyclopedie.filter((e) => {
+    if (cat === 'rouleaux') return false;
     if (cat === 'secret') return e.id.startsWith('secret:');
     if (e.id.startsWith('secret:')) return false;
     return e.categorie === cat;
@@ -50,9 +53,13 @@ export default function Encyclopedie({ etat, meta }: { etat: GameState | null; m
           </button>
         ))}
       </div>
-      <p className="sous-titre">
-        {visibles.length} sur {entrees.length} entrées connues.
-      </p>
+      {cat === 'rouleaux' ? (
+        <Rouleaux etat={etat} />
+      ) : (
+        <p className="sous-titre">
+          {visibles.length} sur {entrees.length} entrées connues.
+        </p>
+      )}
       {cat === 'histoire' && (
         <details className="entree" open>
           <summary>

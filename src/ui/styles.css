@@ -1518,6 +1518,128 @@ p {
 .entree {
   border-bottom: 1px solid var(--trait-doux);
 }
+/* Décor illustré d'une scène : invisible tant que l'image n'est pas chargée. */
+.decor-scene {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  aspect-ratio: 21 / 9;
+  max-height: 42vh;
+  overflow: hidden;
+}
+.decor-scene:not(.charge) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.decor-scene img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.decor-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, var(--encre) 100%);
+  pointer-events: none;
+}
+@media (max-width: 700px) {
+  .decor-scene {
+    aspect-ratio: 4 / 3;
+    max-height: 34vh;
+  }
+}
+/* Rouleaux : le catalogue des techniques. */
+.rouleaux-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+.rouleaux-filtres input[type='search'],
+.rouleaux-filtres select {
+  flex: 1 1 140px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon-s);
+  background: var(--ardoise);
+  color: inherit;
+  font: inherit;
+  font-size: var(--t-s);
+}
+.rouleaux-filtres input[type='search'] {
+  flex-basis: 100%;
+}
+.rouleaux-kinjutsu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-s);
+}
+.fiche-technique summary > span:first-child {
+  min-width: 0;
+}
+.ft-francais {
+  color: var(--brume);
+}
+.ft-connue {
+  color: var(--or);
+}
+.ft-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: none;
+}
+.ft-rang {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 4px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: var(--t-xs);
+}
+.ft-rang.rang-S,
+.ft-rang.rang-SS {
+  color: var(--danger);
+}
+.ft-rang.rang-A {
+  color: var(--vermillon-clair);
+}
+.ft-kinjutsu {
+  font-size: var(--t-xs);
+  font-weight: 800;
+  color: var(--danger);
+  letter-spacing: 0.05em;
+}
+.fiche-technique.interdite summary strong {
+  color: var(--danger);
+}
+.ft-details {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 0 0 14px;
+  font-size: var(--t-s);
+}
+.ft-details dt {
+  color: var(--brume);
+}
+.ft-details dd {
+  margin: 0;
+}
+.ft-alerte {
+  color: var(--danger);
+}
 /* Bingo Book : des fiches comme des avis de recherche. */
 .fiche-bingo {
   margin: 14px 0;
@@ -2118,6 +2240,26 @@ p.entree.inconnue {
   font-size: var(--t-xs);
   font-style: italic;
   line-height: 1.45;
+}
+.attaque.transformation {
+  border-color: color-mix(in srgb, var(--or) 60%, var(--trait));
+  background: color-mix(in srgb, var(--or) 8%, var(--ardoise));
+}
+.transformation-active {
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--or);
+  background: color-mix(in srgb, var(--or) 10%, transparent);
+  border-radius: var(--rayon-s);
+  font-size: var(--t-s);
+}
+.attaque-kinjutsu {
+  font-size: var(--t-xs);
+  color: var(--danger);
+}
+.attaque-kinjutsu b {
+  font-weight: 800;
+  letter-spacing: 0.05em;
 }
 .attaque-portee {
   font-size: var(--t-xs);
@@ -2881,4 +3023,221 @@ p.entree.inconnue {
 .musique-pastille[aria-pressed='false'] {
   opacity: 0.55;
   text-decoration: line-through;
+}
+
+
+/* ── Temps libre : refonte ─────────────────────────────────── */
+.temps-libre {
+  --cat: var(--or);
+}
+.temps-libre[data-cat='missions'] { --cat: var(--vermillon-clair); }
+.temps-libre[data-cat='route'] { --cat: #b58b5a; }
+.temps-libre[data-cat='entrainement'] { --cat: var(--or); }
+.temps-libre[data-cat='techniques'] { --cat: var(--glycine); }
+.temps-libre[data-cat='liens'] { --cat: #d58aa0; }
+.temps-libre[data-cat='vie'] { --cat: #7fb08a; }
+.temps-libre[data-cat='forge'] { --cat: #8fa3b8; }
+.tl-intro {
+  font-size: var(--t-m);
+  padding: 12px 14px;
+  border-left: 3px solid var(--cat);
+  background: color-mix(in srgb, var(--cat) 6%, transparent);
+  border-radius: var(--rayon-s);
+}
+.tl-categories {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(78px, 1fr);
+  gap: 6px;
+  margin: 22px 0 8px;
+  padding: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border: 0;
+  background: none;
+}
+.tl-categories button {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 6px 8px;
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  background: var(--ardoise);
+  color: var(--brume);
+  font-size: var(--t-xs);
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.tl-categories button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--cat) 60%, var(--trait));
+}
+.tl-categories button[aria-selected='true'] {
+  color: var(--papier);
+  border-color: var(--cat);
+  background: color-mix(in srgb, var(--cat) 14%, var(--ardoise));
+  box-shadow: 0 6px 18px -10px var(--cat);
+}
+.tl-kanji {
+  font-family: var(--mincho);
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+.tl-categories button[aria-selected='true'] .tl-kanji {
+  color: var(--cat);
+}
+.tl-categories .compte {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cat) 25%, var(--encre-2));
+  color: var(--papier);
+  font-size: 0.68rem;
+  line-height: 18px;
+  margin: 0;
+}
+.temps-libre .sous-groupe h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  letter-spacing: 0.02em;
+}
+.temps-libre .sous-groupe h3::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--trait), transparent);
+}
+.temps-libre .activites {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  gap: 10px;
+}
+.temps-libre .activite {
+  position: relative;
+  overflow: hidden;
+  padding: 13px 14px 12px 17px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ardoise) 60%, color-mix(in srgb, var(--cat) 7%, var(--ardoise)));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--cat) 70%, transparent);
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.temps-libre .activite::after {
+  content: attr(data-kanji);
+  position: absolute;
+  right: -6px;
+  bottom: -18px;
+  font-family: var(--mincho);
+  font-size: 4.4rem;
+  line-height: 1;
+  color: var(--cat);
+  opacity: 0.07;
+  pointer-events: none;
+}
+.temps-libre .activite:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--cat);
+  box-shadow: inset 3px 0 0 var(--cat), 0 8px 22px -14px var(--cat);
+}
+.temps-libre .act-nom {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  font-weight: 700;
+}
+.temps-libre .act-duree {
+  grid-row: 1;
+  align-self: start;
+  border-color: color-mix(in srgb, var(--cat) 45%, var(--trait));
+  color: var(--papier);
+}
+.temps-libre .act-progression {
+  grid-column: 1 / -1;
+}
+.temps-libre .act-pips i {
+  width: 18px;
+  height: 7px;
+}
+.temps-libre .act-pips i.atteint {
+  background: var(--cat);
+}
+.temps-libre .act-barre {
+  max-width: none;
+  height: 6px;
+  border-radius: 3px;
+}
+.temps-libre .act-barre i {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 60%, transparent), var(--cat));
+}
+.temps-libre .act-detail {
+  grid-column: 1 / -1;
+}
+.temps-libre .activite.choisie {
+  border-color: var(--cat);
+  box-shadow: inset 3px 0 0 var(--cat), 0 0 0 1px var(--cat);
+}
+.temps-libre .activite:disabled,
+.temps-libre .activite.bloquee {
+  border-style: dashed;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.7;
+}
+.temps-libre .sous-groupe.bloquees h3 {
+  color: var(--danger);
+}
+@media (min-width: 900px) {
+  .tl-categories {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+
+/* ── Couleurs des natures : chaque nature a la sienne, partout où elle apparaît ── */
+:root {
+  --n-katon: #e8643c;
+  --n-suiton: #3f9ee0;
+  --n-fuuton: #5fc48a;
+  --n-raiton: #e9c23a;
+  --n-doton: #b4865a;
+  --n-yoton: #d9480f;
+  --n-futton: #e07b9c;
+  --n-hyoton: #8fd6ef;
+  --n-ranton: #7f86f0;
+  --n-mokuton: #5f9e4a;
+  --n-jiton: #8d939e;
+  --n-bakuton: #f08c2e;
+  --n-shakuton: #f5a742;
+}
+.badges-nature {
+  display: inline-flex;
+  gap: 3px;
+  margin-right: 7px;
+  vertical-align: 1px;
+}
+.badge-nature {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--nat) 22%, transparent);
+  border: 1px solid var(--nat);
+  color: var(--nat);
+  font-family: var(--mincho);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.attaque.a-nature {
+  border-color: color-mix(in srgb, var(--nat) 55%, var(--trait));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--nat) 12%, var(--ardoise)), var(--ardoise) 70%);
+  box-shadow: inset 3px 0 0 var(--nat);
+}
+.attaque.a-nature:hover:not(:disabled) {
+  border-color: var(--nat);
 }

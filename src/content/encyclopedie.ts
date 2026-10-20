@@ -189,6 +189,8 @@ export const ENCYCLOPEDIE: EntreeEncyclopedie[] = [
   S('frontiere_incidents', 'Les ninjas sans bandeau', 'Les incidents de frontière sont l’œuvre de ninjas de village, pas de bandits.'),
   S('abandon_mission', 'L’ordre de ne pas engager', 'L’équipe de ton aîné·e avait ordre de ne pas engager l’ennemi.'),
   S('mort_aine_trahison', 'L’itinéraire vendu', 'Quelqu’un a vendu l’itinéraire de la mission où ton aîné·e est mort·e.'),
+  S('voleur_rouleaux', 'Le voleur de rouleaux', 'Un genin d’un village voisin volait les rouleaux de ton village, la nuit, par la forêt.'),
+  S('informateur_village', 'L’informateur', 'Les archives d’une base ennemie nomment un informateur au cœur de ton village.'),
   S('plans_voisins', 'Les plans du village voisin', 'Tu as rapporté les plans de guerre d’un village voisin. Deux armées ont bougé à cause de toi.'),
   S('pont_kannabi', 'L’ordre du pont', 'Au pont de Kannabi, une unité alliée a été sacrifiée pour couvrir un membre du Conseil.'),
   S('verite_kannabi', 'La vérité sur Kannabi', 'Ton parent faisait partie des deux survivants du pont de Kannabi.'),

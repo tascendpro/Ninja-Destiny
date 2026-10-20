@@ -1,0 +1,220 @@
+Décors du jeu — à déposer dans ce dossier (public/images/locations/…), au chemin exact indiqué.
+Format conseillé : .webp, paysage, 1920×820 environ (le jeu recadre en 21/9 sur ordinateur et 4/3 sur téléphone).
+Sans personnage au premier plan : un même décor sert à plusieurs scènes.
+Tant qu’un fichier manque, la scène s’affiche simplement sans illustration.
+
+== PRIORITÉ 1 — déjà utilisés par le jeu (à faire en premier) (71) ==
+public/images/locations/konoha/konoha-vue.webp  —  Konoha — vue générale
+public/images/locations/konoha/konoha-academie.webp  —  Konoha — académie ninja
+public/images/locations/konoha/konoha-terrain.webp  —  Konoha — terrain d’entraînement
+public/images/locations/konoha/konoha-residentiel.webp  —  Konoha — quartier résidentiel
+public/images/locations/suna/suna-vue.webp  —  Suna — vue générale
+public/images/locations/suna/suna-terrain.webp  —  Suna — terrain d’entraînement désertique
+public/images/locations/kiri/kiri-vue.webp  —  Kiri — vue générale du village brumeux
+public/images/locations/kiri/kiri-port.webp  —  Kiri — port et quais
+public/images/locations/kiri/kiri-epeistes.webp  —  Kiri — quartier d’entraînement des épéistes
+public/images/locations/kumo/kumo-vue.webp  —  Kumo — vue générale dans les montagnes
+public/images/locations/kumo/kumo-ponts.webp  —  Kumo — ponts suspendus
+public/images/locations/kumo/kumo-terrain.webp  —  Kumo — terrain d’entraînement orageux
+public/images/locations/iwa/iwa-vue.webp  —  Iwa — vue générale du village rocheux
+public/images/locations/iwa/iwa-place.webp  —  Iwa — place fortifiée
+public/images/locations/iwa/iwa-canyon.webp  —  Iwa — canyon d’entraînement
+public/images/locations/ame/ame-ville.webp  —  Amegakure — ville sous la pluie
+public/images/locations/ame/ame-tours.webp  —  Amegakure — tours métalliques et passerelles
+public/images/locations/training/academie-salle.webp  —  Académie — salle de cours
+public/images/locations/training/salle-examen-ecrit.webp  —  Salle d’examen écrit
+public/images/locations/training/arene-chunin.webp  —  Arène du tournoi Chūnin
+public/images/locations/training/salle-taijutsu.webp  —  Salle d’entraînement au taijutsu
+public/images/locations/training/zone-jonin.webp  —  Zone d’entraînement réservée aux jōnin
+public/images/locations/forests/foret-mort-clairiere.webp  —  Forêt de la Mort — clairière
+public/images/locations/forests/foret-konoha-profonde.webp  —  Forêt profonde de Konoha
+public/images/locations/forests/pont-pierre.webp  —  Pont de pierre isolé
+public/images/locations/forests/plaines-herbeuses.webp  —  Plaines herbeuses
+public/images/locations/forests/route-commerciale.webp  —  Route commerciale entre deux villages
+public/images/locations/forests/carrefour-auberge.webp  —  Carrefour avec auberge
+public/images/locations/legendary/vallee-fin-statues.webp  —  Vallée de la Fin — statues monumentales
+public/images/locations/legendary/sanctuaire-oublie.webp  —  Sanctuaire oublié
+public/images/locations/legendary/temple-sceaux.webp  —  Temple des sceaux
+public/images/locations/legendary/temple-montagne.webp  —  Temple au sommet d’une montagne
+public/images/locations/legendary/ruines-desert.webp  —  Ruines enfouies dans le désert
+public/images/locations/legendary/foret-arbres-geants.webp  —  Forêt des arbres géants
+public/images/locations/legendary/site-invocation.webp  —  Site d’une ancienne invocation
+public/images/locations/secret-bases/cachette-orochimaru-entree.webp  —  Cachette d’Orochimaru — entrée
+public/images/locations/secret-bases/prison-souterraine.webp  —  Prison souterraine
+public/images/locations/secret-bases/cellule-detention.webp  —  Cellule de détention
+public/images/locations/secret-bases/salle-interrogatoire.webp  —  Salle d’interrogatoire
+public/images/locations/secret-bases/base-renseignement.webp  —  Base de renseignement
+public/images/locations/secret-bases/passage-contrebande.webp  —  Passage souterrain de contrebande
+public/images/locations/secret-bases/base-montagne-ennemie.webp  —  Base ennemie dans une montagne
+public/images/locations/secret-bases/camp-militaire.webp  —  Camp militaire fortifié
+public/images/locations/interiors/auberge-traditionnelle.webp  —  Auberge traditionnelle
+public/images/locations/interiors/boutique-armes.webp  —  Boutique d’armes
+public/images/locations/interiors/marche-village.webp  —  Marché de village
+public/images/locations/interiors/salle-conseil.webp  —  Salle de réunion du conseil
+public/images/locations/interiors/maison-traditionnelle.webp  —  Maison traditionnelle
+public/images/locations/battlefields/village-attaque.webp  —  Village attaqué
+public/images/locations/battlefields/rue-explosion.webp  —  Rue après une explosion
+public/images/locations/battlefields/champ-bataille-fumant.webp  —  Champ de bataille fumant
+public/images/locations/battlefields/gorge-embuscade.webp  —  Gorge étroite d’embuscade
+public/images/locations/battlefields/pont-endommage.webp  —  Pont endommagé
+public/images/locations/battlefields/forteresse-ennemie.webp  —  Forteresse ennemie
+public/images/locations/battlefields/camp-secours.webp  —  Camp de secours
+public/images/locations/dimensions/myoboku-terrain.webp  —  Mont Myōboku — terrain du mode ermite
+public/images/locations/travel/foret-frontaliere.webp  —  Forêt frontalière du Pays du Feu
+public/images/locations/travel/desert-vent.webp  —  Désert du Pays du Vent
+public/images/locations/travel/cote-eau.webp  —  Côte du Pays de l’Eau
+public/images/locations/travel/village-cotier.webp  —  Village côtier
+public/images/locations/travel/montagnes-foudre.webp  —  Montagnes du Pays de la Foudre
+public/images/locations/travel/col-enneige.webp  —  Col enneigé
+public/images/locations/travel/carriere-terre.webp  —  Carrière du Pays de la Terre
+public/images/locations/travel/village-thermal.webp  —  Pays des Sources Chaudes — village thermal
+public/images/locations/travel/pays-fer-forteresse.webp  —  Pays du Fer — forteresse samouraï
+public/images/locations/travel/pays-fer-sommet.webp  —  Pays du Fer — salle du sommet des Kage
+public/images/locations/ambiances/rue-deserte-minuit.webp  —  Rue déserte à minuit
+public/images/locations/ambiances/foret-pleine-lune.webp  —  Forêt sous la pleine lune
+public/images/locations/ambiances/route-orage.webp  —  Route sous un orage
+public/images/locations/ambiances/terrain-aube.webp  —  Terrain d’entraînement à l’aube
+public/images/locations/ambiances/interieur-apres-attaque.webp  —  Intérieur d’une maison après une attaque
+
+== PRIORITÉ 2 — variantes d’ambiance des décors utilisés (4) ==
+public/images/locations/ambiances/konoha-lever-soleil.webp  —  Lever de soleil sur Konoha
+public/images/locations/ambiances/konoha-pluie-nuit.webp  —  Konoha sous une pluie nocturne
+public/images/locations/ambiances/konoha-neige.webp  —  Konoha enneigé
+public/images/locations/ambiances/konoha-fete.webp  —  Konoha pendant une fête
+
+== PRIORITÉ 3 — inventaire, pour plus tard (135) ==
+public/images/locations/konoha/konoha-rue-commercante.webp  —  Konoha — rue commerçante
+public/images/locations/konoha/konoha-place-hokage.webp  —  Konoha — place centrale et monument des Hokage
+public/images/locations/konoha/konoha-bureau-hokage.webp  —  Konoha — bureau du Hokage
+public/images/locations/konoha/konoha-quartier-uchiha.webp  —  Konoha — quartier Uchiha historique
+public/images/locations/konoha/konoha-hopital.webp  —  Konoha — hôpital ninja
+public/images/locations/konoha/konoha-salle-mission.webp  —  Konoha — salle de mission
+public/images/locations/suna/suna-marche.webp  —  Suna — marché et rues de sable
+public/images/locations/suna/suna-palais.webp  —  Suna — palais du Kazekage
+public/images/locations/kiri/kiri-salle-mizukage.webp  —  Kiri — salle de réunion du Mizukage
+public/images/locations/kumo/kumo-palais.webp  —  Kumo — palais du Raikage
+public/images/locations/iwa/iwa-bureau.webp  —  Iwa — bureau du Tsuchikage
+public/images/locations/oto/oto-base.webp  —  Otogakure — base souterraine
+public/images/locations/oto/oto-laboratoire.webp  —  Otogakure — laboratoire secret
+public/images/locations/training/terrain-examen.webp  —  Terrain d’examen pratique
+public/images/locations/training/foret-entrainement.webp  —  Forêt d’entraînement
+public/images/locations/training/terrain-7.webp  —  Terrain d’entraînement numéro 7
+public/images/locations/training/couloirs-examen.webp  —  Couloirs souterrains de l’examen Chūnin
+public/images/locations/training/poteaux-bois.webp  —  Terrain aux poteaux de bois
+public/images/locations/training/champ-rocheux.webp  —  Champ d’entraînement rocheux
+public/images/locations/training/terrain-pluie.webp  —  Terrain d’entraînement sous la pluie
+public/images/locations/training/salle-armes.webp  —  Salle d’entraînement aux armes
+public/images/locations/training/salle-meditation.webp  —  Salle de méditation et contrôle du chakra
+public/images/locations/training/terrain-elementaire.webp  —  Terrain des techniques élémentaires
+public/images/locations/forests/foret-mort-entree.webp  —  Forêt de la Mort — entrée
+public/images/locations/forests/foret-mort-marecage.webp  —  Forêt de la Mort — marécage
+public/images/locations/forests/foret-mort-ruines.webp  —  Forêt de la Mort — ruines cachées
+public/images/locations/forests/foret-bambous.webp  —  Forêt de bambous
+public/images/locations/forests/foret-enneigee.webp  —  Forêt enneigée
+public/images/locations/forests/foret-brulee.webp  —  Forêt brûlée après un combat
+public/images/locations/forests/route-foret-crepuscule.webp  —  Route forestière au crépuscule
+public/images/locations/forests/chemin-montagne.webp  —  Chemin de montagne
+public/images/locations/forests/grand-pont.webp  —  Grand pont sur une rivière
+public/images/locations/forests/riviere-foret.webp  —  Rivière en forêt
+public/images/locations/forests/cascade-cachee.webp  —  Cascade cachée
+public/images/locations/forests/grotte-naturelle.webp  —  Grotte naturelle
+public/images/locations/forests/grotte-cristal.webp  —  Grotte de cristal
+public/images/locations/forests/canyon-etroit.webp  —  Canyon étroit
+public/images/locations/forests/plateau-rocheux.webp  —  Plateau rocheux
+public/images/locations/forests/lac-montagnes.webp  —  Lac entouré de montagnes
+public/images/locations/forests/vallee-brume.webp  —  Vallée dans la brume
+public/images/locations/forests/campement-foret.webp  —  Campement ninja en forêt
+public/images/locations/forests/village-abandonne.webp  —  Village abandonné
+public/images/locations/legendary/vallee-fin.webp  —  Vallée de la Fin — vue générale
+public/images/locations/legendary/vallee-fin-cascade.webp  —  Vallée de la Fin — rivière et cascade
+public/images/locations/legendary/ruines-village-ancien.webp  —  Ruines d’un ancien village
+public/images/locations/legendary/temple-ancien.webp  —  Temple ancien
+public/images/locations/legendary/autel-rituel.webp  —  Autel rituel
+public/images/locations/legendary/base-clan-ancienne.webp  —  Ancienne base de clan
+public/images/locations/legendary/ruines-bataille.webp  —  Ruines d’un champ de bataille
+public/images/locations/legendary/cimetiere-ninja.webp  —  Cimetière ninja
+public/images/locations/legendary/monument-morts.webp  —  Monument aux shinobi morts
+public/images/locations/legendary/tombeau-ancien.webp  —  Tombeau ancien
+public/images/locations/legendary/bibliotheque-interdite.webp  —  Bibliothèque interdite
+public/images/locations/legendary/salle-parchemins.webp  —  Salle secrète des parchemins
+public/images/locations/legendary/bataille-brume.webp  —  Ancien champ de bataille dans la brume
+public/images/locations/secret-bases/akatsuki-exterieur.webp  —  Base de l’Akatsuki — extérieur
+public/images/locations/secret-bases/akatsuki-reunion.webp  —  Base de l’Akatsuki — salle de réunion
+public/images/locations/secret-bases/akatsuki-couloir.webp  —  Base de l’Akatsuki — couloir
+public/images/locations/secret-bases/akatsuki-preparation.webp  —  Base de l’Akatsuki — salle de préparation
+public/images/locations/secret-bases/laboratoire-orochimaru.webp  —  Laboratoire d’Orochimaru
+public/images/locations/secret-bases/salle-experimentation.webp  —  Salle d’expérimentation
+public/images/locations/secret-bases/couloir-laboratoire.webp  —  Couloir souterrain de laboratoire
+public/images/locations/secret-bases/qg-anbu.webp  —  Quartier général de l’ANBU
+public/images/locations/secret-bases/briefing-anbu.webp  —  Salle de briefing de l’ANBU
+public/images/locations/secret-bases/salle-conseil-secret.webp  —  Salle secrète du conseil
+public/images/locations/secret-bases/refuge-clandestin.webp  —  Refuge clandestin
+public/images/locations/secret-bases/cachette-foret.webp  —  Cachette dissimulée dans une forêt
+public/images/locations/interiors/ramen.webp  —  Restaurant de ramen
+public/images/locations/interiors/salon-the.webp  —  Salon de thé
+public/images/locations/interiors/boutique-materiel.webp  —  Boutique de matériel ninja
+public/images/locations/interiors/hopital-soins.webp  —  Hôpital — salle de soins
+public/images/locations/interiors/hopital-chambre.webp  —  Hôpital — chambre de repos
+public/images/locations/interiors/pharmacie.webp  —  Pharmacie ninja
+public/images/locations/interiors/salle-archives.webp  —  Salle d’archives
+public/images/locations/interiors/bibliotheque.webp  —  Bibliothèque
+public/images/locations/interiors/salle-reception-kage.webp  —  Salle de réception du Kage
+public/images/locations/interiors/bureau-administratif.webp  —  Bureau administratif
+public/images/locations/interiors/salle-repos-shinobi.webp  —  Salle de repos des shinobi
+public/images/locations/interiors/dortoir.webp  —  Dortoir des ninjas
+public/images/locations/interiors/residence-clan.webp  —  Intérieur d’une résidence de clan
+public/images/locations/interiors/salle-entrainement-interieure.webp  —  Salle d’entraînement intérieure
+public/images/locations/interiors/salle-preparation-mission.webp  —  Salle de préparation aux missions
+public/images/locations/battlefields/village-ruines.webp  —  Village en ruines
+public/images/locations/battlefields/foret-detruite.webp  —  Forêt détruite par une technique
+public/images/locations/battlefields/zone-calcinee.webp  —  Zone calcinée
+public/images/locations/battlefields/terrain-gele.webp  —  Terrain gelé
+public/images/locations/battlefields/champ-lave.webp  —  Champ de lave
+public/images/locations/battlefields/terrain-foudroye.webp  —  Terrain frappé par la foudre
+public/images/locations/battlefields/marecage-toxique.webp  —  Marécage toxique
+public/images/locations/battlefields/campement-attaque.webp  —  Campement attaqué de nuit
+public/images/locations/battlefields/porte-assiegee.webp  —  Porte de village assiégée
+public/images/locations/battlefields/bataille-brouillard.webp  —  Champ de bataille dans le brouillard
+public/images/locations/battlefields/cratere-ultime.webp  —  Cratère d’une technique ultime
+public/images/locations/battlefields/zone-evacuation.webp  —  Zone d’évacuation
+public/images/locations/battlefields/combat-clair-lune.webp  —  Terrain de combat au clair de lune
+public/images/locations/dimensions/myoboku.webp  —  Mont Myōboku — panorama
+public/images/locations/dimensions/myoboku-sanctuaire.webp  —  Mont Myōboku — sanctuaire des crapauds
+public/images/locations/dimensions/ryuchi-entree.webp  —  Grotte Ryūchi — entrée
+public/images/locations/dimensions/ryuchi-sanctuaire.webp  —  Grotte Ryūchi — sanctuaire des serpents
+public/images/locations/dimensions/shikkotsu.webp  —  Forêt de Shikkotsu
+public/images/locations/dimensions/sanctuaire-limaces.webp  —  Sanctuaire des limaces
+public/images/locations/dimensions/ile-entrainement.webp  —  Île isolée d’entraînement
+public/images/locations/dimensions/ile-animaux.webp  —  Île aux animaux géants
+public/images/locations/dimensions/ile-tempete.webp  —  Île dans la tempête
+public/images/locations/dimensions/autel-biju.webp  —  Autel de scellement d’un bijū
+public/images/locations/dimensions/chambre-jinchuriki.webp  —  Chambre intérieure d’un jinchūriki
+public/images/locations/dimensions/paysage-mental.webp  —  Paysage mental
+public/images/locations/dimensions/kaguya-glace.webp  —  Dimension de Kaguya — glace
+public/images/locations/dimensions/kaguya-lave.webp  —  Dimension de Kaguya — lave
+public/images/locations/dimensions/kaguya-desert.webp  —  Dimension de Kaguya — désert
+public/images/locations/dimensions/kaguya-gravite.webp  —  Dimension de Kaguya — gravité
+public/images/locations/dimensions/dimension-vide.webp  —  Dimension sombre et vide
+public/images/locations/dimensions/dimension-chakra.webp  —  Dimension de chakra
+public/images/locations/dimensions/champ-celeste.webp  —  Champ céleste des Six Chemins
+public/images/locations/travel/frontiere-feu.webp  —  Frontière du Pays du Feu
+public/images/locations/travel/oasis-vent.webp  —  Oasis du Pays du Vent
+public/images/locations/travel/mer-agitee.webp  —  Mer agitée
+public/images/locations/travel/iles-rocheuses.webp  —  Îles rocheuses
+public/images/locations/travel/falaises-rocheuses.webp  —  Falaises rocheuses
+public/images/locations/travel/herbe-foret-dense.webp  —  Pays de l’Herbe — forêt dense
+public/images/locations/travel/vagues-port.webp  —  Pays des Vagues — port
+public/images/locations/travel/vagues-pont.webp  —  Pays des Vagues — pont en construction
+public/images/locations/travel/pluie-rue.webp  —  Pays de la Pluie — rue sous une pluie battante
+public/images/locations/travel/oiseaux-falaises.webp  —  Pays des Oiseaux — falaises et nids
+public/images/locations/ambiances/campement-coucher.webp  —  Campement au coucher du soleil
+public/images/locations/ambiances/village-brouillard.webp  —  Village dans le brouillard
+public/images/locations/ambiances/temple-lanternes.webp  —  Temple illuminé de lanternes
+public/images/locations/ambiances/place-ceremonie.webp  —  Place publique après une cérémonie
+public/images/locations/ambiances/foret-lucioles.webp  —  Forêt aux lucioles
+public/images/locations/ambiances/riviere-gelee.webp  —  Rivière gelée
+public/images/locations/ambiances/ruines-aube.webp  —  Ruines au lever du soleil
+public/images/locations/ambiances/reunion-urgence.webp  —  Salle de réunion en urgence
+public/images/locations/ambiances/poste-garde.webp  —  Poste de garde à la frontière
+public/images/locations/ambiances/tour-guet.webp  —  Tour de guet
+public/images/locations/ambiances/panorama-crepuscule.webp  —  Panorama du monde ninja au crépuscule

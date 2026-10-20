@@ -48,7 +48,8 @@ export type NpcEtat = 'vivant' | 'blesse' | 'disparu' | 'mort';
 export type StatutArme = 'possedee' | 'pretee' | 'derobee' | 'confisquee' | 'perdue' | 'detruite' | 'vendue' | 'rendue';
 export const STATUTS_ARME_UTILISABLES: StatutArme[] = ['possedee', 'pretee', 'derobee'];
 export type RareteArme = 'commune' | 'qualite' | 'maitre' | 'legendaire' | 'maudite';
-export type RangTechnique = 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+/** SS : rang propre au jeu, réservé aux pouvoirs mythiques au-delà du rang S. */
+export type RangTechnique = 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS';
 export type RangMission = 'D' | 'C' | 'B' | 'A' | 'S';
 
 export type ArcId =
@@ -261,6 +262,8 @@ export interface EventDef {
   lieu: string;
   texte: Texte;
   personnages?: string[];
+  /** Décor précis de la scène (bibliothèque des lieux), quand le lieu seul ne suffit pas. */
+  decor?: string;
   si: Condition;
   choix: ChoiceDef[];
   /** > 0 : événement de trame, prioritaire dès que ses conditions sont réunies. */
@@ -335,6 +338,8 @@ export interface MasteryDef {
   technique?: TechniqueDef;
   /** Pouvoir ne pouvant jamais être entraîné via le temps libre (ex. Mangekyō). */
   nonEntrainable?: boolean;
+  /** Kinjutsu : technique interdite. Statut indépendant du rang (coût, danger, sacrifice, conséquences). */
+  kinjutsu?: { raison: string };
 }
 
 export type CategorieTechnique = 'ninjutsu' | 'taijutsu' | 'genjutsu' | 'armes' | 'medical' | 'fuinjutsu' | 'fusion' | 'biju' | 'combinaison' | 'dojutsu' | 'transformation';
@@ -362,6 +367,85 @@ export interface TechniqueAdverse {
   element?: ElementId;
   duel: string;
   escouade: string;
+}
+
+// ── Bibliothèque des lieux (décors illustrés) ──
+
+export type CategorieDecor = 'village' | 'entrainement' | 'nature' | 'legendaire' | 'base' | 'interieur' | 'combat' | 'surnaturel' | 'voyage' | 'ambiance';
+
+/** Ce qu'un décor peut accueillir, sans illustration différente à chaque fois. */
+export type TypeScene = 'entrainement' | 'duel' | 'mission' | 'rencontre' | 'embuscade' | 'infiltration' | 'combat' | 'repos' | 'politique' | 'commerce' | 'soins' | 'rituel' | 'deuil' | 'decouverte';
+
+export interface DecorDef {
+  id: string;
+  nom: string;
+  region: string;
+  categorie: CategorieDecor;
+  description: string;
+  /** Chemin public de l'image (/images/locations/…). Absente, la scène reste sans illustration. */
+  image: string;
+  tags: string[];
+  /** Types de scènes compatibles. */
+  scenes: TypeScene[];
+  /** Variantes d'ambiance (autres décors du catalogue : nuit, pluie, neige…). */
+  variantes?: string[];
+  /** Accès restreint (lieu secret, révélé par l'histoire). */
+  acces?: Condition;
+  /** 1 : utilisé par le jeu aujourd'hui ; 2 : par les rencontres de lieu ; 3 : inventaire de production. */
+  priorite: 1 | 2 | 3;
+}
+
+// ── Catalogue des techniques (référence encyclopédique, extensible sans code) ──
+
+export type TypeTechnique =
+  | 'ninjutsu'
+  | 'taijutsu'
+  | 'genjutsu'
+  | 'fuinjutsu'
+  | 'kuchiyose'
+  | 'dojutsu'
+  | 'iryo'
+  | 'sensoriel'
+  | 'marionnette'
+  | 'armes'
+  | 'clones'
+  | 'deplacement'
+  | 'transformation'
+  | 'biju'
+  | 'sceau_maudit'
+  | 'dimensionnel'
+  | 'six_chemins';
+
+/** D'où vient une technique : manga, anime, Boruto, version du jeu, ou création originale. */
+export type OrigineTechnique = 'manga' | 'anime' | 'boruto' | 'jeu' | 'original';
+
+export interface FicheTechnique {
+  id: string;
+  japonais: string;
+  francais: string;
+  types: TypeTechnique[];
+  /** Clan associé (identifiant du jeu quand le clan y existe). */
+  clan?: string;
+  utilisateurs?: string[];
+  /** Natures et natures avancées (katon, mokuton, jinton…). */
+  elements?: string[];
+  rang: RangTechnique;
+  /** Rang estimé pour le jeu, faute de référence officielle. */
+  rangEstime?: boolean;
+  chakra: 'faible' | 'modéré' | 'élevé' | 'très élevé' | 'colossal';
+  portee: string;
+  zone: string;
+  effets: string;
+  faiblesses: string;
+  apprentissage: string;
+  /** Niveau de maîtrise attendu (« chūnin confirmé », « Kage »…). */
+  maitrise: string;
+  origine: OrigineTechnique;
+  /** Technique interdite : la raison, indépendante du rang. */
+  kinjutsu?: string;
+  consequences?: string;
+  /** Identifiant de la technique jouable correspondante, quand elle existe dans le jeu. */
+  jouable?: string;
 }
 
 /** Une fiche du Bingo Book : un ninja recherché, ou l'un des grands ninjas de l'époque. */
@@ -393,6 +477,44 @@ export interface Affrontement {
   verdict?: boolean;
 }
 
+export interface LimiteTechnique {
+  /** Nombre d'usages possibles dans toute une vie (Izanagi : un par œil). */
+  usages?: number;
+  /** Réserve de chakra perdue pour toujours à chaque usage. */
+  chakraMaxPerdu?: number;
+  /** Risque de mort à chaque usage, à partir d'un palier donné (la huitième porte). */
+  mort?: { chance: number; palierMin?: number };
+  /** Sacrifice : la technique emporte toujours son utilisateur à la fin du combat. */
+  sacrifice?: boolean;
+  /** Ce que chaque usage coûte à la conscience (Edo Tensei). */
+  ethique?: Partial<Record<EthiqueId, number>>;
+  /** Pouvoir d'une bête : il peut échapper à qui contrôle mal ses émotions. */
+  controle?: boolean;
+  /** Ce qu'on lit avant de s'en servir. */
+  avertissement: string;
+}
+
+/**
+ * Une transformation n'est pas une attaque : on l'active (sans perdre de manche), et elle renforce
+ * l'attaque et la défense jusqu'à la fin du combat. Certaines techniques n'existent que transformé.
+ */
+export interface PostureDef {
+  /** Bonus d'attaque au palier 1 ; il croît avec la maîtrise. */
+  attaque: number;
+  /** Bonus d'esquive et de contre au palier 1. */
+  defense: number;
+  /** Récits d'entrée en transformation, par palier minimal (plusieurs variantes, tirées tour à tour). */
+  entree: { min: number; textes: string[] }[];
+  /** Ce que la transformation change, en une ligne. */
+  effet: string;
+  /** Ce qu'elle coûte à chaque manche pour être maintenue. */
+  entretien?: { chakra?: number; sante?: number; fatigue?: number };
+  /** Nombre maximal de manches avant qu'elle ne retombe d'elle-même. */
+  duree?: number;
+  /** Ce que raconte sa fin. */
+  fin?: string;
+}
+
 export interface TechniqueDef {
   categorie: CategorieTechnique;
   /** Bonus de combat apporté au palier 1 ; il croît avec la maîtrise. */
@@ -403,6 +525,12 @@ export interface TechniqueDef {
   sante?: number;
   /** Santé rendue à chaque usage (sceau de régénération). */
   soin?: number;
+  /** Ce que coûte vraiment une technique ultime : usages comptés, réserve perdue, mort possible, sacrifice. */
+  limite?: LimiteTechnique;
+  /** Transformation : un état qui dure tout le combat, pas une attaque. */
+  posture?: PostureDef;
+  /** Technique qui n'existe que sous l'une de ces transformations. */
+  exigeTransformation?: string[];
   /** Utilisable comme attaque spéciale en combat. */
   offensive: boolean;
   /** Maîtrises requises pour l'apprendre (ex. nature_katon palier 1, famille_kenjutsu palier 2). */
@@ -423,6 +551,8 @@ export interface MasteryState {
   awakenedAtDay?: number;
   awakenedAtAge?: number;
   tier: MasteryTier;
+  /** Jour où le palier actuel a été atteint (le corps s'y habitue avec les années). */
+  palierDepuis?: number;
   trainingDays: number;
   combatUses: number;
   strain: number;
@@ -639,6 +769,14 @@ export interface Contenu {
   techniquesAdverses: TechniqueAdverse[];
   /** Le Bingo Book : ninjas recherchés et grands ninjas. */
   bingo: FicheBingo[];
+  /** Catalogue encyclopédique des techniques. */
+  catalogue: FicheTechnique[];
+  /** Bibliothèque des décors illustrés. */
+  decors: DecorDef[];
+  /** Lieu du jeu → décor qui l'illustre par défaut. */
+  decorsLieux: Record<string, string>;
+  /** Événement → décor plus précis que son lieu. */
+  decorsEvenements: Record<string, string>;
 }
 
 // ── Mondes ───────────────────────────────────────────────────
@@ -892,6 +1030,14 @@ export type Scene =
       priorite?: string;
       /** Une esquive réussie ouvre sa garde : la manche suivante est à toi, avec un avantage. */
       ouverture?: boolean;
+      /** Une permutation réussie : tu surgis dans son dos, l'avantage est plus grand. */
+      dos?: boolean;
+      /** La transformation active (jusqu'à la fin du combat, ou jusqu'à ce qu'elle retombe). */
+      transformation?: string;
+      /** Manches jouées depuis l'activation. */
+      transfoTours?: number;
+      /** Dōjutsu activé (Sharingan, Byakugan…) : il se paie en chakra à chaque manche. */
+      dojutsu?: string;
     };
 
 export type Action =

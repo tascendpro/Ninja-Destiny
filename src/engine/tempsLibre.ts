@@ -53,6 +53,29 @@ export interface Activite {
 
 const ROLES_NON_SOCIAUX = ['kage', 'recruteur', 'ennemi', 'deserteur', 'marchand'];
 
+/** Les natures d'une maîtrise : la nature elle-même, la lignée de fusion, ou les natures d'une technique. */
+export function naturesMaitrise(id: string): string[] {
+  const def = R.maitrises[id];
+  if (!def) return [];
+  if (id.startsWith('nature_')) return [id.slice(7)];
+  if (def.composantes) return [id];
+  if (def.technique?.elements?.length) return def.technique.elements;
+  if (def.element) return [def.element];
+  // Les techniques des lignées (Futton, Hyōton…) prennent la couleur de leur lignée.
+  const lignee = def.technique?.requis?.find((r) => R.maitrises[r.maitrise]?.composantes || ['hyoton', 'mokuton'].includes(r.maitrise));
+  if (lignee) return [lignee.maitrise];
+  if (id === 'hyoton' || id === 'mokuton') return [id];
+  return [];
+}
+
+/** Les natures d'une activité du temps libre (pour la colorer). */
+export function naturesActivite(a: { id: string }): string[] {
+  const [type, cible] = a.id.split(':');
+  if (type === 'nature') return [cible];
+  if (type === 'entrainer' || type === 'technique') return naturesMaitrise(cible);
+  return [];
+}
+
 export function dureeBase(s: GameState): number {
   return age(s) < 12 ? 90 : 30;
 }
@@ -131,8 +154,8 @@ export function genererActivites(s: GameState): Activite[] {
     if (grave) raison = 'Ta blessure grave t’interdit tout entraînement.';
     else if (epuise) raison = 'Tu es épuisé·e : repose-toi d’abord.';
     else if (ms.bloquee) raison = 'Technique inexécutable pour l’instant.';
-    // L'entraînement ne peut plus rien apporter : on ne le propose pas (affiché en rouge avec la raison).
-    else if (prog?.inutile) raison = prog.murTexte;
+    // Un mur (âge, maîtrise prérequise, expérience de combat, maître…) : on ne peut pas améliorer sans le niveau requis.
+    else if (prog?.mur) raison = prog.murTexte;
     const sort = !!def.technique;
     res.push({
       id: `entrainer:${ms.id}`,

@@ -20,6 +20,10 @@ import {
 import { equiper, lierArme, obtenirArme, perdreArme, recupererArme, transferUniqueItem, usureArme } from './armes';
 import { canalReputation, changeCareer, quitterMetier } from './metiers';
 import { avancerTemps } from './temps';
+import { declencherRage, estProche } from './pertes';
+
+/** Drapeaux qui disent qu'un être cher vient de mourir sous les yeux du personnage. */
+const DEUILS_TEMOINS = new Set(['conjoint_mort', 'enfant_mort', 'ami_mort_quartier']);
 
 const CHEMINS_VISIBLES = /^(social\.(loyaute|reputation|reputationOmbre|influence|confianceClan|suspicion)|jauges\.(sante|ryo|chakraMax)|attributs\.)/;
 
@@ -68,7 +72,14 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
   if ('drapeau' in e) {
     if (e.retirer) delete s.drapeaux[e.drapeau];
     else if (e.incr !== undefined) s.drapeaux[e.drapeau] = (Number(s.drapeaux[e.drapeau]) || 0) + e.incr;
-    else s.drapeaux[e.drapeau] = e.valeur ?? true;
+    else {
+      // La mort d'un être cher sous ses yeux (conjoint, enfant, ami) peut libérer la bête d'un jinchūriki.
+      if (DEUILS_TEMOINS.has(e.drapeau) && !s.drapeaux[e.drapeau]) {
+        s.drapeaux['derniere_perte_jour'] = s.jour;
+        declencherRage(s, ctx, true);
+      }
+      s.drapeaux[e.drapeau] = e.valeur ?? true;
+    }
     return;
   }
   if ('secret' in e) {
@@ -292,7 +303,7 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
     return;
   }
   if ('temps' in e) return avancerTemps(s, e.temps, ctx);
-  if ('journal' in e) return ajouterJournal(s, e.journal, e.importance ?? 2);
+  if ('journal' in e) return ajouterJournal(s, interpoler(e.journal, s), e.importance ?? 2);
   if ('decouvrir' in e) {
     for (const id of Array.isArray(e.decouvrir) ? e.decouvrir : [e.decouvrir]) decouvrir(s, id);
     return;
@@ -309,7 +320,13 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
     st.gueriLe = e.etat === 'blesse' ? s.jour + 60 : undefined;
     ctx.changements.push({ t: 'pnj', pnj: id, etat: e.etat });
     const nom = R.pnj[id]?.nom ?? s.pnjGeneres[id]?.nom ?? id;
-    if (e.etat === 'mort') ajouterJournal(s, `${nom} est mort${(R.pnj[id] ?? s.pnjGeneres[id])?.genre === 'f' ? 'e' : ''}.`, 3);
+    if (e.etat === 'mort') {
+      ajouterJournal(s, `${nom} est mort${(R.pnj[id] ?? s.pnjGeneres[id])?.genre === 'f' ? 'e' : ''}.`, 3);
+      if (estProche(s, id)) {
+        s.drapeaux['derniere_perte_jour'] = s.jour;
+        declencherRage(s, ctx, true);
+      }
+    }
     if (e.etat === 'disparu') ajouterJournal(s, `${nom} a disparu.`, 3);
     return;
   }

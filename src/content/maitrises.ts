@@ -1,4 +1,5 @@
 import type { ElementId, MasteryDef, PalierDef, RangTechnique, TechniqueDef, VillageId } from '../engine/types';
+import { POSTURES } from './transformations';
 
 const P = (...noms: [string, string][]): PalierDef[] => noms.map(([nom, effet]) => ({ nom, effet }));
 
@@ -306,7 +307,14 @@ const TECHNIQUES: MasteryDef[] = [
   T('tai_tourbillon', 'Tourbillon', 'D', 'Un coup de pied circulaire, simple et redoutable.', off('taijutsu', 7, 0, [{ maitrise: 'taijutsu', palierMin: 1 }], 'partout')),
   T('tai_poing', 'Poing ferré', 'C', 'Un enchaînement qui vise toujours le même point.', off('taijutsu', 11, 0, [{ maitrise: 'taijutsu', palierMin: 2 }], 'partout')),
   T('tai_danse', 'Danse de l’ombre', 'B', 'Se glisser dans l’angle mort de l’adversaire et frapper d’en dessous.', off('taijutsu', 16, 6, [{ maitrise: 'taijutsu', palierMin: 3 }], 'partout')),
-  T('tai_portes', 'Ouverture des portes', 'A', 'Lever les verrous du corps. Une puissance terrible, qui détruit celui qui l’emploie.', off('taijutsu', 30, 10, [{ maitrise: 'taijutsu', palierMin: 4 }], 'village', 18)),
+  T(
+    'tai_portes',
+    'Hachimon Tonkō (Ouverture des huit portes)',
+    'A',
+    'Lever les verrous du corps, porte après porte. Une puissance terrible, qui détruit celui qui l’emploie. La huitième porte, celle de la Mort, ne laisse presque jamais de survivant.',
+    { ...off('taijutsu', 30, 10, [{ maitrise: 'taijutsu', palierMin: 4 }], 'village', 18), limite: { mort: { chance: 0.85, palierMin: 5 }, avertissement: 'La huitième porte brûle toute la vie qui te restait.' } },
+    { kinjutsu: { raison: 'Détruit le corps de l’utilisateur ; la huitième porte le tue presque toujours.' } },
+  ),
 
   // Genjutsu
   T('gen_brume', 'Genjutsu : Brume de terreur', 'D', 'Une peur sans visage qui fait trembler les mains.', off('genjutsu', 7, 8, [{ maitrise: 'genjutsu', palierMin: 1 }])),
@@ -336,7 +344,7 @@ const TECHNIQUES: MasteryDef[] = [
   T('bakuton_argile', 'Bakuton : Argile explosive', 'C', 'De l’argile chargée de foudre, qui explose au contact.', off('fusion', 16, 20, [{ maitrise: 'bakuton', palierMin: 1 }], 'partout')),
 
   // Bijū
-  T('biju_manteau', 'Manteau du bijū', 'B', 'Le chakra de la bête t’enveloppe. Il protège, il frappe, et il réclame.', off('biju', 24, 20, [{ maitrise: 'chakra_biju', palierMin: 2 }], 'partout', 6)),
+  T('biju_manteau', 'Manteau du bijū', 'B', 'Le chakra de la bête t’enveloppe. Il protège, il frappe, et il réclame.', { ...off('biju', 24, 20, [{ maitrise: 'chakra_biju', palierMin: 2 }], 'partout', 6), limite: { avertissement: 'Moins tu contrôles tes émotions, plus la bête risque de prendre le dessus.', controle: true } }),
 ];
 
 // Combinaisons : deux natures lancées ensemble, rang C. Il faut les deux natures au palier 2, ou au palier 1 seulement
@@ -344,15 +352,15 @@ const TECHNIQUES: MasteryDef[] = [
 // peut les inventer seul·e. Les natures qui s'accordent (le vent attise le feu, l'eau conduit la foudre) frappent
 // plus fort ; celles qui se contrarient coûtent plus de chakra, mais couvrent la faiblesse de l'une par l'autre.
 const COMBINAISONS: [ElementId, ElementId, string, string, string, number, number][] = [
-  ['katon', 'fuuton', 'combo_tempete_feu', 'Tornade de feu', 'Le vent tourne autour de tes flammes et les dresse en colonne hurlante.', 22, 26],
+  ['katon', 'fuuton', 'combo_tempete_feu', 'Enpūton : Karyū Rasen (Tornade de feu)', 'Le vent tourne autour de tes flammes et les dresse en colonne hurlante.', 22, 26],
   ['suiton', 'raiton', 'combo_eau_foudre', 'Eau foudroyée', 'Tu noies le terrain, puis la foudre court dans chaque flaque.', 24, 30],
   ['katon', 'doton', 'combo_meteores', 'Pluie de météores', 'Des blocs de roche arrachés au sol, enflammés avant de retomber.', 21, 32],
-  ['katon', 'raiton', 'combo_orage_ardent', 'Orage ardent', 'Un éclair qui embrase tout ce qu’il touche.', 21, 32],
+  ['katon', 'raiton', 'combo_orage_ardent', 'Raikaton : Gōrai Ryū (Orage ardent)', 'Un éclair qui embrase tout ce qu’il touche.', 21, 32],
   ['suiton', 'fuuton', 'combo_typhon', 'Typhon', 'Une trombe d’eau que le vent fait tourner comme une vrille.', 21, 30],
   ['fuuton', 'doton', 'combo_tempete_sable', 'Tempête de poussière', 'Un mur de sable et de gravier, assez dense pour écorcher.', 20, 30],
   ['katon', 'suiton', 'combo_vapeur', 'Voile de vapeur brûlante', 'Le feu et l’eau se détruisent l’un l’autre en un brouillard qui cuit la peau.', 20, 38],
   ['suiton', 'doton', 'combo_coulee', 'Coulée de boue', 'Une coulée lourde qui ensevelit et retient.', 20, 36],
-  ['fuuton', 'raiton', 'combo_ouragan', 'Ouragan électrique', 'Une rafale chargée de foudre, que le vent rend presque impossible à guider.', 20, 38],
+  ['fuuton', 'raiton', 'combo_ouragan', 'Raiton-Fūton : Shinkū Raijin (Ouragan électrique)', 'Une rafale chargée de foudre, que le vent rend presque impossible à guider.', 20, 38],
   ['raiton', 'doton', 'combo_pointes', 'Pointes foudroyantes', 'Des lances de pierre qui jaillissent chargées de foudre.', 20, 38],
 ];
 const NOMS_NATURES: Record<string, string> = { katon: 'Katon', suiton: 'Suiton', fuuton: 'Fūton', raiton: 'Raiton', doton: 'Doton' };
@@ -374,7 +382,14 @@ const TECHNIQUES_YEUX: MasteryDef[] = [
   T('amaterasu', 'Amaterasu', 'A', 'Des flammes noires qui ne s’éteignent pas avant d’avoir tout consumé.', { ...off('dojutsu', 30, 34, [{ maitrise: 'mangekyo', palierMin: 1 }], 'partout', 8), drapeau: MGK('amaterasu') }),
   T('kamui', 'Kamui', 'A', 'L’espace se tord autour de ton œil : les coups traversent ton corps, ou l’adversaire disparaît.', { ...off('dojutsu', 28, 32, [{ maitrise: 'mangekyo', palierMin: 1 }], 'partout', 6), drapeau: MGK('kamui') }),
   T('kotoamatsukami', 'Kotoamatsukami', 'S', 'Le plus subtil des genjutsu : réécrire la volonté d’un autre sans qu’il le sache.', { ...off('dojutsu', 34, 40, [{ maitrise: 'mangekyo', palierMin: 2 }], 'partout', 10), drapeau: MGK('kotoamatsukami') }),
-  T('izanagi', 'Izanagi', 'S', 'Réécrire la réalité un instant : une blessure mortelle devient un rêve. L’œil qui l’utilise se ferme pour toujours.', { ...off('dojutsu', 32, 30, [{ maitrise: 'mangekyo', palierMin: 2 }], 'partout', 14), drapeau: MGK('izanagi') }),
+  T(
+    'izanagi',
+    'Izanagi',
+    'S',
+    'Réécrire la réalité un instant : une blessure mortelle devient un rêve. L’œil qui l’utilise se ferme pour toujours.',
+    { ...off('dojutsu', 32, 30, [{ maitrise: 'mangekyo', palierMin: 2 }], 'partout', 14), drapeau: MGK('izanagi'), limite: { usages: 2, chakraMaxPerdu: 10, avertissement: 'Un œil se ferme, pour toujours.' } },
+    { kinjutsu: { raison: 'Coûte un œil à chaque usage ; interdite par le clan Uchiha lui-même.' } },
+  ),
   T('susanoo', 'Susanoo', 'A', 'Un géant de chakra qui te protège et frappe à ta place. Chaque usage te brûle de l’intérieur.', off('dojutsu', 32, 48, [{ maitrise: 'mangekyo', palierMin: 1 }, { maitrise: 'sharingan', palierMin: 3 }], 'partout', 12)),
   T('shinra_tensei', 'Shinra Tensei', 'A', 'Tout ce qui t’entoure est repoussé d’un seul coup, avec la force d’une montagne.', off('dojutsu', 30, 36, [{ maitrise: 'rinnegan', palierMin: 1 }], 'partout')),
   T('bansho_tenin', 'Banshō Ten’in', 'B', 'L’adversaire est arraché à sa garde et attiré vers toi.', off('dojutsu', 20, 22, [{ maitrise: 'rinnegan', palierMin: 1 }], 'partout')),
@@ -792,7 +807,7 @@ const MAITRISES_BASE: MasteryDef[] = [
   { id: 'katon_tempete', nom: 'Katon : Tempête de flammes', kind: 'jutsu', rang: 'A', element: 'katon', description: 'Un mur de flammes dévastateur.', paliers: PALIERS_TECHNIQUE, cout: 'Chakra considérable.' },
   {
     id: 'hyoton_miroirs',
-    nom: 'Hyōton : Miroirs de glace',
+    nom: 'Hyōton : Makyō Hyōshō (Miroirs de glace)',
     kind: 'jutsu',
     rang: 'B',
     kekkeiGenkai: true,
@@ -824,6 +839,7 @@ const TECHNIQUES_SANNIN: MasteryDef[] = [
         ['Maîtrise du sceau', 'La marque est à toi. Ou toi à elle : tu ne sais plus.'],
       ),
       sansPlafondAge: true,
+      kinjutsu: { raison: 'Un sceau maudit qui tue neuf porteurs sur dix et corrompt les survivants.' },
     },
   ),
   T(
@@ -862,10 +878,164 @@ const TECHNIQUES_SANNIN: MasteryDef[] = [
   ),
 ];
 
+// ── Techniques de clan, de lignée et techniques interdites (jouables) ──
+// Une technique de clan exige le pouvoir du clan (ou une lignée perdue qui le porte). Les kinjutsu ont un statut
+// indépendant de leur rang, et leur prix est réel : usages comptés, réserve perdue, mort possible, sacrifice.
+const C = (clan: string, hereditaire = true): Partial<MasteryDef> => ({ clan, kekkeiGenkai: hereditaire, copiable: !hereditaire });
+const req = (maitrise: string, palierMin: number) => ({ maitrise, palierMin });
+
+const TECHNIQUES_CLANS: MasteryDef[] = [
+  // Hyūga
+  T('hyuga_kusho', 'Hakke Kūshō (Paume du vide)', 'C', 'Une paume lancée dans le vide : l’onde de chakra frappe à plusieurs mètres.', off('taijutsu', 11, 6, [req('juken', 2)], 'partout'), C('hyuga')),
+  T('hyuga_kaiten', 'Hakkeshō Kaiten (Tourbillon divin)', 'B', 'Expulser du chakra par tous les points du corps en tournant sur soi : une sphère qui repousse tout.', off('taijutsu', 16, 14, [req('juken', 3), req('byakugan', 2)], 'partout'), C('hyuga')),
+  T('hyuga_64', 'Hakke Rokujūyon Shō (Soixante-quatre coups)', 'B', 'Soixante-quatre frappes qui ferment, une à une, les points de chakra de l’adversaire.', off('taijutsu', 18, 16, [req('juken', 3), req('byakugan', 2)], 'partout'), C('hyuga')),
+  T('hyuga_128', 'Hakke Hyaku Nijūhachi Shō (Cent vingt-huit coups)', 'A', 'La version que seuls les maîtres du Jūken atteignent : cent vingt-huit points fermés.', off('taijutsu', 24, 22, [req('juken', 4), req('byakugan', 3)], 'partout'), C('hyuga')),
+  // Nara
+  T('nara_kubi', 'Kage Kubi Shibari (Étranglement de l’ombre)', 'B', 'L’ombre liée remonte le long du corps adverse et se referme sur sa gorge.', off('ninjutsu', 15, 16, [req('kagemane', 2)], 'partout'), C('nara')),
+  T('nara_nui', 'Kage Nui (Couture de l’ombre)', 'A', 'Des aiguilles d’ombre solidifiée qui transpercent et cousent l’ennemi sur place.', off('ninjutsu', 21, 22, [req('kagemane', 3)], 'partout'), C('nara')),
+  // Yamanaka
+  T('yamanaka_shinranshin', 'Shinranshin (Confusion de l’esprit)', 'B', 'Prendre le contrôle du corps adverse sans quitter le sien : il frappe ses alliés.', off('genjutsu', 15, 14, [req('shintenshin', 2)], 'partout'), C('yamanaka')),
+  // Akimichi
+  T('akimichi_nikudan', 'Nikudan Sensha (Char de chair)', 'C', 'Le corps gonflé en boule, rentré sur lui-même, lancé en rouleau compresseur.', off('taijutsu', 12, 8, [req('baika', 1)], 'partout'), C('akimichi')),
+  T('akimichi_hari', 'Nikudan Hari Sensha (Char hérissé)', 'B', 'Le même char, hérissé de kunai pris dans les cheveux.', off('taijutsu', 16, 12, [req('baika', 2)], 'partout'), C('akimichi')),
+  T('akimichi_chodan', 'Chōdan Bakugeki (Bombe du papillon géant)', 'A', 'Le chakra converti en masse et concentré dans un seul poing, d’une taille de montagne.', off('taijutsu', 24, 22, [req('baika', 3)], 'partout'), C('akimichi')),
+  T(
+    'akimichi_papillon',
+    'Mode papillon (Pilule rouge)',
+    'S',
+    'Les trois pilules du clan, jusqu’à la dernière : toute la graisse du corps convertie en chakra, des ailes de papillon dans le dos. Le corps n’y survit presque jamais.',
+    { ...off('transformation', 32, 20, [req('baika', 4)], 'partout', 16), limite: { mort: { chance: 0.3 }, avertissement: 'La pilule rouge consume ce qu’il te restait de corps.' } },
+    { ...C('akimichi'), kinjutsu: { raison: 'Consomme les réserves du corps jusqu’à la mort.' } },
+  ),
+  // Inuzuka
+  T('inuzuka_gatsuga', 'Gatsūga (Croc sur croc)', 'C', 'Le maître et son chien tournoient comme deux vrilles et percent tout ce qu’ils touchent.', off('taijutsu', 12, 6, [req('ninken_lien', 1)], 'partout'), C('inuzuka')),
+  T('inuzuka_garoga', 'Garōga (Double croc du loup)', 'B', 'Fusionnés en un loup bicéphale géant, ils fondent en une seule vrille.', off('taijutsu', 18, 12, [req('ninken_lien', 3)], 'partout'), C('inuzuka')),
+  // Aburame
+  T('aburame_essaim', 'Kikaichū : Essaim dévoreur', 'C', 'Des milliers d’insectes qui dévorent le chakra de ce qu’ils recouvrent.', off('ninjutsu', 12, 8, [req('kikaichu', 1)], 'partout'), C('aburame')),
+  T('aburame_kabe', 'Mushi Kabe (Mur d’insectes)', 'B', 'Un mur vivant qui encaisse les coups, puis se referme sur l’attaquant.', off('ninjutsu', 15, 12, [req('kikaichu', 2)], 'partout'), C('aburame')),
+  // Kaguya
+  T('kaguya_tsubaki', 'Tsubaki no Mai (Danse du camélia)', 'C', 'Un os tiré de l’épaule, plus dur que l’acier, en guise de lame.', off('taijutsu', 12, 4, [req('shikotsumyaku', 1)], 'partout'), C('kaguya')),
+  T('kaguya_karamatsu', 'Karamatsu no Mai (Danse du mélèze)', 'B', 'Des os jaillissent de tout le corps : impossible de le toucher sans s’empaler.', off('taijutsu', 16, 8, [req('shikotsumyaku', 2)], 'partout'), C('kaguya')),
+  T('kaguya_tessenka', 'Tessenka no Mai (Danse de la clématite)', 'A', 'La colonne vertébrale arrachée comme un fouet, puis un bras changé en foret d’os.', off('taijutsu', 22, 14, [req('shikotsumyaku', 3)], 'partout', 4), C('kaguya')),
+  T('kaguya_sawarabi', 'Sawarabi no Mai (Danse des fougères)', 'A', 'Une forêt d’os géants jaillit du sol sur tout le terrain.', off('taijutsu', 26, 24, [req('shikotsumyaku', 4)], 'partout', 8), C('kaguya')),
+  // Yuki
+  T('yuki_sensatsu', 'Sensatsu Suishō (Mille aiguilles de glace)', 'C', 'L’humidité de l’air gèle en mille aiguilles qui se referment sur la cible.', off('ninjutsu', 14, 14, [req('hyoton', 1)], 'partout'), C('yuki')),
+  T('yuki_haryu', 'Haryū Mōko (Tigre de glace)', 'A', 'Un tigre de glace géant qui dévore tout sur son passage.', off('ninjutsu', 24, 28, [req('hyoton', 3)], 'partout'), C('yuki')),
+  // Uzumaki
+  T('uzumaki_kongo', 'Kongō Fūsa (Chaînes adamantines)', 'A', 'Des chaînes de chakra qui sortent du dos et immobilisent même une bête à queues.', off('fuinjutsu', 22, 20, [req('chaines_chakra', 2)], 'partout'), C('uzumaki')),
+  T(
+    'shiki_fujin',
+    'Shiki Fūjin (Sceau du dieu de la mort)',
+    'S',
+    'Invoquer le dieu de la mort, qui arrache l’âme de l’adversaire et la scelle dans son propre ventre. Le prix : l’âme de celui qui l’invoque.',
+    { ...off('fuinjutsu', 60, 20, [req('fuinjutsu_uzumaki', 3)], 'partout'), limite: { sacrifice: true, usages: 1, avertissement: 'Le dieu de la mort prend toujours deux âmes.' } },
+    { ...C('uzumaki', false), kinjutsu: { raison: 'Sacrifice : l’âme de l’utilisateur est dévorée avec celle de la cible.' } },
+  ),
+  // Hōzuki
+  T('hozuki_suika', 'Suika no Jutsu : Bras d’eau', 'C', 'Le bras liquéfié s’étire et frappe comme un fouet, avant de reprendre forme.', off('ninjutsu', 11, 8, [req('hydrification', 1)], 'partout'), C('hozuki')),
+  T('hozuki_teppodama', 'Suiton : Teppōdama (Balle d’eau)', 'B', 'De l’eau comprimée dans la bouche, tirée comme une balle capable de percer la pierre.', off('ninjutsu', 15, 12, [req('hydrification', 2)], 'partout'), C('hozuki')),
+  // Senju : Mokuton
+  T('mokuton_jukai', 'Mokuton : Jukai Kōtan (Naissance d’une forêt)', 'A', 'Une forêt entière jaillit du sol et étouffe le champ de bataille.', off('ninjutsu', 26, 30, [req('mokuton', 2)], 'partout'), C('senju')),
+  T('mokuton_mokuryu', 'Mokuton : Mokuryū (Dragon de bois)', 'S', 'Un dragon de bois qui enserre sa proie et boit son chakra.', off('ninjutsu', 30, 36, [req('mokuton', 3)], 'partout'), C('senju')),
+  T('mokuton_kajukai', 'Mokuton : Kajukai Kōrin (Avènement d’un monde d’arbres en fleurs)', 'S', 'Des arbres en fleurs dont le pollen plonge les armées dans le sommeil.', off('ninjutsu', 32, 44, [req('mokuton', 4)], 'partout'), C('senju')),
+  // Clans du jeu
+  T('shirakaze_rideau', 'Fūton : Rideau des dunes', 'B', 'Un mur de sable soulevé par le souffle du clan Shirakaze, qui aveugle et écorche.', off('ninjutsu', 15, 14, [req('souffle_dunes', 2)], 'partout'), C('shirakaze')),
+  T('raiko_charge', 'Raiton : Charge de l’armure', 'B', 'L’armure de foudre du clan Raikō lancée en une seule charge.', off('taijutsu', 16, 12, [req('armure_foudre', 2)], 'partout'), C('raiko')),
+  T('ishikawa_poing', 'Doton : Poing de roche', 'B', 'La peau de roche du clan Ishikawa concentrée dans un seul poing.', off('taijutsu', 15, 8, [req('peau_roche', 2)], 'partout'), C('ishikawa')),
+
+  // Techniques célèbres, transmises hors des clans
+  T('raiton_chidori', 'Chidori (Mille oiseaux)', 'A', 'La foudre concentrée dans la main, au bruit de mille oiseaux. Inventée par Kakashi Hatake ; trop rapide pour qui n’a pas un œil capable de la suivre.', off('ninjutsu', 25, 26, nat('raiton', 3)), { element: 'raiton' }),
+  T('rasengan', 'Rasengan (Orbe tourbillonnant)', 'A', 'Une sphère de chakra pur en rotation, sans signe ni nature. Créée par Minato, transmise par Jiraiya.', off('ninjutsu', 25, 24, [req('ninjutsu', 4)], { drapeau: 'maitre_jiraiya', maitre: 'Jiraiya' })),
+
+  // Lignées de fusion : techniques supplémentaires
+  T('futton_gokamugen', 'Futton : Gōka Mugen (Vapeur infinie)', 'B', 'Création du jeu. Une vapeur bouillante qui avance comme un mur et cuit tout ce qu’elle enveloppe.', off('fusion', 20, 26, [req('futton', 2)], 'partout'), { kekkeiGenkai: true, copiable: false }),
+  T('ranton_reiza', 'Ranton : Reizā Sākasu (Cirque de lasers)', 'B', 'Des dizaines de rayons d’orage qui se courbent et poursuivent leurs cibles.', off('fusion', 20, 26, [req('ranton', 2)], 'partout'), { kekkeiGenkai: true, copiable: false }),
+  T('yoton_yokai', 'Yōton : Yōkai no Jutsu (Lave dissolvante)', 'B', 'Une boue de lave acide crachée qui dissout la roche et la chair.', off('fusion', 20, 26, [req('yoton', 2)], 'partout'), { kekkeiGenkai: true, copiable: false }),
+  T('jiton_kinsa', 'Jiton : Kinsa (Poussière d’or)', 'B', 'Le magnétisme appliqué à la poussière d’or : plus lourde que le sable de fer, elle écrase et emprisonne.', off('fusion', 20, 24, [req('jiton', 2)], 'partout'), { kekkeiGenkai: true, copiable: false }),
+  T('shakuton_kajosatsu', 'Shakuton : Kajōsatsu (Dessèchement)', 'A', 'Des sphères de chaleur qui assèchent un corps en quelques secondes.', off('fusion', 24, 30, [req('shakuton', 3)], 'partout'), { kekkeiGenkai: true, copiable: false }),
+  T(
+    'bakuton_c0',
+    'C0 (Autodestruction)',
+    'S',
+    'Avaler l’argile explosive et devenir soi-même la bombe : un cratère de dix kilomètres. Rien ne survit au centre, ni la cible ni l’artiste.',
+    { ...off('fusion', 60, 30, [req('bakuton', 4)], 'partout'), limite: { sacrifice: true, usages: 1, avertissement: 'L’art est une explosion, et l’artiste en fait partie.' } },
+    { kekkeiGenkai: true, copiable: false, kinjutsu: { raison: 'Sacrifice : l’utilisateur devient la bombe.' } },
+  ),
+
+  // Techniques interdites transmises par Orochimaru
+  T(
+    'edo_tensei',
+    'Edo Tensei (Réincarnation des morts)',
+    'S',
+    'Rappeler l’âme d’un mort dans un corps vivant sacrifié, et le faire combattre pour soi. Inventée par Tobirama Senju, perfectionnée par Orochimaru.',
+    { ...off('fuinjutsu', 30, 30, [], { drapeau: 'eleve_orochimaru', maitre: 'Orochimaru' }), limite: { ethique: { compassion: -10, honneur: -6 }, avertissement: 'Chaque mort rappelé exige un vivant sacrifié.' } },
+    { kinjutsu: { raison: 'Exige un sacrifice humain pour chaque mort rappelé et profane les défunts.' }, copiable: false },
+  ),
+
+  // Izanami : le jumeau d'Izanagi
+  T(
+    'izanami',
+    'Izanami',
+    'S',
+    'Enfermer l’adversaire dans une boucle de destin dont il ne sort qu’en acceptant ce qu’il est. L’œil qui l’utilise se ferme pour toujours.',
+    { ...off('dojutsu', 34, 30, [req('mangekyo', 2)], 'partout', 10), drapeau: MGK('izanagi'), limite: { usages: 1, chakraMaxPerdu: 10, avertissement: 'Ton œil se ferme, et ne se rouvrira pas.' } },
+    { kinjutsu: { raison: 'Coûte un œil, pour toujours.' }, copiable: false, kekkeiGenkai: true },
+  ),
+];
+
+// Les pouvoirs de la bête scellée, débloqués palier après palier en apprenant à vivre avec elle.
+const BETE = { avertissement: 'Moins tu contrôles tes émotions, plus la bête risque de prendre le dessus.', controle: true };
+const TECHNIQUES_BIJU: MasteryDef[] = [
+  T('biju_version2', 'Transformation partielle (plusieurs queues)', 'A', 'Le chakra de la bête prend forme autour de toi, avec ses queues, sa peau, sa gueule. Tu n’es plus tout à fait toi.', { ...off('biju', 28, 20, [req('chakra_biju', 3)], 'partout', 8), limite: BETE }, { copiable: false }),
+  T('biju_mode', 'Mode bijū (transformation complète)', 'S', 'La bête et toi, d’accord pour une fois : tu prends sa forme entière, haute comme une montagne.', { ...off('biju', 34, 30, [req('chakra_biju', 4)], 'partout', 6), limite: BETE }, { copiable: false }),
+  T('biju_dama', 'Bijūdama (sphère de la bête)', 'S', 'Chakra noir et blanc condensé dans la gueule de la bête, puis avalé et recraché : une sphère qui rase une montagne.', { ...off('biju', 40, 40, [req('chakra_biju', 5)], 'partout', 10), limite: BETE }, { copiable: false }),
+];
+
+// Techniques qui n'existent que sous une transformation (le Rasengan ermite n'a de sens qu'en mode ermite).
+const SOUS = (ids: string[]): Partial<TechniqueDef> => ({ exigeTransformation: ids });
+const TECHNIQUES_TRANSFORMATIONS: MasteryDef[] = [
+  T('raiton_yoroi', 'Raiton no Yoroi (Armure de foudre)', 'A', 'Une armure de foudre qui accélère les nerfs : on esquive avant de voir le coup, on frappe avant qu’il ait fini de bouger.', off('transformation', 20, 24, nat('raiton', 4)), { element: 'raiton' }),
+  T('raiton_lariat', 'Raiton : Lariat', 'A', 'Sous l’armure de foudre, une charge bras tendu qui fauche tout sur son passage.', { ...off('taijutsu', 26, 10, [req('raiton_yoroi', 1)]), ...SOUS(['raiton_yoroi']) }, { element: 'raiton' }),
+  T('raiton_guillotine', 'Raiton : Guillotine Drop', 'S', 'Sous l’armure de foudre, un saut, puis un talon qui tombe comme un couperet.', { ...off('taijutsu', 32, 14, [req('raiton_yoroi', 3)]), ...SOUS(['raiton_yoroi']) }, { element: 'raiton' }),
+  T('sennin_rasengan', 'Senpō : Rasengan ermite', 'A', 'Un Rasengan nourri d’énergie naturelle, grand comme un homme.', { ...off('ninjutsu', 30, 20, [req('mode_ermite', 2)], { drapeau: 'maitre_jiraiya', maitre: 'Jiraiya' }), ...SOUS(['mode_ermite']) }),
+  T('kawazu_kumite', 'Senpō : Kawazu Kumite (taijutsu des crapauds)', 'B', 'En mode ermite, l’énergie naturelle prolonge chaque coup : il frappe même ce qu’il ne touche pas.', { ...off('taijutsu', 24, 6, [req('mode_ermite', 1)], { drapeau: 'maitre_jiraiya', maitre: 'Jiraiya' }), ...SOUS(['mode_ermite']) }),
+  T('tai_ura_renge', 'Ura Renge (Lotus caché)', 'A', 'Les portes ouvertes, une série de coups qui projette l’adversaire en l’air, puis le ramène au sol en vrille.', { ...off('taijutsu', 26, 0, [req('tai_portes', 2)], 'village', 6), ...SOUS(['tai_portes']) }, { kinjutsu: { raison: 'Exige d’ouvrir les portes ; déchire le corps de l’utilisateur.' } }),
+  T('tai_sekizo', 'Sekizō (Éléphant du soir)', 'S', 'Cinq coups de poing qui frappent l’air comme les pattes d’un éléphant. Seule la huitième porte le permet.', { ...off('taijutsu', 36, 0, [req('tai_portes', 4)], 'village', 10), ...SOUS(['tai_portes']) }, { kinjutsu: { raison: 'Exige la huitième porte.' } }),
+  T('byakugo_okasho', 'Ōkashō (Poing de la fleur de cerisier)', 'A', 'Sous le sceau libéré, un poing chargé de chakra qui fend la terre en étoile.', { ...off('taijutsu', 26, 8, [req('byakugo', 1)], { drapeau: 'maitre_tsunade', maitre: 'Tsunade' }), ...SOUS(['byakugo']) }),
+  T('marque_ailes', 'Vol de la marque (niveau 2)', 'A', 'Sous la marque de niveau 2, les ailes de chair te portent au-dessus de lui avant de plonger.', { ...off('taijutsu', 26, 8, [req('marque_maudite', 3)], { drapeau: 'marque_maudite', maitre: 'Orochimaru' }, 4), ...SOUS(['marque_maudite']) }),
+  // Transformations élémentaires, ouvertes par le palier de la nature
+  T('katon_manteau', 'Katon : Manteau de braises', 'B', 'Le chakra enflammé à fleur de peau : chaque coup brûle.', off('transformation', 14, 14, nat('katon', 3), 'partout'), { element: 'katon' }),
+  T('katon_phenix_avatar', 'Katon : Avatar du phénix', 'S', 'Un phénix de flammes dont tu es le cœur. Il te consume aussi vite qu’il consume l’ennemi.', off('transformation', 24, 26, nat('katon', 5), 'partout'), { element: 'katon' }),
+  T('katon_plongeon', 'Katon : Plongeon du phénix', 'S', 'Sous l’avatar du phénix, tu plonges du ciel comme une comète.', { ...off('ninjutsu', 32, 16, nat('katon', 5), 'partout'), ...SOUS(['katon_phenix_avatar']) }, { element: 'katon' }),
+  T('suiton_maree', 'Suiton : Corps de marée', 'B', 'Une armure d’eau mouvante où les coups glissent.', off('transformation', 12, 12, nat('suiton', 3), 'partout'), { element: 'suiton' }),
+  T('suiton_leviathan', 'Suiton : Armure du léviathan', 'S', 'Une masse d’eau en forme de requin géant, dont tu es le cœur.', off('transformation', 22, 26, nat('suiton', 5), 'partout'), { element: 'suiton' }),
+  T('suiton_maelstrom', 'Suiton : Maelström', 'A', 'Sous l’armure du léviathan, un tourbillon qui aspire et broie.', { ...off('ninjutsu', 28, 14, nat('suiton', 5), 'partout'), ...SOUS(['suiton_leviathan']) }, { element: 'suiton' }),
+  T('fuuton_voile', 'Fūton : Voile des lames', 'B', 'Une spirale de vent tranchant qui t’enveloppe.', off('transformation', 13, 12, nat('fuuton', 3), 'partout'), { element: 'fuuton' }),
+  T('fuuton_ouragan_forme', 'Fūton : Forme de l’ouragan', 'S', 'Tu deviens le cœur d’une tornade : vitesse et tranchant extrêmes.', off('transformation', 24, 24, nat('fuuton', 5), 'partout'), { element: 'fuuton' }),
+  T('fuuton_mille_lames', 'Fūton : Mille lames', 'A', 'Sous la forme de l’ouragan, mille lames de vent lâchées d’un coup.', { ...off('ninjutsu', 28, 14, nat('fuuton', 5), 'partout'), ...SOUS(['fuuton_ouragan_forme']) }, { element: 'fuuton' }),
+  T('doton_granit', 'Doton : Peau de granit', 'B', 'Ta peau devient roche : presque rien ne passe.', off('transformation', 10, 10, nat('doton', 3), 'partout'), { element: 'doton' }),
+  T('doton_titan', 'Doton : Armure du titan', 'S', 'Un colosse de roche autour de ton corps.', off('transformation', 22, 26, nat('doton', 5), 'partout'), { element: 'doton' }),
+  T('doton_seisme', 'Doton : Pas du titan', 'A', 'Sous l’armure du titan, un seul pas qui fend la terre jusqu’à l’ennemi.', { ...off('taijutsu', 28, 12, nat('doton', 5), 'partout'), ...SOUS(['doton_titan']) }, { element: 'doton' }),
+  T('raiton_kirin_eclair', 'Raiton : Éclair noir', 'S', 'Sous l’armure de foudre noire, tu deviens l’éclair lui-même.', { ...off('ninjutsu', 32, 16, nat('raiton', 5), 'partout'), ...SOUS(['raiton_yoroi']) }, { element: 'raiton' }),
+  T('hyoton_armure', 'Hyōton : Armure de givre', 'B', 'Une armure de glace qui gèle ce qui la touche.', off('transformation', 14, 14, [req('hyoton', 3)], 'partout'), C('yuki')),
+  T('yoton_cuirasse', 'Yōton : Cuirasse de lave', 'B', 'Une cuirasse de lave qui brûle tout contact.', off('transformation', 16, 16, [req('yoton', 3)], 'partout'), { kekkeiGenkai: true, copiable: false }),
+  T('jiton_carapace', 'Jiton : Carapace de sable de fer', 'B', 'Une carapace de sable de fer qui intercepte chaque coup.', off('transformation', 12, 14, [req('jiton', 3)], 'partout'), { kekkeiGenkai: true, copiable: false }),
+  T('susanoo_yasaka', 'Susanoo : Yasaka no Magatama', 'A', 'Le Susanoo lance une volée de magatama de chakra, chacune grosse comme un rocher.', { ...off('dojutsu', 28, 14, [req('susanoo', 2)], 'partout'), ...SOUS(['susanoo']) }, { kekkeiGenkai: true, copiable: false }),
+];
+
 export const MAITRISES: MasteryDef[] = [
   ...MAITRISES_BASE.map((m) => (TECHNIQUES_EXISTANTES[m.id] ? { ...m, technique: TECHNIQUES_EXISTANTES[m.id] } : m)),
   ...TECHNIQUES,
   ...TECHNIQUES_COMBINEES,
   ...TECHNIQUES_YEUX,
   ...TECHNIQUES_SANNIN,
-];
+  ...TECHNIQUES_CLANS,
+  ...TECHNIQUES_BIJU,
+  ...TECHNIQUES_TRANSFORMATIONS,
+].map((m) => {
+  // Les transformations reçoivent leur posture ; la Bijūdama n'existe que sous une forme de la bête.
+  const posture = POSTURES[m.id];
+  if (posture && m.technique) return { ...m, technique: { ...m.technique, posture } };
+  if (m.id === 'biju_dama' && m.technique) return { ...m, technique: { ...m.technique, exigeTransformation: ['biju_version2', 'biju_mode'] } };
+  return m;
+});

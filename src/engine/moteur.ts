@@ -42,14 +42,25 @@ import {
   avantageTechnique,
   avecAffrontement,
   bonusTechnique,
+  bonusDojutsu,
+  bonusPosture,
+  chancePermutation,
+  coutDojutsu,
+  dojutsuDisponibles,
+  texteDojutsu,
   chancePriorite,
+  entreeTransformation,
+  estTransformation,
   conclureCombat,
   evaluerEpreuve,
   natureQuiDomine,
   resoudreDefense,
   techniqueAdverse,
+  CHAKRA_PERMUTATION,
+  permutationPossible,
   testDefense,
   tirerTechniqueAdverse,
+  usagesRestants,
   nombreManches,
   porteeTechnique,
   recitTechnique,
@@ -58,9 +69,9 @@ import {
   risqueAllie,
   texteTirAmi,
 } from './epreuves';
-import type { IssueManche, NiveauRisque } from './epreuves';
+import type { Defense, IssueManche, NiveauRisque } from './epreuves';
 import { interpoler, resoudreTexte } from './texte';
-import { faireActivite } from './tempsLibre';
+import { faireActivite, naturesMaitrise } from './tempsLibre';
 import { verifierFin, verifierSucces } from './fins';
 
 export const VERSION_ETAT = 1;
@@ -586,6 +597,15 @@ export interface VueAttaque {
   recit?: string;
   /** Chance de toucher un allié, en pourcentage (0 sans allié ou pour une technique ciblée). */
   risqueAllie: number;
+  rang?: string;
+  /** Technique interdite : la raison de l'interdiction. */
+  kinjutsu?: string;
+  /** Usages restants d'une technique comptée. */
+  usages?: number;
+  /** Le prix d'une technique ultime, lu avant de la lancer. */
+  avertissement?: string;
+  /** Natures de la technique (pour sa couleur). */
+  natures: string[];
 }
 
 /** Comment une attaque spéciale entre dans le récit, selon sa famille. */
@@ -621,6 +641,11 @@ function vueAttaque(s: GameState, tech: string, t: CheckDef, modificateur = 0): 
     portee: porteeTechnique(tech),
     recit: recitTechnique(s, tech, t),
     risqueAllie: Math.round(risqueAllie(s, tech, t) * 100),
+    rang: R.maitrises[tech].rang,
+    kinjutsu: R.maitrises[tech].kinjutsu?.raison,
+    usages: usagesRestants(s, tech),
+    avertissement: R.maitrises[tech].technique!.limite?.avertissement,
+    natures: naturesMaitrise(tech),
   };
 }
 
@@ -659,7 +684,7 @@ export function choixVisibles(s: GameState, ev: EventDef): VueChoix[] {
 }
 
 /** Payer une attaque spéciale (chakra, santé), en tirer de l'expérience, et renforcer le test. */
-function lancerTechnique(s: GameState, test: CheckDef, tech: string, ctx: Ctx): { test: CheckDef; prelude: string } {
+function lancerTechnique(s: GameState, test: CheckDef, tech: string, ctx: Ctx, tour = 0): { test: CheckDef; prelude: string } {
   const def = R.maitrises[tech];
   const t = def.technique!;
   s.jauges.chakra = clamp(s.jauges.chakra - t.chakra, 0, s.jauges.chakraMax);
@@ -674,11 +699,15 @@ function lancerTechnique(s: GameState, test: CheckDef, tech: string, ctx: Ctx): 
   }
   // Certains pouvoirs se souviennent de chaque usage (la marque maudite réclame son dû).
   s.drapeaux[`usages_${tech}`] = (Number(s.drapeaux[`usages_${tech}`]) || 0) + 1;
+  const consequence = consequenceUltime(s, tech, ctx);
   // Le risque se calcule avant l'expérience gagnée par ce lancer : c'est le risque affiché au joueur.
   const risque = risqueAllie(s, tech, test);
   applyCombatExperience(s, [tech, ...(def.element ? [`nature_${def.element}`] : []), ...(t.requis ?? []).map((x) => x.maitrise)], ctx);
   const recit = recitTechnique(s, tech, test);
-  let prelude = recit ? `${def.nom}. ${recit} ` : `${VERBE_ATTAQUE[t.categorie]} ${def.nom}. `;
+  // Une transformation se raconte comme une métamorphose, pas comme un coup.
+  let prelude = t.posture
+    ? `${entreeTransformation(s, tech, tour + s.jour)} ${consequence}`
+    : (recit ? `${def.nom}. ${recit} ` : `${VERBE_ATTAQUE[t.categorie]} ${def.nom}. `) + consequence;
   let renforce = testAvecTechnique(s, test, tech);
   // Dans la mêlée, une technique de zone peut toucher un des tiens : le coup y perd sa force.
   if (risque > 0 && alea(s) < risque) {
@@ -696,7 +725,58 @@ const LIGNES_MANCHE: Record<IssueManche, string[]> = {
   riposte: ['Il esquive et riposte dans le même geste. Une douleur vive au flanc.', 'Il contre et te projette au sol. Tu te relèves avec du sang dans la bouche.', 'Tu frappes dans le vide ; sa lame, elle, trouve ton épaule.', 'Il attendait exactement ça. Le coup en retour te coupe le souffle.'],
 };
 
+/**
+ * Le prix d'une technique ultime, payé au moment où on la lance : réserve perdue pour toujours, mort possible
+ * (la huitième porte), ou sacrifice qui emportera l'utilisateur à la fin du combat (Shiki Fūjin, C0).
+ */
+function consequenceUltime(s: GameState, tech: string, ctx: Ctx): string {
+  const l = R.maitrises[tech]?.technique?.limite;
+  if (!l) return '';
+  let texte = '';
+  if (l.chakraMaxPerdu) {
+    s.jauges.chakraMax = Math.max(10, s.jauges.chakraMax - l.chakraMaxPerdu);
+    s.jauges.chakra = Math.min(s.jauges.chakra, s.jauges.chakraMax);
+    ctx.changements.push({ t: 'stat', chemin: 'jauges.chakraMax', delta: -l.chakraMaxPerdu });
+    texte += 'Quelque chose en toi s’éteint pour toujours. ';
+  }
+  if (l.mort && (s.maitrises[tech]?.tier ?? 0) >= (l.mort.palierMin ?? 0) && alea(s) < l.mort.chance) {
+    s.drapeaux['sacrifice'] = tech;
+    texte += 'Tu sens ton corps se consumer de l’intérieur. Tu sais déjà que tu n’en reviendras pas. ';
+  }
+  if (l.controle) {
+    const tier = s.maitrises['chakra_biju']?.tier ?? 1;
+    const perte = clamp(0.5 - s.attributs.controleEmotionnel / 200 - (tier - 1) * 0.08, 0.03, 0.6);
+    if (alea(s) < perte) {
+      const d = 10;
+      s.jauges.sante = clamp(s.jauges.sante - d, 1, 100);
+      ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -d });
+      s.social.suspicion = clamp(s.social.suspicion + 4, 0, 100);
+      s.drapeaux['pertes_controle'] = (Number(s.drapeaux['pertes_controle']) || 0) + 1;
+      texte += 'La bête prend le dessus un instant : tu frappes plus fort que tu ne le voulais, et elle te mord de l’intérieur en retour. ';
+    }
+  }
+  if (l.ethique) {
+    for (const [k, v] of Object.entries(l.ethique)) s.ethique[k as keyof typeof s.ethique] += v ?? 0;
+    texte += `${l.avertissement} `;
+  }
+  if (l.sacrifice) {
+    s.drapeaux['sacrifice'] = tech;
+    texte += 'Le prix est fixé. Tu le paieras quand tout sera fini. ';
+  }
+  return texte;
+}
+
 function finaliserChoix(s: GameState, ev: EventDef, choixId: string, libelle: string, texte: string, suite: string | undefined, issue: Issue | undefined, ctx: Ctx): void {
+  // Un sacrifice consenti (Shiki Fūjin, huitième porte, C0) se paie une fois le combat terminé.
+  const sacrifice = s.drapeaux['sacrifice'];
+  if (typeof sacrifice === 'string' && !s.fin) {
+    delete s.drapeaux['sacrifice'];
+    s.drapeaux['cause_mort'] = `emporté·e par sa propre technique (${R.maitrises[sacrifice]?.nom ?? sacrifice})`;
+    texte += `\n\n${R.maitrises[sacrifice]?.technique?.limite?.avertissement ?? ''} Le combat est fini. Toi aussi.`;
+    ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -s.jauges.sante });
+    s.jauges.sante = 0;
+    suite = undefined;
+  }
   s.historique.push({ jour: s.jour, evenementId: ev.id, titre: interpoler(ev.titre, s), choixId, choix: libelle, issue });
   verifierFin(s);
   verifierSucces(s, ctx);
@@ -755,6 +835,13 @@ function choisirMut(s: GameState, choixId: string): void {
   // Combat en plusieurs manches : le choix ouvre l'affrontement, la première manche se joue tout de suite.
   if (ch.test && nombreManches(ch.test) > 1) {
     s.scene = { type: 'combat', evenementId: ev.id, choixId: baseId, manche: 0, total: nombreManches(ch.test), touches: 0, ripostes: 0, resultats: [], journal: [], techniques: [], chakra: 0, sante: 0 };
+    // Engager sans technique, c'est lui laisser une chance de frapper le premier.
+    const t = avecAffrontement(ev.id, ch.id, ch.test);
+    if (!tech && alea(s) < chancePriorite(s, t) * 0.8) {
+      s.scene.priorite = tirerTechniqueAdverse(s, t);
+      s.scene.journal.push('Il attaque le premier, avant que tu aies bougé !');
+      return;
+    }
     jouerManche(s, tech);
     return;
   }
@@ -829,6 +916,14 @@ export function vueCombat(s: GameState): {
   adversaire?: VuePriorite;
   /** Ta dernière esquive a ouvert sa garde. */
   ouverture: boolean;
+  /** Chance (en %) qu'une permutation transforme un coup mortel en coup sur une bûche. */
+  permutation: number;
+  /** Transformations qu'on peut activer (sans perdre la manche). */
+  transformations: VueTransformation[];
+  /** La transformation active et ce qu'elle apporte. */
+  transformation?: VueTransformation;
+  /** Yeux qu'on peut activer, ou yeux actifs, et ce qu'ils coûtent par manche. */
+  dojutsu: { id: string; nom: string; palier: string; cout: number; attaque: number; defense: number; actif: boolean }[];
 } | undefined {
   if (s.scene.type !== 'combat') return undefined;
   const sc = s.scene;
@@ -836,6 +931,10 @@ export function vueCombat(s: GameState): {
   const ch = ev.choix.find((c) => c.id === sc.choixId)!;
   const t = avecAffrontement(ev.id, ch.id, ch.test!);
   const precedente = sc.techniques.at(-1);
+  // Transformé·e : les chances affichées tiennent compte de la transformation.
+  const pt = sc.transformation ? bonusPosture(s, sc.transformation) : { attaque: 0, defense: 0 };
+  const oeil = sc.dojutsu ? bonusDojutsu(s, sc.dojutsu) : { attaque: 0, defense: 0 };
+  const posture = { attaque: pt.attaque + oeil.attaque, defense: pt.defense + oeil.defense };
   return {
     titre: interpoler(ev.titre, s),
     texte: interpoler(ch.texte, s),
@@ -845,11 +944,11 @@ export function vueCombat(s: GameState): {
     ripostes: sc.ripostes,
     resultats: sc.resultats ?? [],
     journal: sc.journal,
-    simple: Math.round(evaluerEpreuve(s, t).proba * 100),
-    attaques: attaquesSpeciales(s, t, 6).map((tech) => {
+    simple: Math.round(evaluerEpreuve(s, { ...t, modificateur: (t.modificateur ?? 0) + posture.attaque }).proba * 100),
+    attaques: attaquesSpeciales(s, t, 6, sc.transformation, true).map((tech) => {
       const ench = enchainement(s, precedente, tech);
       return {
-        ...vueAttaque(s, tech, t, ench ? BONUS_ENCHAINEMENT : 0),
+        ...vueAttaque(s, tech, t, (ench ? BONUS_ENCHAINEMENT : 0) + posture.attaque),
         enchainement: ench ? `${R.elements[ench[0]]?.nom} → ${R.elements[ench[1]]?.nom}` : undefined,
       };
     }),
@@ -858,12 +957,74 @@ export function vueCombat(s: GameState): {
       nom: c.nom,
       effet: c.effet,
       stock: stock(s, c.id),
-      chance: Math.round(evaluerEpreuve(s, { ...t, modificateur: (t.modificateur ?? 0) + c.bonus }).proba * 100),
+      chance: Math.round(evaluerEpreuve(s, { ...t, modificateur: (t.modificateur ?? 0) + c.bonus + posture.attaque }).proba * 100),
     })),
     forme: t.forme ?? 'duel',
     allies: !!t.allies,
-    adversaire: sc.priorite ? vuePriorite(s, t, sc.priorite) : undefined,
+    adversaire: sc.priorite ? vuePriorite(s, { ...t, modificateur: (t.modificateur ?? 0) + posture.defense }, sc.priorite) : undefined,
+    transformations: sc.transformation
+      ? []
+      : Object.keys(s.maitrises)
+          .filter((id) => estTransformation(id) && attaqueDisponible(s, id))
+          .map((id) => vueTransformation(s, id)),
+    transformation: sc.transformation ? vueTransformation(s, sc.transformation) : undefined,
+    dojutsu: (sc.dojutsu ? [sc.dojutsu] : dojutsuDisponibles(s)).map((id) => ({
+      id,
+      nom: R.maitrises[id].nom,
+      palier: R.maitrises[id].paliers[s.maitrises[id].tier]?.nom ?? '',
+      cout: coutDojutsu(s, id),
+      ...bonusDojutsu(s, id),
+      actif: sc.dojutsu === id,
+    })),
     ouverture: !!sc.ouverture,
+    permutation: t.letal ? Math.round(chancePermutation(s) * 100) : 0,
+  };
+}
+
+export interface VueTransformation {
+  id: string;
+  nom: string;
+  chakra: number;
+  sante: number;
+  effet: string;
+  attaque: number;
+  defense: number;
+  kinjutsu?: string;
+  avertissement?: string;
+  /** Techniques spéciales que la transformation ouvre. */
+  speciales: string[];
+  /** Ce qu'elle coûte par manche, en clair (vide si rien). */
+  entretien: string;
+  /** Manches restantes avant qu'elle retombe d'elle-même (si limitée). */
+  restantes?: number;
+}
+
+function vueTransformation(s: GameState, id: string): VueTransformation {
+  const def = R.maitrises[id];
+  const t = def.technique!;
+  const b = bonusPosture(s, id);
+  return {
+    id,
+    nom: def.nom,
+    chakra: t.chakra,
+    sante: t.sante ?? 0,
+    effet: t.posture!.effet,
+    attaque: b.attaque,
+    defense: b.defense,
+    kinjutsu: def.kinjutsu?.raison,
+    avertissement: t.limite?.avertissement,
+    speciales: R.contenu.maitrises.filter((m) => m.technique?.exigeTransformation?.includes(id)).map((m) => m.nom),
+    entretien: [
+      t.posture!.entretien?.chakra && `${t.posture!.entretien.chakra} chakra`,
+      t.posture!.entretien?.sante && `${t.posture!.entretien.sante} santé`,
+      t.posture!.entretien?.fatigue && `${t.posture!.entretien.fatigue} fatigue`,
+    ]
+      .filter(Boolean)
+      .join(', '),
+    restantes:
+      t.posture!.duree !== undefined
+        ? Math.max(0, t.posture!.duree - (s.scene.type === 'combat' && s.scene.transformation === id ? (s.scene.transfoTours ?? 0) : 0))
+        : undefined,
   };
 }
 
@@ -873,6 +1034,10 @@ export interface VuePriorite {
   element?: string;
   esquive: number;
   contre: number;
+  /** Chance de permutation (absente si on ne la connaît pas ou faute de chakra). */
+  permutationChance?: number;
+  /** Contrer avec une technique : chance, et si sa nature domine la sienne. */
+  contres: { id: string; nom: string; chakra: number; chance: number; avantage?: 'fort' | 'faible'; natures: string[] }[];
   /** La permutation (kawarimi) aide à esquiver. */
   permutation: boolean;
   /** Ta nature qui domine la sienne aide à contrer. */
@@ -888,6 +1053,19 @@ function vuePriorite(s: GameState, t: CheckDef, advId: string): VuePriorite {
     element: adv.element ? R.elements[adv.element]?.nom : undefined,
     esquive: Math.round(evaluerEpreuve(s, testDefense(s, t, advId, 'esquiver')).proba * 100),
     contre: Math.round(evaluerEpreuve(s, testDefense(s, t, advId, 'contrer')).proba * 100),
+    permutationChance: permutationPossible(s) ? Math.round(evaluerEpreuve(s, testDefense(s, t, advId, 'permutation')).proba * 100) : undefined,
+    contres: attaquesSpeciales(s, t, 4, s.scene.type === 'combat' ? s.scene.transformation : undefined, true).map((tech) => {
+      const av = avantageTechnique(tech, adv.element);
+      const avecTech = { ...testAvecTechnique(s, t, tech), modificateur: (testAvecTechnique(s, t, tech).modificateur ?? 0) + (av === 'fort' ? 8 : av === 'faible' ? -8 : 0) };
+      return {
+        id: tech,
+        nom: R.maitrises[tech].nom,
+        chakra: R.maitrises[tech].technique!.chakra,
+        chance: Math.round(evaluerEpreuve(s, testDefense(s, avecTech, advId, 'contrer')).proba * 100),
+        avantage: av,
+        natures: naturesMaitrise(tech),
+      };
+    }),
     permutation: (s.maitrises['kawarimi']?.tier ?? 0) >= 1,
     natureFavorable: nat ? R.elements[nat]?.nom : undefined,
   };
@@ -904,10 +1082,29 @@ function jouerManche(s: GameState, action?: string): void {
   const ctx = nouveauCtx();
   // L'adversaire a pris l'initiative : on ne peut qu'esquiver ou contrer sa technique.
   if (sc.priorite) {
-    if (action !== 'esquiver' && action !== 'contrer') throw new Error('L’adversaire attaque : esquive ou contre.');
+    const contreTech = action?.startsWith('contrer:') ? action.slice(8) : undefined;
+    const mode: Defense | undefined = contreTech ? 'contrer' : action === 'esquiver' || action === 'contrer' || action === 'permutation' ? action : undefined;
+    if (!mode) throw new Error('L’adversaire attaque : esquive, permute ou contre.');
+    if (mode === 'permutation' && !permutationPossible(s)) throw new Error('Permutation impossible.');
     const adv = techniqueAdverse(sc.priorite)!;
-    const r = resoudreDefense(s, base, sc.priorite, action, ctx);
-    const ligne = LIGNES_DEFENSE[action][r.issue]!;
+    const def = (sc.transformation ? bonusPosture(s, sc.transformation).defense : 0) + (sc.dojutsu ? bonusDojutsu(s, sc.dojutsu).defense : 0);
+    let t = def ? { ...base, modificateur: (base.modificateur ?? 0) + def } : base;
+    let prelude = '';
+    if (mode === 'permutation') {
+      s.jauges.chakra -= CHAKRA_PERMUTATION;
+      ctx.changements.push({ t: 'stat', chemin: 'jauges.chakra', delta: -CHAKRA_PERMUTATION });
+    }
+    // Contrer avec une technique : sa force s'ajoute au contre, et une nature qui domine la sienne aide encore.
+    if (contreTech) {
+      if (!attaqueDisponible(s, contreTech) || !attaquesSpeciales(s, base, 6, sc.transformation, true).includes(contreTech)) throw new Error('Technique indisponible pour contrer.');
+      const lance = lancerTechnique(s, t, contreTech, ctx, sc.manche);
+      const av = avantageTechnique(contreTech, adv.element);
+      t = { ...lance.test, modificateur: (lance.test.modificateur ?? 0) + (av === 'fort' ? 8 : av === 'faible' ? -8 : 0) };
+      prelude = `Tu contres avec ${R.maitrises[contreTech].nom}. `;
+      sc.techniques.push(contreTech);
+    }
+    const r = resoudreDefense(s, t, sc.priorite, mode, ctx);
+    const ligne = `${prelude}${LIGNES_DEFENSE[mode][r.issue]!}`;
     if (r.issue === 'touche') sc.touches++;
     if (r.issue === 'riposte') sc.ripostes++;
     sc.resultats.push(r.issue);
@@ -915,6 +1112,8 @@ function jouerManche(s: GameState, action?: string): void {
     sc.journal.push(`Manche ${sc.manche}. ${adv.nom} ! ${adv[base.forme ?? 'duel']} ${ligne}`);
     sc.priorite = undefined;
     sc.ouverture = r.issue === 'esquive';
+    sc.dos = mode === 'permutation' && r.issue === 'esquive';
+    entretenirTransformation(s, ctx);
     if (sc.manche < sc.total) {
       prendreInitiative(s, base);
       return;
@@ -922,21 +1121,46 @@ function jouerManche(s: GameState, action?: string): void {
     conclureManches(s, ev, ch, base, ctx);
     return;
   }
+  // Activer ses yeux non plus : le dōjutsu se paie ensuite à chaque manche.
+  if (action?.startsWith('dojutsu:')) {
+    const id = action.slice(8);
+    if (sc.priorite) throw new Error('L’adversaire attaque : esquive ou contre d’abord.');
+    if (sc.dojutsu || !dojutsuDisponibles(s).includes(id)) throw new Error('Dōjutsu indisponible.');
+    sc.dojutsu = id;
+    const ms = s.maitrises[id];
+    sc.journal.push(`${texteDojutsu(id)} (${R.maitrises[id].nom}, ${R.maitrises[id].paliers[ms.tier]?.nom ?? `palier ${ms.tier}`} : ${coutDojutsu(s, id)} chakra par manche.)`);
+    return;
+  }
+  // Se transformer n'est pas une attaque : la transformation s'active sans consommer la manche.
+  if (action?.startsWith('transfo:')) {
+    activerTransformation(s, base, action.slice(8), ctx);
+    return;
+  }
+  // Depuis l'écran des choix, une transformation ouvre le combat : on se transforme, puis on frappe.
+  let enEntree = '';
+  if (action && estTransformation(action) && !sc.transformation) {
+    enEntree = activerTransformation(s, base, action, ctx, false);
+    action = undefined;
+  }
   const objet = action?.startsWith('objet:') ? action.slice(6) : undefined;
   const tech = objet ? undefined : action;
-  if (tech && (!attaqueDisponible(s, tech) || !attaquesSpeciales(s, base, 6).includes(tech))) throw new Error('Attaque spéciale indisponible.');
+  if (tech && (!attaqueDisponible(s, tech) || !attaquesSpeciales(s, base, 6, sc.transformation, true).includes(tech))) throw new Error('Attaque spéciale indisponible.');
   let test = base;
-  let prelude = '';
+  let prelude = enEntree;
+  // Transformé·e : chaque attaque porte la force de la transformation ; les yeux activés aussi.
+  if (sc.transformation) test = { ...test, modificateur: (test.modificateur ?? 0) + bonusPosture(s, sc.transformation).attaque };
+  if (sc.dojutsu) test = { ...test, modificateur: (test.modificateur ?? 0) + bonusDojutsu(s, sc.dojutsu).attaque };
   let protege = false;
   // Une esquive réussie a ouvert sa garde : l'attaque qui suit en profite.
   if (sc.ouverture) {
-    test = { ...test, modificateur: (test.modificateur ?? 0) + BONUS_OUVERTURE };
-    prelude = 'Sa garde est ouverte. ';
+    test = { ...test, modificateur: (test.modificateur ?? 0) + (sc.dos ? BONUS_DOS : BONUS_OUVERTURE) };
+    prelude += sc.dos ? 'Tu surgis dans son dos. ' : 'Sa garde est ouverte. ';
     sc.ouverture = false;
+    sc.dos = false;
   }
   if (tech) {
     const ench = enchainement(s, sc.techniques.at(-1), tech);
-    const lance = lancerTechnique(s, test, tech, ctx);
+    const lance = lancerTechnique(s, test, tech, ctx, sc.manche);
     test = lance.test;
     prelude += lance.prelude;
     if (ench) {
@@ -959,6 +1183,7 @@ function jouerManche(s: GameState, action?: string): void {
   sc.resultats.push(r.issue);
   sc.manche++;
   sc.journal.push(`Manche ${sc.manche}. ${tech || objet ? prelude : `${prelude}Tu attaques sans technique, au plus simple. `}${ligne}`);
+  entretenirTransformation(s, ctx);
   if (sc.manche < sc.total) {
     prendreInitiative(s, base);
     return;
@@ -966,10 +1191,80 @@ function jouerManche(s: GameState, action?: string): void {
   conclureManches(s, ev, ch, base, ctx);
 }
 
+/**
+ * Après chaque manche, une transformation se paie : chakra, santé ou fatigue. Faute de pouvoir payer,
+ * ou une fois sa durée écoulée, elle retombe, et le journal le raconte.
+ */
+function entretenirTransformation(s: GameState, ctx: Ctx): void {
+  if (s.scene.type !== 'combat') return;
+  // Les yeux d'abord : un dōjutsu se paie à chaque manche, au tarif de son palier et de l'habitude.
+  if (s.scene.dojutsu) {
+    const id = s.scene.dojutsu;
+    const cout = coutDojutsu(s, id);
+    if (s.jauges.chakra < cout) {
+      s.scene.dojutsu = undefined;
+      s.scene.journal.push(`Tes yeux s’éteignent : ${R.maitrises[id].nom} réclame plus de chakra qu’il ne t’en reste.`);
+    } else {
+      s.jauges.chakra -= cout;
+      ctx.changements.push({ t: 'stat', chemin: 'jauges.chakra', delta: -cout });
+    }
+  }
+  if (!s.scene.transformation) return;
+  const sc = s.scene;
+  const id = sc.transformation!;
+  const p = R.maitrises[id]?.technique?.posture;
+  if (!p) return;
+  sc.transfoTours = (sc.transfoTours ?? 0) + 1;
+  const e = p.entretien ?? {};
+  const fin = (raison: string) => {
+    sc.transformation = undefined;
+    sc.transfoTours = undefined;
+    sc.journal.push(`${p.fin ?? `${R.maitrises[id].nom} retombe.`} ${raison}`);
+  };
+  if (p.duree !== undefined && sc.transfoTours >= p.duree) return fin('Ton corps ne peut pas la tenir plus longtemps.');
+  if (e.chakra && s.jauges.chakra < e.chakra) return fin('Tu n’as plus assez de chakra pour la maintenir.');
+  if (e.sante && s.jauges.sante <= e.sante + 1) return fin('Ton corps cède avant elle.');
+  if (e.chakra) {
+    s.jauges.chakra -= e.chakra;
+    ctx.changements.push({ t: 'stat', chemin: 'jauges.chakra', delta: -e.chakra });
+  }
+  if (e.sante) {
+    s.jauges.sante = clamp(s.jauges.sante - e.sante, 1, 100);
+    ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -e.sante });
+  }
+  if (e.fatigue) s.jauges.fatigue = clamp(s.jauges.fatigue + e.fatigue, 0, 100);
+}
+
 const BONUS_OUVERTURE = 8;
+/** Après une permutation réussie : dans son dos, le coup est presque gratuit. */
+const BONUS_DOS = 14;
+
+/**
+ * Activer une transformation : on en paie le prix (chakra, santé, conséquences), et elle dure jusqu'à la fin du combat.
+ * Le journal la raconte ; la manche n'est pas consommée. Renvoie le récit d'entrée.
+ */
+function activerTransformation(s: GameState, base: CheckDef, id: string, ctx: Ctx, journal = true): string {
+  if (s.scene.type !== 'combat') throw new Error('Aucun combat en cours.');
+  const sc = s.scene;
+  if (sc.priorite) throw new Error('L’adversaire attaque : esquive ou contre d’abord.');
+  if (sc.transformation) throw new Error('Tu es déjà transformé·e.');
+  if (!estTransformation(id) || !attaqueDisponible(s, id)) throw new Error('Transformation indisponible.');
+  const lance = lancerTechnique(s, base, id, ctx, sc.manche + sc.journal.length);
+  sc.transformation = id;
+  sc.transfoTours = 0;
+  sc.techniques.push(id);
+  const b = bonusPosture(s, id);
+  const texte = `${lance.prelude.trim()} (${R.maitrises[id].nom} : attaque +${b.attaque}, défense +${b.defense}.) `;
+  if (journal) sc.journal.push(`Transformation. ${texte}`);
+  return texte;
+}
 
 /** Ce qui arrive quand on esquive ou qu'on contre sa technique. */
-const LIGNES_DEFENSE: Record<'esquiver' | 'contrer', Partial<Record<IssueManche, string>>> = {
+const LIGNES_DEFENSE: Record<Defense, Partial<Record<IssueManche, string>>> = {
+  permutation: {
+    esquive: 'Son attaque frappe une bûche. Toi, tu es déjà derrière lui.',
+    riposte: 'Ta permutation arrive une fraction trop tard : la bûche et toi encaissez le coup ensemble.',
+  },
   esquiver: {
     esquive: 'Tu plonges hors de portée au dernier instant. Le coup passe, et sa garde reste ouverte.',
     riposte: 'Tu bondis, trop tard d’un souffle. Le coup te prend de plein fouet.',
