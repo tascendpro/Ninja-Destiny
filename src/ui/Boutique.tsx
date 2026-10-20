@@ -4,7 +4,7 @@ import { R } from '../engine/registre';
 import { acheterHeritage, annulerHeritage } from '../engine/sauvegarde';
 import type { Meta, Stockage } from '../engine/sauvegarde';
 
-/** Boutique des héritages : on y dépense la bourse de l'onglet pour avantager la prochaine vie. */
+/** Boutique des héritages : on y dépense ta bourse pour avantager la prochaine vie. */
 export default function Boutique({ meta, stockage, onMeta, onToast }: { meta: Meta; stockage: Stockage; onMeta: (m: Meta) => void; onToast: (t: string) => void }) {
   const reserve = meta.heritage ? R.contenu.heritages.find((h) => h.id === meta.heritage) : undefined;
   const credit = meta.ryo + (reserve?.prix ?? 0);
@@ -15,7 +15,7 @@ export default function Boutique({ meta, stockage, onMeta, onToast }: { meta: Me
           {meta.ryo} <span aria-hidden="true">両</span>
         </span>
         <span>
-          dans la bourse de l’onglet. Les ryō de chaque vie terminée s’y ajoutent. Un seul héritage par vie : il s’applique à la prochaine.
+          dans ta bourse. Les ryō de chaque vie terminée s’y ajoutent. Un seul héritage par vie : il s’applique à la prochaine.
         </span>
       </p>
       <ul className="heritages">

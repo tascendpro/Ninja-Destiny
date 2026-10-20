@@ -5,7 +5,7 @@ import type { Creation as CreationT, GameState } from '../engine/types';
 import { R } from '../engine/registre';
 import { activite, chapitreSuivant, choisir, continuer, lieuCourant, manche, nouvellePartie, repartir } from '../engine/moteur';
 import { age, libelleSaison } from '../engine/calendrier';
-import { charger, consommerHeritage, enregistrer, fusionnerMeta, lireMeta, listerSauvegardes, restaurer, stockageMemoire, stockageSession } from '../engine/sauvegarde';
+import { charger, consommerHeritage, enregistrer, fusionnerMeta, lireMeta, listerSauvegardes, restaurer, stockageDurable, stockageMemoire } from '../engine/sauvegarde';
 import type { Meta, Stockage } from '../engine/sauvegarde';
 import Accueil from './Accueil';
 import Creation from './Creation';
@@ -37,7 +37,7 @@ const REGLAGES_DEFAUT: Reglages = { theme: 'nuit', son: true, volume: 0.5, anima
 const CLE_REGLAGES = 'ninja-destiny:reglages';
 
 export default function Game() {
-  const stockage = useMemo<Stockage>(() => (typeof window === 'undefined' ? stockageMemoire() : stockageSession()), []);
+  const stockage = useMemo<Stockage>(() => (typeof window === 'undefined' ? stockageMemoire() : stockageDurable()), []);
   const [pret, setPret] = useState(false);
   const [ecran, setEcran] = useState<Ecran>('accueil');
   const [onglet, setOnglet] = useState<Onglet>('recit');

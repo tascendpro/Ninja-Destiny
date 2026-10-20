@@ -185,7 +185,7 @@ export default function Fin({
         <span className="bourse-montant">
           +{Math.max(0, Math.round(etat.jauges.ryo))} <span aria-hidden="true">両</span>
         </span>
-        <span>versés à la bourse de l’onglet. Dépense-les à la boutique pour avantager ta prochaine vie.</span>
+        <span>versés à ta bourse. Dépense-les à la boutique pour avantager ta prochaine vie.</span>
       </p>
 
       <section className="groupe">

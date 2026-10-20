@@ -1,5 +1,5 @@
-// Sauvegardes de session : la partie vit tant que l'onglet reste ouvert (sessionStorage).
-// Elle survit à un rechargement de la page, pas à sa fermeture. Aucun serveur, aucune base de données.
+// Sauvegardes locales : la partie est gardée dans le navigateur (localStorage), y compris quand on le ferme,
+// sur téléphone comme sur ordinateur. Aucun serveur, aucune base de données.
 // Une sauvegarde contient les décisions : la restauration rejoue la partie et vérifie l'empreinte.
 
 import type { Creation, GameState } from './types';
@@ -33,14 +33,39 @@ export const EMPLACEMENTS = ['auto', 'manuel1', 'manuel2', 'manuel3'] as const;
 export type Emplacement = (typeof EMPLACEMENTS)[number];
 
 /**
- * Stockage de l'onglet (sessionStorage) : effacé par le navigateur à la fermeture de la page.
- * Repli en mémoire si sessionStorage est indisponible (navigation privée stricte, iframe isolée).
+ * Stockage durable du navigateur (localStorage) : la partie survit à la fermeture du navigateur.
+ * Au premier lancement, une partie encore rangée dans l'ancien stockage de session est récupérée.
+ * Repli en mémoire si le stockage est indisponible (navigation privée stricte, iframe isolée).
  */
+export function stockageDurable(): Stockage {
+  const st = stockageNavigateur('localStorage');
+  try {
+    const ancien = typeof window !== 'undefined' ? window.sessionStorage : undefined;
+    if (ancien) {
+      for (let i = 0; i < ancien.length; i++) {
+        const cle = ancien.key(i);
+        if (cle?.startsWith(PREFIXE) && st.lire(cle) === null) {
+          const v = ancien.getItem(cle);
+          if (v !== null) st.ecrire(cle, v);
+        }
+      }
+    }
+  } catch {
+    /* ancien stockage illisible : rien à récupérer */
+  }
+  return st;
+}
+
+/** Ancien stockage de l'onglet (sessionStorage), effacé à la fermeture. Gardé pour la compatibilité. */
 export function stockageSession(): Stockage {
+  return stockageNavigateur('sessionStorage');
+}
+
+function stockageNavigateur(type: 'localStorage' | 'sessionStorage'): Stockage {
   const memoire = new Map<string, string>();
   const ls = (() => {
     try {
-      const x = typeof window !== 'undefined' ? window.sessionStorage : undefined;
+      const x = typeof window !== 'undefined' ? window[type] : undefined;
       if (!x) return undefined;
       x.setItem(`${PREFIXE}test`, '1');
       x.removeItem(`${PREFIXE}test`);

@@ -84,8 +84,8 @@ export default function Menu({
         {section === 'sauvegardes' && (
           <section>
             <p className="sous-titre">
-              La partie est enregistrée après chaque décision et survit à un rechargement. Les sauvegardes durent tant que cet onglet reste ouvert : fermer la page
-              les efface toutes.
+              La partie est enregistrée après chaque décision, dans ce navigateur : elle survit à la fermeture de la page et du navigateur. Seul l’effacement des
+              données du site (ou la navigation privée) la fait disparaître.
             </p>
             {EMPLACEMENTS.map((e) => {
               const sv = emplacements.find((x) => x.emplacement === e)?.sauvegarde;

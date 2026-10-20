@@ -75,8 +75,8 @@ export default function Accueil({
           </div>
         </div>
         <p className="accueil-note apparition d3">
-          {parties > 0 && `${parties} ${parties > 1 ? 'vies commencées' : 'vie commencée'} dans cet onglet. `}
-          Ta partie dure tant que la page reste ouverte : la fermer l’efface.
+          {parties > 0 && `${parties} ${parties > 1 ? 'vies commencées' : 'vie commencée'} sur cet appareil. `}
+          Ta partie est gardée sur cet appareil, même si tu fermes le navigateur.
         </p>
         <p className="accueil-signature apparition d3">Créé par Tascend</p>
       </div>
