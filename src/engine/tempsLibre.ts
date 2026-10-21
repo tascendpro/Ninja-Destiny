@@ -20,6 +20,7 @@ import { avancerTemps } from './temps';
 import { resoudreLieu, tirerAleatoire, trameDisponible } from './selection';
 import { resoudreEpreuve } from './epreuves';
 import { resoudreTexte } from './texte';
+import { crimes } from './bingo';
 
 export type CategorieActivite =
   | 'entrainement'
@@ -257,6 +258,19 @@ export function genererActivites(s: GameState): Activite[] {
         disponible: !grave,
         raison: grave ? 'Personne n’engage un blessé.' : undefined,
       });
+    }
+    // Hors-la-loi : les crimes paient mieux que les contrats, et chacun alourdit la prime.
+    if (s.drapeaux['hors_la_loi'] && a >= 13) {
+      for (const c of CRIMES_ROUTE)
+        res.push({
+          id: `route:${c.id}`,
+          libelle: c.libelle,
+          description: c.description,
+          duree: d,
+          categorie: 'route',
+          disponible: !grave,
+          raison: grave ? 'Dans ton état, ce sont eux qui te dépouilleraient.' : undefined,
+        });
     }
   }
 
@@ -773,11 +787,127 @@ function bloc(s: GameState, id: string, ctx: Ctx, opts: { sansTemps?: boolean; j
       avancerTemps(s, d, ctx);
       return `Un mois au service de ton unité (${R.metiers[mid]?.nom}). Le travail est rarement glorieux, toujours formateur.`;
     }
-    case 'route':
-      return combatDeRoute(s, cible === 'contrat', d, ctx);
+    case 'route': {
+      const crime = CRIMES_ROUTE.find((c) => c.id === cible);
+      return crime ? crimeDeRoute(s, crime, d, ctx) : combatDeRoute(s, cible === 'contrat', d, ctx);
+    }
     default:
       throw new Error(`[temps libre] bloc inconnu : ${id}`);
   }
+}
+
+interface CrimeRoute {
+  id: string;
+  libelle: string;
+  description: string;
+  compteur: string;
+  test: Pick<CheckDef, 'type' | 'difficulte' | 'attributs'>;
+  gain: [number, number];
+  crainte: number;
+  /** Chance qu'il y ait un mort, avant la morale du personnage. */
+  sang: number;
+  reussite: string[];
+  rate: string;
+}
+
+/** Les crimes des routes : chacun a son risque, son butin, et sa ligne dans le Bingo Book. */
+const CRIMES_ROUTE: CrimeRoute[] = [
+  {
+    id: 'convoi',
+    libelle: 'Attaquer un convoi',
+    description: 'Des caravanes et leurs escortes : le meilleur butin, des gardes qui se défendent. On peut y mourir, et y tuer.',
+    compteur: 'crime_convois',
+    test: { type: 'combat', difficulte: 40, attributs: { force: 1, agilite: 1, perception: 1 } },
+    gain: [50, 130],
+    crainte: 3,
+    sang: 0.3,
+    reussite: [
+      'Le convoi s’arrête au pied du col, là où la route se resserre. Les gardes lâchent leurs lances avant la fin du premier assaut. Les marchands, eux, comptent leurs pertes en silence.',
+      'Une caravane de soie, quatre gardes, un chien. Le chien est le seul à se battre jusqu’au bout. Tu le laisses partir. Pas les rouleaux de soie.',
+      'Tu attaques au crépuscule, quand les gardes ont la vue basse. C’est fini avant que la lune se lève. Sur la route, on racontera que vous étiez vingt.',
+    ],
+    rate: 'L’escorte était plus nombreuse qu’annoncé. Tu te replies dans les rochers, sans butin, en laissant du sang sur les pierres.',
+  },
+  {
+    id: 'racket',
+    libelle: 'Rançonner un bourg',
+    description: 'Passer dans un bourg et réclamer ce qu’on te doit pour ne pas revenir. Peu de risques, peu de gloire, beaucoup de haine.',
+    compteur: 'crime_rackets',
+    test: { type: 'competence', difficulte: 36, attributs: { charisme: 1, force: 2 } },
+    gain: [25, 60],
+    crainte: 2,
+    sang: 0.05,
+    reussite: [
+      'Le chef du bourg te tend la bourse avant que tu aies parlé. Derrière les volets, des yeux te suivent jusqu’à la sortie du village.',
+      'Une auberge, un forgeron, un moulin : chacun paie sa part. Le meunier crache par terre quand tu tournes le dos. Il paie quand même.',
+    ],
+    rate: 'Les villageois se sont armés de fourches et de faux, et ils sont trop nombreux. Tu repars les mains vides, sous les pierres.',
+  },
+  {
+    id: 'rancon',
+    libelle: 'Enlever un marchand',
+    description: 'Le fils d’un négociant, un collecteur d’impôts : on les garde quelques jours, la famille paie. Le plus rentable, et le plus haï.',
+    compteur: 'crime_rancons',
+    test: { type: 'competence', difficulte: 44, attributs: { discretion: 2, agilite: 1, intellect: 1 } },
+    gain: [80, 200],
+    crainte: 4,
+    sang: 0.1,
+    reussite: [
+      'Un négociant en sel, cueilli à la sortie d’une maison de thé. Sa famille paie au troisième jour, sans prévenir personne. Il repart en tremblant, et ne voyagera plus jamais sans escorte.',
+      'Le collecteur d’impôts du daimyō, dans sa litière. Le daimyō paie la rançon, puis double la prime sur ta tête. C’était prévisible. C’était quand même rentable.',
+    ],
+    rate: 'Le marchand avait engagé un ninja sans bandeau. Tu t’échappes de justesse, et ton visage est maintenant connu dans toute la vallée.',
+  },
+];
+
+/** Un crime sur les routes : du butin, de la crainte, une ligne de plus au Bingo Book, et des chasseurs qui finissent par venir. */
+function crimeDeRoute(s: GameState, c: CrimeRoute, d: number, ctx: Ctx): string {
+  const a = age(s);
+  const test: CheckDef = {
+    ...c.test,
+    difficulte: c.test.difficulte + Math.max(0, a - 13) * 2,
+    maitrises: c.test.type === 'combat' ? { taijutsu: 1, arme: 1 } : undefined,
+    arme: c.test.type === 'combat',
+    letal: c.test.type === 'combat',
+    succes: { texte: '', effets: [] },
+    echec: { texte: '', effets: [] },
+  };
+  const { issue, mort } = resoudreEpreuve(s, test, ctx);
+  avancerTemps(s, d, ctx);
+  s.jauges.fatigue = clamp(s.jauges.fatigue + Math.round(d * 0.3), 0, 100);
+  if (mort) {
+    s.drapeaux['cause_mort'] = 'abattu·e par l’escorte d’un convoi, sur la route du col';
+    return 'Ce convoi-là avait un ninja dans son escorte. Il t’attendait.';
+  }
+  if (issue !== 'succes' && issue !== 'critique') {
+    appliquerEffet(s, { stat: 'jauges.sante', delta: -8 }, ctx);
+    return c.rate;
+  }
+  const gain = aleaEntier(s, c.gain[0], c.gain[1]);
+  s.jauges.ryo += gain;
+  ctx.changements.push({ t: 'stat', chemin: 'jauges.ryo', delta: gain });
+  appliquerEffet(s, { drapeau: c.compteur, incr: 1 }, ctx);
+  appliquerEffet(s, { stat: 'social.reputationOmbre', delta: c.crainte }, ctx);
+  const texte = c.reussite[Math.floor(alea(s) * c.reussite.length)];
+  // La morale du personnage pèse sur le sang versé : l'ambition tue plus volontiers que la compassion.
+  const sang = clamp(c.sang + (s.ethique.ambition - s.ethique.compassion) / 300, 0, 0.8);
+  const extras: string[] = [];
+  if (alea(s) < sang) {
+    appliquerEffet(s, { drapeau: 'crime_meurtres', incr: 1 }, ctx);
+    appliquerEffet(s, { ethique: { compassion: -2 } }, ctx);
+    extras.push('Il y a eu un mort. Tu ne te souviens pas d’avoir décidé que ce serait le cas.');
+  }
+  traquer(s);
+  return [texte, ...extras, `+${gain} ryō.`].join('\n\n');
+}
+
+/** Plus la prime est lourde, plus les chasseurs viennent vite ; au-delà d'un seuil, ton ancien village envoie les siens. */
+function traquer(s: GameState): void {
+  if (s.planifies.some((p) => p.evenementId === 'hl_chasseurs' || p.evenementId === 'hl_traqueurs')) return;
+  const prime = crimes(s).prime + s.social.reputationOmbre * 100;
+  if (alea(s) >= Math.min(0.4, prime / 25000)) return;
+  const elite = prime >= 15000 || !!s.drapeaux['crime_raid'];
+  s.planifies.push({ evenementId: elite ? 'hl_traqueurs' : 'hl_chasseurs', jour: s.jour + aleaEntier(s, 20, 90) });
 }
 
 /** Duel ou contrat sur les routes : expérience réelle, ryō, et un vrai risque de mourir. */

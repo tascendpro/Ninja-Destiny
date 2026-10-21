@@ -54,7 +54,7 @@ export function resoudrePnj(state: GameState, ref: string): string | undefined {
 
 export function defPnj(state: GameState, id: string | undefined): NpcDef | undefined {
   if (!id) return undefined;
-  return R.pnj[id] ?? state.pnjGeneres[id];
+  return state.pnjGeneres[id] ?? R.pnj[id];
 }
 
 export function nomPnj(state: GameState, ref: string): string {

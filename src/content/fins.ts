@@ -5,6 +5,7 @@ export const FINS: EndingDef[] = [
     id: 'mort',
     titre: 'Mort au service du village',
     titres: [
+      { si: { drapeau: 'hors_la_loi' }, titre: 'Mort d’un hors-la-loi' },
       { si: { drapeau: 'statut_avant_mort', egal: 'errant' }, titre: 'Mort sur la route' },
       { si: { drapeau: 'statut_avant_mort', egal: 'deserteur' }, titre: 'Mort d’un déserteur' },
       { si: { rang: 'eleve' }, titre: 'Mort trop jeune' },
@@ -25,6 +26,30 @@ export const FINS: EndingDef[] = [
       { si: { drapeau: 'cause_mort' }, texte: 'Dans le registre, une ligne sèche résume ta fin : {causeMort}. Elle ne dit rien de ce que tu as été.' },
     ],
     note: 'Une mort qui découle de tes décisions, jamais du hasard seul.',
+  },
+  {
+    id: 'regicide',
+    titre: 'La nuit où le Kage est tombé',
+    type: 'desertion',
+    texte: [
+      { texte: 'On parlera de cette nuit pendant cent ans. Le {kage} de {village}, tué dans sa propre tour, par un·e enfant que l’Académie avait refoulé·e. Ton nom passe en tête du Bingo Book de tous les villages, avec une prime qu’aucun chasseur n’osera jamais réclamer.' },
+      { si: { drapeau: 'ami_tue_raid' }, texte: 'Il y a un autre nom, sur la stèle, gravé la même semaine : {@coequipierA}, tombé{e:@coequipierA} à son poste de garde. Ce nom-là, c’est toi aussi qui l’y as mis.' },
+      { si: { drapeau: 'protecteur_kawabe' }, texte: 'À Kawabe, on continue de dire que le loup gardait le bourg. On ne sait plus très bien s’il faut le pleurer ou le maudire.' },
+      { texte: 'Tu disparais dans les montagnes avec ce qui reste de ta bande. Certains disent que tu règnes sur les routes du sel. D’autres que tu es mort·e de tes blessures la semaine suivante. Personne ne sait. C’est peut-être ça, la vraie fin d’un hors-la-loi : devenir une rumeur.' },
+    ],
+    note: 'Fin des hors-la-loi : la voie du crime, jusqu’au bout.',
+  },
+  {
+    id: 'seigneur_routes',
+    titre: 'Le seigneur des routes',
+    titres: [{ si: { drapeau: 'pardon_daimyo' }, titre: 'Le bandit devenu seigneur' }],
+    type: 'desertion',
+    texte: [
+      { si: { drapeau: 'pardon_daimyo' }, texte: 'Le daimyō tient parole. Ta prime disparaît du Bingo Book en une saison. Tes hommes portent une livrée, et les routes du sel n’ont jamais été aussi sûres : personne n’ose plus les attaquer, puisque c’est toi qui les gardes.' },
+      { si: { drapeau: 'crime_meurtres', min: 3 }, texte: 'Les veuves des convois, elles, n’ont pas reçu de livrée. Tu croises parfois leurs regards au marché.' },
+      { texte: 'Tu vieillis dans un fort au-dessus du col de la Pie, que les voyageurs saluent en passant. Ton ancien village t’envoie, chaque année, un message auquel tu ne réponds jamais. Ce n’est pas la vie qu’on t’avait promise à l’Académie. C’est une vie que tu as prise.' },
+    ],
+    note: 'Fin des hors-la-loi : la paix achetée.',
   },
   {
     id: 'vie_civile',

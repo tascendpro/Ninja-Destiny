@@ -190,23 +190,23 @@ export const OBJECTIFS: ObjectifDef[] = [
 
 export const NOMS: Record<VillageId, { m: string[]; f: string[] }> = {
   konoha: {
-    m: ['Haruto', 'Ren', 'Sōma', 'Daisuke', 'Kōhei', 'Shinji', 'Takumi', 'Yūsei'],
-    f: ['Aoi', 'Hinata', 'Yui', 'Sakiko', 'Mei', 'Natsuki', 'Emiko', 'Rin'],
+    m: ['Haruto', 'Ren', 'Sōma', 'Daisuke', 'Kōhei', 'Shinji', 'Takumi', 'Yūsei', 'Kazuki', 'Itsuki', 'Renji', 'Masaru', 'Hiroto', 'Kōta', 'Shun', 'Tatsuya', 'Akio', 'Minoru'],
+    f: ['Aoi', 'Hinata', 'Yui', 'Sakiko', 'Mei', 'Natsuki', 'Emiko', 'Rin', 'Haruka', 'Misaki', 'Chiyoko', 'Sora', 'Kanako', 'Nozomi', 'Ayumi', 'Tomomi', 'Hana', 'Michiru'],
   },
   suna: {
-    m: ['Sabure', 'Hōji', 'Ishin', 'Rakushi', 'Tōru', 'Senji', 'Jinpa', 'Kazan'],
-    f: ['Sara', 'Yukari', 'Kaede', 'Sayo', 'Arisu', 'Fuyu', 'Mitsu', 'Suzuha'],
+    m: ['Sabure', 'Hōji', 'Ishin', 'Rakushi', 'Tōru', 'Senji', 'Jinpa', 'Kazan', 'Sekka', 'Jūrō', 'Kanpū', 'Sōen', 'Hakuji', 'Garyō', 'Tenma', 'Shiden', 'Arata', 'Kōga'],
+    f: ['Sara', 'Yukari', 'Kaede', 'Sayo', 'Arisu', 'Fuyu', 'Mitsu', 'Suzuha', 'Sarasa', 'Yūna', 'Kaya', 'Akari', 'Ayane', 'Shion', 'Rena', 'Mayumi', 'Sachiyo', 'Natsume'],
   },
   kiri: {
-    m: ['Kaizen', 'Mizuho', 'Shūsui', 'Ryōga', 'Kirio', 'Nagi', 'Seiji', 'Utsuro'],
-    f: ['Kasumi', 'Shizuka', 'Mio', 'Ayame', 'Nagisa', 'Fubuki', 'Rui', 'Umiko'],
+    m: ['Kaizen', 'Mizuho', 'Shūsui', 'Ryōga', 'Kirio', 'Nagi', 'Seiji', 'Utsuro', 'Ushio', 'Kairi', 'Kōsui', 'Sōta', 'Rintarō', 'Isao', 'Takeru', 'Wataru', 'Tōma', 'Seiryū'],
+    f: ['Kasumi', 'Shizuka', 'Mio', 'Ayame', 'Nagisa', 'Fubuki', 'Rui', 'Umiko', 'Shizuku', 'Misora', 'Kirika', 'Minami', 'Sayuri', 'Kaori', 'Isuzu', 'Mizore', 'Uta', 'Nanase'],
   },
   kumo: {
-    m: ['Taiga', 'Ikki', 'Gōen', 'Kenta', 'Hayato', 'Raidō', 'Dan', 'Shōma'],
-    f: ['Hikari', 'Inari', 'Tsubame', 'Mana', 'Kurumi', 'Asuka', 'Reika', 'Shiori'],
+    m: ['Taiga', 'Ikki', 'Gōen', 'Kenta', 'Hayato', 'Raidō', 'Dan', 'Shōma', 'Raiden', 'Kōtarō', 'Jin', 'Tōya', 'Gōki', 'Ryōma', 'Hibiki', 'Arashi', 'Tenrai', 'Kaname'],
+    f: ['Hikari', 'Inari', 'Tsubame', 'Mana', 'Kurumi', 'Asuka', 'Reika', 'Shiori', 'Natsu', 'Miyabi', 'Hibari', 'Yuzuki', 'Kirara', 'Saki', 'Tsubaki', 'Akemi', 'Ranko', 'Sena'],
   },
   iwa: {
-    m: ['Ganryū', 'Tetsuo', 'Kōseki', 'Iwao', 'Dōmon', 'Rokurō', 'Banji', 'Jūzō'],
-    f: ['Ishiko', 'Sachi', 'Ryōko', 'Kōme', 'Chie', 'Hotaru', 'Kiyomi', 'Tamaki'],
+    m: ['Ganryū', 'Tetsuo', 'Kōseki', 'Iwao', 'Dōmon', 'Rokurō', 'Banji', 'Jūzō', 'Daigo', 'Gantetsu', 'Isamu', 'Kōji', 'Masato', 'Ryūzō', 'Kenji', 'Toshirō', 'Yasuo', 'Teppei'],
+    f: ['Ishiko', 'Sachi', 'Ryōko', 'Kōme', 'Chie', 'Hotaru', 'Kiyomi', 'Tamaki', 'Chiharu', 'Kotomi', 'Sekiko', 'Nobuko', 'Yasuko', 'Haruna', 'Mineko', 'Kayo', 'Midori', 'Akiko'],
   },
 };

@@ -1,4 +1,4 @@
-import type { Effect, EventDef } from '../../engine/types';
+import type { Condition, Effect, EventDef } from '../../engine/types';
 
 // Ce qui suit un combat mortel, quel qu'il soit : l'adversaire vaincu à ta merci, ou ta propre captivité.
 // Ces scènes sont ouvertes par le moteur (voir apresCombat) et peuvent revenir à chaque combat.
@@ -22,6 +22,10 @@ const RETOUR: Effect[] = [
 ];
 const VILLAGE_DERRIERE = { drapeau: 'statut_avant_capture', egal: 'actif' } as const;
 const DUEL = { drapeau: 'verdict_forme', egal: 'duel' } as const;
+/** Ton sensei est encore là, derrière toi, tant que tu es jeune genin. */
+const SENSEI_PRESENT: Condition = { tout: [{ statut: 'actif' }, { rang: 'genin' }, { age: { max: 16 } }, { pnj: '@sensei', etat: ['vivant', 'blesse'] }] };
+/** Ton coéquipier est dans la mêlée quand le combat avait des alliés. */
+const AMI_PRESENT: Condition = { tout: [{ statut: 'actif' }, { drapeau: 'verdict_allies' }, { pnj: '@coequipierA', etat: ['vivant', 'blesse'] }] };
 
 export const CONSEQUENCES: EventDef[] = [
   // ── L'adversaire à ta merci ──
@@ -43,14 +47,33 @@ export const CONSEQUENCES: EventDef[] = [
         id: 'achever',
         texte: 'L’achever : un ennemi épargné est un ennemi qui revient',
         effets: [
-          { ethique: { compassion: -8, ambition: 2 } },
-          { stat: 'social.reputationOmbre', delta: 4 },
-          { stat: 'attributs.controleEmotionnel', delta: -1 },
-          { drapeau: 'ennemis_acheves', incr: 1 },
+          // Qui est là peut te retenir : ton sensei tant que tu es jeune genin, ton coéquipier quand il est dans la mêlée.
+          { drapeau: 'verdict_issue', valeur: 'tue' },
+          { si: SENSEI_PRESENT, alors: [{ hasard: [{ poids: 45, effets: [{ drapeau: 'verdict_issue', valeur: 'sensei' }] }, { poids: 55, effets: [] }] }] },
+          { si: { tout: [{ drapeau: 'verdict_issue', egal: 'tue' }, AMI_PRESENT] }, alors: [{ hasard: [{ poids: 35, effets: [{ drapeau: 'verdict_issue', valeur: 'ami' }] }, { poids: 65, effets: [] }] }] },
+          {
+            si: { drapeau: 'verdict_issue', egal: 'tue' },
+            alors: [
+              { ethique: { compassion: -8, ambition: 2 } },
+              { stat: 'social.reputationOmbre', delta: 4 },
+              { stat: 'attributs.controleEmotionnel', delta: -1 },
+              { drapeau: 'ennemis_acheves', incr: 1 },
+              { journal: 'Tu as achevé un ennemi vaincu.', importance: 2 },
+            ],
+            sinon: [
+              { ethique: { compassion: 2 } },
+              { si: { drapeau: 'verdict_issue', egal: 'sensei' }, alors: [{ relation: '@sensei', delta: { confiance: -4, attachement: 3 } }, { planifier: 'x_epargne_vengeance', dansJours: 300 }] },
+              { si: { drapeau: 'verdict_issue', egal: 'ami' }, alors: [{ relation: '@coequipierA', delta: { confiance: 4, attachement: 3 } }, { planifier: 'x_epargne_dette', dansJours: 240 }] },
+            ],
+          },
           { drapeau: 'verdict_forme', retirer: true },
-          { journal: 'Tu as achevé un ennemi vaincu.', importance: 2 },
+          { drapeau: 'verdict_allies', retirer: true },
         ],
-        resultat: 'Tu ne détournes pas les yeux. C’est la seule politesse qu’il te reste à lui faire. Le soir, en lavant tes mains, tu frottes plus longtemps que nécessaire.',
+        resultat: [
+          { si: { drapeau: 'verdict_issue', egal: 'tue' }, texte: 'Tu ne détournes pas les yeux. C’est la seule politesse qu’il te reste à lui faire. Le soir, en lavant tes mains, tu frottes plus longtemps que nécessaire.' },
+          { si: { drapeau: 'verdict_issue', egal: 'sensei' }, texte: 'Ta lame s’arrête à un pouce de sa gorge : {@sensei} te tient le poignet. « On ne tue pas un homme à terre parce qu’on peut. On le tue parce qu’on doit. Là, tu ne dois pas. » L’ennemi en profite pour disparaître dans les fourrés.' },
+          { si: { drapeau: 'verdict_issue', egal: 'ami' }, texte: '{@coequipierA} se jette entre vous. « Il est fini. Regarde-le. Il est fini. » Tu baisses ta lame. L’homme rampe jusqu’aux arbres. Tu ne sais pas si tu en veux à ton ami{e:@coequipierA}, ou si tu lui dois quelque chose.' },
+        ],
       },
       {
         id: 'epargner',

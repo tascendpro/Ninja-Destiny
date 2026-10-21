@@ -82,7 +82,7 @@ export const ERRANCE: EventDef[] = [
     priorite: 85,
     si: SUR_LA_ROUTE,
     texte:
-      'Trois jours de marche plus tard, la route du sel se divise. Au nord, le Pays du Fer, où l’on dit que les samouraïs enseignent le sabre à qui balaie leurs dojos. À l’est, le bourg de Kōsai, où l’on se bat pour de l’argent dans des caves. Au sud, un sentier qui monte vers un temple que personne ne visite plus.',
+      'Trois jours de marche plus tard, la route du sel se divise en quatre. À l’ouest, le col de la Pie, où une bande prélève sa part sur chaque convoi. Au nord, le Pays du Fer, où l’on dit que les samouraïs enseignent le sabre à qui balaie leurs dojos. À l’est, le bourg de Kōsai, où l’on se bat pour de l’argent dans des caves. Au sud, un sentier qui monte vers un temple que personne ne visite plus.',
     choix: [
       {
         id: 'fer',
@@ -101,6 +101,13 @@ export const ERRANCE: EventDef[] = [
         texte: 'Le sud : le temple oublié',
         effets: [{ drapeau: 'errance_voie', valeur: 'temple' }, { drapeau: 'lieu_errance', valeur: 'temple_oublie' }, { decouvrir: 'lieu:temple_oublie' }],
         resultat: 'Mille marches mangées par la mousse. En haut, de la fumée monte d’un toit à moitié effondré. Quelqu’un vit ici.',
+      },
+      {
+        id: 'col',
+        texte: 'L’ouest : le col de la Pie, où les convois paient pour passer',
+        indice: 'La voie du crime : butin, prime sur ta tête, et ton village qui finit par envoyer ses traqueurs.',
+        effets: [{ drapeau: 'errance_voie', valeur: 'bandit' }, { drapeau: 'lieu_errance', valeur: 'frontiere_herbe' }, { decouvrir: 'lieu:frontiere_herbe' }],
+        resultat: 'La route de l’ouest monte entre des rochers où l’on voit des restes de charrettes brûlées. Personne n’y voyage seul. Toi, si.',
       },
     ],
   },

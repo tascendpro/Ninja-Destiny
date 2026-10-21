@@ -4,7 +4,7 @@ import type { Effect, GameState, MissionStatut, RelationAxe, StatPath } from './
 import { AXES_RELATION } from './types';
 import { R } from './registre';
 import { interpoler } from './texte';
-import { Ctx, ajouterJournal, decouvrir, ecrireStat, lireStat, relationDe, resoudrePnj } from './etat';
+import { Ctx, ajouterJournal, decouvrir, defPnj, ecrireStat, lireStat, relationDe, resoudrePnj } from './etat';
 import { evaluer } from './conditions';
 import { alea, tirerPondere } from './rng';
 import {
@@ -131,7 +131,7 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
       r.amitie = Math.min(r.amitie, 10);
       r.attachement = Math.min(r.attachement, 5);
       ctx.changements.push({ t: 'rupture', pnj: id });
-      ajouterJournal(s, `Rupture avec ${R.pnj[id]?.nom ?? s.pnjGeneres[id]?.nom ?? id}.`, 2);
+      ajouterJournal(s, `Rupture avec ${defPnj(s, id)?.nom ?? id}.`, 2);
     }
     return;
   }
@@ -142,7 +142,7 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
     if (r.rompue) {
       r.rompue = false;
       ctx.changements.push({ t: 'reconciliation', pnj: id });
-      ajouterJournal(s, `Réconciliation avec ${R.pnj[id]?.nom ?? s.pnjGeneres[id]?.nom ?? id}.`, 2);
+      ajouterJournal(s, `Réconciliation avec ${defPnj(s, id)?.nom ?? id}.`, 2);
     }
     return;
   }
@@ -325,9 +325,9 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
     if (e.cause) st.cause = e.cause;
     st.gueriLe = e.etat === 'blesse' ? s.jour + 60 : undefined;
     ctx.changements.push({ t: 'pnj', pnj: id, etat: e.etat });
-    const nom = R.pnj[id]?.nom ?? s.pnjGeneres[id]?.nom ?? id;
+    const nom = defPnj(s, id)?.nom ?? id;
     if (e.etat === 'mort') {
-      ajouterJournal(s, `${nom} est mort${(R.pnj[id] ?? s.pnjGeneres[id])?.genre === 'f' ? 'e' : ''}.`, 3);
+      ajouterJournal(s, `${nom} est mort${defPnj(s, id)?.genre === 'f' ? 'e' : ''}.`, 3);
       if (estProche(s, id)) {
         s.drapeaux['derniere_perte_jour'] = s.jour;
         declencherRage(s, ctx, true);

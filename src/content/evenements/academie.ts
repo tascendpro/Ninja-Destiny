@@ -133,11 +133,11 @@ export const ACADEMIE: EventDef[] = [
     personnages: ['@coequipierB'],
     texte: [
       { texte: 'Derrière le bâtiment de l’Académie, trois élèves de dernière année ont coincé {@coequipierB} contre le mur.' },
-      { si: { village: 'konoha' }, texte: '« Alors, la branche secondaire, il fait mal ton petit sceau ? » Ils lui arrachent son bandeau de front pour voir la marque.' },
-      { si: { village: 'suna' }, texte: '« Les Shirakaze, c’est des chiens de caravane. Aboie, pour voir. »' },
-      { si: { village: 'kiri' }, texte: '« Un Kaguya. Le Mizukage va bientôt tous vous noyer. » Ils rient trop fort pour des enfants.' },
-      { si: { village: 'kumo' }, texte: '« Le fils de l’estropié. Ton père a perdu son bras en fuyant, c’est ça ? »' },
-      { si: { village: 'iwa' }, texte: '« La fille du scribe. Trop faible pour porter une pierre, trop fière pour pleurer. »' },
+      { si: { clanPnj: '@coequipierB', clan: 'hyuga' }, texte: '« Alors, la branche secondaire, il fait mal ton petit sceau ? » Ils lui arrachent son bandeau de front pour voir la marque.' },
+      { si: { clanPnj: '@coequipierB', clan: 'shirakaze' }, texte: '« Les Shirakaze, c’est des chiens de caravane. Aboie, pour voir. »' },
+      { si: { clanPnj: '@coequipierB', clan: 'kaguya' }, texte: '« Un Kaguya. Le Mizukage va bientôt tous vous noyer. » Ils rient trop fort pour des enfants.' },
+      { si: { clanPnj: '@coequipierB', clan: 'sans_clan' }, texte: '« Pas de clan, pas de nom, pas de père. Tu viens d’où, toi ? D’un caniveau ? »' },
+      { si: { non: { clanPnj: '@coequipierB', clan: ['hyuga', 'shirakaze', 'kaguya', 'sans_clan'] } }, texte: '« Alors, les {clan:@coequipierB}, on se croit au-dessus des autres ? Montre-nous ce que ton clan sait faire, sans ta famille derrière. »' },
     ],
     choix: [
       {
@@ -218,7 +218,7 @@ export const ACADEMIE: EventDef[] = [
         id: 'aider',
         texte: 'Aider {@coequipierB} plutôt que de réussir seul·e',
         effets: [{ relation: '@coequipierB', delta: { amitie: 10, confiance: 8 } }, { stat: 'attributs.controleChakra', delta: 2 }, { drapeau: 'talent_medical' }, { ethique: { compassion: 4 } }],
-        resultat: 'Tu poses ta main sur son épaule et tu respires avec {le:@coequipierB}, lentement. Ça finit par tenir — pour vous deux. L’instructeur a vu. Il ne dit rien, mais il a vu.',
+        resultat: 'Tu poses ta main sur son épaule et tu respires avec {lui:@coequipierB}, lentement. Ça finit par tenir — pour vous deux. L’instructeur a vu. Il ne dit rien, mais il a vu.',
       },
       {
         id: 'acharner',
@@ -390,7 +390,7 @@ export const ACADEMIE: EventDef[] = [
     choix: [
       {
         id: 'promettre',
-        texte: 'Lui promettre que tu ne lèveras jamais la main sur {le:@coequipierA}',
+        texte: 'Lui promettre que tu ne lèveras jamais la main sur {lui:@coequipierA}',
         effets: [
           { promesse: 'shizuka_pacte', pnj: '@coequipierA', texte: 'Ne jamais lever la main sur {@coequipierA}, même à l’examen.' },
           { relation: '@coequipierA', delta: { amitie: 12, confiance: 15 } },

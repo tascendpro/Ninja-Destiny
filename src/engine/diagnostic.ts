@@ -88,6 +88,7 @@ export function diagnostiquer(): Probleme[] {
       if ('relation' in x) verifierPnj(x.relation, ou);
       if ('relationRompue' in x) verifierPnj(x.relationRompue, ou);
       if ('pnj' in x) verifierPnj(x.pnj, ou);
+      if ('clanPnj' in x) verifierPnj(x.clanPnj, ou);
       if ('age' in x && x.age.min !== undefined && x.age.max !== undefined && x.age.min > x.age.max)
         err('condition_contradictoire', `${ou} : âge minimum supérieur au maximum.`);
       if ('tout' in x) {
@@ -155,7 +156,7 @@ export function diagnostiquer(): Probleme[] {
   const verifierTexte = (t: Texte | undefined, ou: string) => {
     for (const j of jetonsDe(t)) {
       if (JETONS_CONNUS.includes(j)) continue;
-      const m = /^(?:(il|Il|e|le):)?(@?[\w-]+)$/.exec(j);
+      const m = /^(?:(il|Il|e|le|lui|clan):)?(@?[\w-]+)$/.exec(j);
       if (m && m[2].startsWith('@')) {
         verifierPnj(m[2], ou);
         continue;

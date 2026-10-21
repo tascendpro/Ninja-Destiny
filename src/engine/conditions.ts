@@ -1,7 +1,7 @@
 import type { Condition, GameState, MissionStatut } from './types';
 import { STATUTS_ARME_UTILISABLES } from './types';
 import { age, saisonDe } from './calendrier';
-import { lireStat, rangIndex, resoudrePnj } from './etat';
+import { defPnj, lireStat, rangIndex, resoudrePnj } from './etat';
 import { R } from './registre';
 import { checkCareerEligibility } from './metiers';
 
@@ -74,6 +74,10 @@ export function evaluer(c: Condition | undefined, s: GameState): boolean {
     return v !== undefined && v !== false && v !== 0 && v !== '';
   }
   if ('village' in c) return inclut(s.creation.village, c.village);
+  if ('clanPnj' in c) {
+    const d = defPnj(s, resoudrePnj(s, c.clanPnj));
+    return !!d?.clan && inclut(d.clan, c.clan);
+  }
   if ('clan' in c) return inclut(s.creation.clan, c.clan);
   if ('element' in c) return inclut(s.creation.element, c.element);
   if ('age' in c) return dansBornes(age(s), c.age.min, c.age.max);

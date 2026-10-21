@@ -782,6 +782,12 @@ export const ADOLESCENCE: EventDef[] = [
         effets: [{ stat: 'attributs.controleEmotionnel', delta: 3 }, { ethique: { compassion: 3 } }],
         resultat: 'Tu restes assis·e à côté de lui toute la matinée, la main sur son flanc qui se soulève de moins en moins. Il part vers midi, dans le soleil. Tu l’enterres près de la boutique de pickles, qui est devenue une boutique de thé.',
       },
+      {
+        id: 'veterinaire',
+        texte: 'Le porter chez l’éleveur de chiens du village',
+        effets: [{ stat: 'jauges.ryo', delta: -10 }, { ethique: { compassion: 2 } }, { stat: 'attributs.controleEmotionnel', delta: 2 }],
+        resultat: 'L’éleveur l’examine avec ses grosses mains douces. « Il est vieux, c’est tout. Il ne souffre pas. » Il te le rend. Le chat vit encore une saison, au soleil, sur ton rebord de fenêtre. Puis un matin, il ne se réveille pas. Tu étais prêt·e. Presque.',
+      },
     ],
   },
 ];

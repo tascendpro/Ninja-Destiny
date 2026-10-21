@@ -109,6 +109,8 @@ export type Condition =
   | { registre: string; detenteur: string }
   | { drapeau: string; egal?: string | number | boolean; min?: number; max?: number; absent?: boolean }
   | { village: VillageId | VillageId[] }
+  /** Le clan d'un personnage (« @rival », « @coequipierA »…), tiré à chaque partie. Testé avant « clan », qui parle du joueur. */
+  | { clanPnj: string; clan: string | string[] }
   | { clan: string | string[] }
   | { element: ElementId | ElementId[] }
   | { age: { min?: number; max?: number } }

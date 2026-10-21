@@ -453,6 +453,12 @@ export const MATURITE: EventDef[] = [
         effets: [{ stat: 'attributs.charisme', delta: 2 }, { stat: 'social.reputation', delta: 2 }, { ethique: { compassion: 2 } }],
         resultat: 'Trente enfants assis en tailleur. Yuta au fond, les bras croisés, exactement comme tu te tenais au bord du terrain. Tu leur apprends à tomber. Ils trouvent ça nul. Puis ils trouvent ça génial. Yuta ne dit rien. Il a les yeux brillants.',
       },
+      {
+        id: 'lettre',
+        texte: 'Lui répondre par une lettre : la classe, c’est la sienne',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { ethique: { compassion: 2 } }],
+        resultat: '« Ils te croiront le jour où ils tomberont pour de vrai et se relèveront. Ce jour-là, ce sera grâce à toi, pas à moi. » Une semaine plus tard, Yuta t’écrit : un élève est tombé de l’arbre de l’Académie, s’est relevé, et a demandé « qui a inventé ça ? ». Yuta a répondu : « Moi. »',
+      },
     ],
   },
   {

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { creation, simuler } from './aide';
 import { nouvellePartie, validerCreation, choisir, continuer, rejouer } from '../src/engine/moteur';
-import { nouveauCtx } from '../src/engine/etat';
+import { defPnj, nouveauCtx } from '../src/engine/etat';
 import { appliquerEffet, appliquerEffets } from '../src/engine/effets';
 import { applyTraining, applyCombatExperience, copierTechnique, maxTierForAge, resolveAwakening, porteurPnj } from '../src/engine/maitrise';
 import { estUtilisable, getWeaponModifiers, instanceArme, lierArme, obtenirArme } from '../src/engine/armes';
@@ -409,6 +409,7 @@ describe('Accord du texte', () => {
       'Impulsive, Discrète, Rieuse, Captive, Éclaireuse, Protectrice, Compagne',
     );
     const s = partie({ presentation: 'masculin' });
-    expect(interpoler('{@coequipierA} est seul{e:@coequipierA} et toi seul·e.', s)).toBe('Haru Nara est seul et toi seul.');
+    const ami = defPnj(s, s.roles['coequipierA'])!;
+    expect(interpoler('{@coequipierA} est seul{e:@coequipierA} et toi seul·e.', s)).toBe(`${ami.nom} est seul${ami.genre === 'f' ? 'e' : ''} et toi seul.`);
   });
 });

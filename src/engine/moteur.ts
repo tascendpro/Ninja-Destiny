@@ -26,7 +26,7 @@ import { ATTRIBUTS } from './types';
 import { R } from './registre';
 import { JOURS_AN, age, ageA, libelleDuree, libellePeriode } from './calendrier';
 import { Ctx, ajouterJournal, clamp, cloner, defPnj, nomDeFamille, nouveauCtx, resoudrePnj } from './etat';
-import { alea, aleaEntier } from './rng';
+import { alea, aleaEntier, tirerPondere } from './rng';
 import { evaluer } from './conditions';
 import { appliquerEffets } from './effets';
 import { applyCombatExperience, exigence, eveilsAutomatiques, maxTierForAge, nouvelleMaitrise } from './maitrise';
@@ -312,6 +312,60 @@ function genererFamille(s: GameState): void {
   if (parent.rang === 'civil') s.drapeaux['parent_civil'] = true;
 }
 
+/** Les rôles dont le visage change à chaque partie : même place dans l'histoire, autre nom, autre clan. */
+const ROLES_TIRES = ['coequipierA', 'coequipierB', 'rival', 'sensei'] as const;
+const POIDS_RARETE = { commun: 4, rare: 1, tres_rare: 0.3 } as const;
+/** Les scènes d'origine de ces clans font d'un rôle ton cousin ou ta cousine : ce rôle est tiré dans ton clan. */
+const COUSINS: Record<string, (typeof ROLES_TIRES)[number]> = { hyuga: 'coequipierB', hozuki: 'rival', kaguya: 'coequipierB', raiko: 'rival' };
+
+/**
+ * Camarades, rival et sensei sont tirés avec la graine de la partie : un prénom du village, un clan du village
+ * (les clans rares plus rarement), et les pouvoirs de ce clan à la place de ceux du personnage d'origine.
+ * Le genre et la personnalité du rôle restent : les textes qui en parlent restent justes.
+ */
+function genererVisages(s: GameState): void {
+  const c = s.creation;
+  const noms = R.contenu.noms[c.village];
+  const pris = new Set([c.prenom, ...Object.values(s.pnjGeneres).map((p) => p.nom.split(' ')[0])]);
+  const clans = R.contenu.clans.filter((k) => k.villages.includes(c.village));
+  // Un clan déjà tiré devient moins probable : une équipe n'est pas une réunion de famille.
+  const tires = new Map<string, number>();
+  for (const role of ROLES_TIRES) {
+    const base = R.pnj[R.contenu.roles[c.village][role]];
+    if (!base) continue;
+    const libres = noms[base.genre].filter((n) => !pris.has(n));
+    const liste = libres.length ? libres : noms[base.genre];
+    const prenom = liste[Math.floor(alea(s) * liste.length)];
+    pris.add(prenom);
+    const tire = tirerPondere(s, clans.map((k) => ({ item: k, poids: (k.id === 'sans_clan' ? 2 : POIDS_RARETE[k.rarete]) / (1 + 2 * (tires.get(k.id) ?? 0)) }))) ?? clans[0];
+    const clan = COUSINS[c.clan] === role ? R.clans[c.clan] : tire;
+    tires.set(clan.id, (tires.get(clan.id) ?? 0) + 1);
+    // Les pouvoirs du clan d'origine cèdent la place à ceux du clan tiré, au même palier.
+    const anciens = new Set(R.clans[base.clan ?? '']?.techniques ?? []);
+    const paliers = base.maitrises.filter((m) => anciens.has(m.id)).map((m) => m.palier);
+    const pouvoirs = clan.techniques
+      .filter((t) => R.maitrises[t])
+      .map((t, i) => ({ id: t, palier: paliers[i] ?? (role === 'sensei' ? 2 : 0), potentiel: aleaEntier(s, base.prodige ? 75 : 55, base.prodige ? 92 : 82) })) as NpcDef['maitrises'];
+    const f = base.genre === 'f';
+    const sansClan = clan.id === 'sans_clan';
+    s.pnjGeneres[base.id] = {
+      ...base,
+      nom: sansClan ? prenom : `${prenom} ${clan.nom}`,
+      clan: clan.id,
+      // Ce que la fiche d'origine disait du clan d'origine ne vaut plus pour un autre clan.
+      objectifs: clan.id === base.clan || !/branche|clan/.test(base.objectifs) ? base.objectifs : sansClan ? 'Se faire un nom que personne ne pourra lui retirer.' : `Être à la hauteur du clan ${clan.nom}, ou s’en libérer.`,
+      limites: clan.id === base.clan || !/branche/.test(base.limites) ? base.limites : 'Ne s’humiliera jamais devant personne.',
+      maitrises: [...base.maitrises.filter((m) => !anciens.has(m.id)), ...pouvoirs],
+      histoire:
+        role === 'sensei'
+          ? base.histoire
+          : sansClan
+            ? `${f ? 'Née' : 'Né'} sans clan, dans une famille qui n’a que son nom. Tout ce qu’${f ? 'elle' : 'il'} obtiendra, il faudra le prendre.`
+            : `${f ? 'Fille' : 'Fils'} d’une famille du clan ${clan.nom}. On attend beaucoup d’${f ? 'elle' : 'lui'}, et ${f ? 'elle' : 'il'} le sait.`,
+    };
+  }
+}
+
 /** Ce que le destin décide à la naissance : talent, bête scellée, lignée de fusion. Tiré avec la graine : rejouable. */
 function tirerDestin(s: GameState): void {
   const c = s.creation;
@@ -428,8 +482,9 @@ export function nouvellePartie(creation: Creation, graine?: number, imposes?: Pa
     if (w.unique) s.registre[w.id] = { detenteur: w.detenteurInitial ?? 'perdue', depuis: JOUR_DEPART - 10 * JOURS_AN };
   }
 
-  // Monde : PNJ du contenu + famille générée
+  // Monde : PNJ du contenu + famille générée + visages tirés (camarades, rival, sensei)
   genererFamille(s);
+  genererVisages(s);
   for (const def of [...R.contenu.pnj, ...Object.values(s.pnjGeneres)]) s.pnj[def.id] = etatPnj(s, def);
   s.roles = { ...R.contenu.roles[c.village], parent: 'famille_parent', aine: 'famille_aine' };
   for (const def of [...R.contenu.pnj, ...Object.values(s.pnjGeneres)]) {
@@ -803,6 +858,8 @@ function apresCombat(s: GameState, test: CheckDef, issue: Issue, capture: boolea
   }
   if (test.verdict && (issue === 'succes' || issue === 'critique')) {
     s.drapeaux['verdict_forme'] = test.forme ?? 'duel';
+    if (test.allies) s.drapeaux['verdict_allies'] = true;
+    else delete s.drapeaux['verdict_allies'];
     return { suite: SCENE_VERDICT, texte: '' };
   }
   return { suite, texte: '' };

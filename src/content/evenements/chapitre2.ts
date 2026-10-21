@@ -362,12 +362,12 @@ export const CHAPITRE2: EventDef[] = [
           critique: {
             texte: 'Tu gagnes, et la foule se lève. Même le {kage} applaudit, deux fois, ce qui pour lui est une ovation.',
             effets: [{ drapeau: 'c2_tournoi_gagne' }, { stat: 'social.reputation', delta: 10 }, { relation: '@rival', delta: { respect: 10, rivalite: 6 } }, ...combatPouvoir()],
-            suite: 'c2_verdict',
+            suite: 'c2_coup_de_grace',
           },
           succes: {
             texte: 'Le combat dure longtemps. Tu le gagnes à la fatigue, d’un dernier coup que tu n’aurais pas cru avoir en toi.',
             effets: [{ drapeau: 'c2_tournoi_gagne' }, { stat: 'social.reputation', delta: 6 }, { relation: '@rival', delta: { rivalite: 8 } }, ...combatPouvoir()],
-            suite: 'c2_verdict',
+            suite: 'c2_coup_de_grace',
           },
           partiel: {
             texte: 'Tu perds, mais tu as forcé ton adversaire à tout montrer. Dans la tribune des examinateurs, quelqu’un hoche la tête.',
@@ -418,7 +418,7 @@ export const CHAPITRE2: EventDef[] = [
           succes: {
             texte: 'Le silence d’abord, puis le bruit. Ce que ton clan sait faire, des milliers de gens viennent de le voir. Ton adversaire ne se relève pas tout de suite.',
             effets: [{ drapeau: 'c2_tournoi_gagne' }, { drapeau: 'pouvoir_revele' }, { stat: 'social.reputation', delta: 8 }, { stat: 'social.confianceClan', delta: 6 }, ...combatPouvoir()],
-            suite: 'c2_verdict',
+            suite: 'c2_coup_de_grace',
           },
           echec: {
             texte: 'Ton pouvoir te glisse entre les doigts au pire moment. Ton adversaire en profite. Dans la tribune de ton clan, plus personne ne parle.',
@@ -441,19 +441,20 @@ export const CHAPITRE2: EventDef[] = [
     texte: [
       { texte: 'Trois jours après le tournoi, les noms sont affichés à la porte de la tour du {kage}. On se bouscule. Certains pleurent, d’autres font semblant de s’en moquer.' },
       { si: { drapeau: 'c2_abandon_equipier' }, texte: 'L’examinateur de la forêt a écrit une ligne sous ton nom. Une seule. Tout le monde l’a lue.' },
+      { si: { drapeau: 'tournoi_sang' }, texte: 'Sous ton nom, une seule ligne, à l’encre rouge : « A frappé après la fin du combat. » Personne ne te regarde en face devant le tableau.' },
     ],
     choix: [
       {
         id: 'promu',
         texte: 'Chercher ton nom parmi les nouveaux chūnin',
-        si: { tout: [{ un: [{ drapeau: 'c2_tournoi_gagne' }, { drapeau: 'c2_tournoi_impressionne' }] }, { drapeau: 'c2_abandon_equipier', absent: true }] },
+        si: { tout: [{ un: [{ drapeau: 'c2_tournoi_gagne' }, { drapeau: 'c2_tournoi_impressionne' }] }, { drapeau: 'c2_abandon_equipier', absent: true }, { drapeau: 'tournoi_sang', absent: true }] },
         effets: [{ rang: 'chunin' }, { succes: 'chunin' }, { relation: '@sensei', delta: { respect: 10, attachement: 6 } }, { stat: 'social.reputation', delta: 6 }, { journal: 'Tu deviens chūnin.', importance: 3 }, ...SUITE_VILLAGE],
         resultat: 'Il est là. Tu le relis cinq fois. {@sensei} te pose une veste sur les épaules, la veste à poches des chūnin. « Désormais, ce sont d’autres qui mourront si tu te trompes. »',
       },
       {
         id: 'recale',
         texte: 'Lire la liste jusqu’au bout',
-        si: { non: { tout: [{ un: [{ drapeau: 'c2_tournoi_gagne' }, { drapeau: 'c2_tournoi_impressionne' }] }, { drapeau: 'c2_abandon_equipier', absent: true }] } },
+        si: { non: { tout: [{ un: [{ drapeau: 'c2_tournoi_gagne' }, { drapeau: 'c2_tournoi_impressionne' }] }, { drapeau: 'c2_abandon_equipier', absent: true }, { drapeau: 'tournoi_sang', absent: true }] } },
         effets: [{ planifier: 'c2_seconde_chance', dansJours: 180 }, { stat: 'attributs.controleEmotionnel', delta: 2 }, ...SUITE_VILLAGE],
         resultat: 'Ton nom n’y est pas. {@sensei} ne dit rien pendant tout le chemin du retour, puis, devant chez toi : « Six mois. La prochaine session est dans six mois. Ce que tu feras de ces six mois, c’est ça, ton examen. »',
       },

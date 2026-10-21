@@ -201,6 +201,12 @@ export const JEUNESSE: EventDef[] = [
           { si: { drapeau: 'ren', egal: 'non' }, texte: 'Chihiro te présente l’enfant. Vous parlez de l’échoppe, de la grand-mère partie l’hiver dernier, de rien. Au moment de partir, Chihiro dit : « Ta lettre, je l’ai gardée. » Tu ne sais pas quoi en faire. Tu la gardes aussi, cette phrase.' },
         ],
       },
+      {
+        id: 'loin',
+        texte: 'Regarder Chihiro de loin, sans t’approcher',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }],
+        resultat: 'Tu restes de l’autre côté de la rue, derrière les lanternes. Chihiro ne te voit pas, ou fait semblant. Les feux d’artifice commencent. Tu les regardes seul·e, et c’est très bien comme ça, presque.',
+      },
     ],
   },
 

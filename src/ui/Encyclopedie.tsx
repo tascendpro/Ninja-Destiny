@@ -39,7 +39,7 @@ export default function Encyclopedie({ etat, meta }: { etat: GameState | null; m
     if (e.id.startsWith('secret:')) return false;
     return e.categorie === cat;
   });
-  const visibles = entrees.filter((e) => e.publique || connues.has(e.id));
+  const visibles = entrees.filter((e) => (e.publique || connues.has(e.id)) && !(etat && e.id.startsWith('pnj:') && etat.pnjGeneres[e.id.slice(4)]));
   const famille = cat === 'personnage' && etat ? Object.values(etat.pnjGeneres) : [];
 
   return (

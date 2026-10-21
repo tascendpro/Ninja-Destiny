@@ -482,6 +482,12 @@ export const RENCONTRES: EventDef[] = [
           echec: { texte: 'Tu en prends trop. Ta peau verdit, tes doigts se palment. Le sage te frappe d’un bâton sur le crâne juste à temps. « Presque une statue. Presque. »', effets: [{ entrainer: 'mode_ermite', jours: 30, mentor: true }, { blessure: { id: 'crapaud', nom: 'Peau de crapaud', gravite: 1, jours: 20 } }] },
         },
       },
+      {
+        id: 'statues',
+        texte: 'Demander au sage qui étaient les crapauds de pierre',
+        effets: [{ stat: 'attributs.intellect', delta: 2 }, { stat: 'attributs.controleEmotionnel', delta: 2 }, { entrainer: 'mode_ermite', jours: 15, mentor: true }],
+        resultat: 'Le sage pose la main sur la plus petite statue. « Celui-là voulait aller plus vite que la montagne. Celui-là aussi. Et celui-là. » Il les nomme tous, un par un. Tu comprends que la leçon du jour, c’était eux.',
+      },
     ],
   },
 ];

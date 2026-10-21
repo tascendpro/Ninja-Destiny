@@ -28,9 +28,14 @@ const combattre = (s: GameState, choix: string): GameState => {
 
 describe('Après un combat à mort', () => {
   it('vaincre un adversaire en mission ouvre la scène de son sort, et l’épargner peut le faire revenir', () => {
-    const s = adulte();
-    s.scene = { type: 'evenement', id: 'mb_daimyo' };
-    let t = combattre(s, 'intercepter');
+    // La victoire dépend des dés : on cherche une partie où le combat est gagné.
+    let t = adulte();
+    for (let g = 5; g < 200; g++) {
+      const s = adulte(g);
+      s.scene = { type: 'evenement', id: 'mb_daimyo' };
+      t = combattre(s, 'intercepter');
+      if (t.scene.type === 'resultat' && t.scene.suite === 'x_verdict') break;
+    }
     expect(t.scene.type === 'resultat' && t.scene.suite).toBe('x_verdict');
     t = continuer(t);
     expect(t.scene.type === 'evenement' && t.scene.id).toBe('x_verdict');

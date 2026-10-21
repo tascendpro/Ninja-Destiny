@@ -19,6 +19,8 @@ export interface FicheJoueur {
   liste: 'recherches' | 'legendes';
   prime: number;
   exploits: string[];
+  /** Les crimes comptés, pour la fiche des hors-la-loi (« Convois pillés : 4 »). */
+  crimes: string[];
   techniques: string[];
   consigne: string;
 }
@@ -46,11 +48,52 @@ const EXPLOITS: { si: Condition; texte: string; poids: number }[] = [
   { si: { rang: 'kage' }, texte: 'Porte le chapeau du Kage.', poids: 50 },
   { si: { rangMin: 'jonin' }, texte: 'Jōnin.', poids: 10 },
   { si: { statut: 'deserteur' }, texte: 'Déserteur·e : son village a rayé son nom.', poids: 15 },
+  { si: { drapeau: 'rival_tue' }, texte: 'A tué un camarade de son propre village.', poids: 15 },
+  { si: { drapeau: 'tournoi_sang' }, texte: 'A frappé à mort un adversaire à terre, pendant l’examen chūnin.', poids: 10 },
+  { si: { drapeau: 'vendetta', egal: 'ouverte' }, texte: 'Une famille de son village a juré sa mort.', poids: 8 },
+  { si: { drapeau: 'chef_bande' }, texte: 'Commande la bande de la Pie, sur la route du col.', poids: 15 },
+  { si: { drapeau: 'seigneur_routes' }, texte: 'Tient les routes du sel : les caravanes paient tribut ou ne passent pas.', poids: 25 },
+  { si: { drapeau: 'allegeance' }, texte: 'A vendu ses services à un village étranger.', poids: 15 },
 ];
+
+/** Les crimes d'un hors-la-loi : chacun compte, et chacun alourdit la prime. */
+const CRIMES: { drapeau: string; libelle: (n: number) => string; poids: number; prime: number }[] = [
+  { drapeau: 'crime_convois', libelle: (n) => `Convois pillés : ${n}`, poids: 4, prime: 600 },
+  { drapeau: 'crime_rackets', libelle: (n) => `Bourgs rançonnés : ${n}`, poids: 2, prime: 250 },
+  { drapeau: 'crime_rancons', libelle: (n) => `Enlèvements contre rançon : ${n}`, poids: 5, prime: 900 },
+  { drapeau: 'crime_meurtres', libelle: (n) => `Meurtres : ${n}`, poids: 6, prime: 1200 },
+  { drapeau: 'crime_chasseurs', libelle: (n) => `Chasseurs de primes abattus : ${n}`, poids: 5, prime: 1000 },
+  { drapeau: 'crime_raid', libelle: () => 'A attaqué son ancien village', poids: 40, prime: 15000 },
+  { drapeau: 'crime_kage', libelle: () => 'A levé la main sur le Kage', poids: 50, prime: 30000 },
+];
+
+function nCrime(s: GameState, d: string): number {
+  const v = s.drapeaux[d];
+  return typeof v === 'number' ? v : v ? 1 : 0;
+}
+
+/** Ce que la fiche d'un hors-la-loi énumère, et ce que ça ajoute au livre et à la prime. */
+export function crimes(s: GameState): { lignes: string[]; poids: number; prime: number } {
+  let poids = 0;
+  let prime = 0;
+  const lignes: string[] = [];
+  for (const c of CRIMES) {
+    const n = nCrime(s, c.drapeau);
+    if (!n) continue;
+    lignes.push(c.libelle(n));
+    poids += c.poids * n;
+    prime += c.prime * n;
+  }
+  return { lignes, poids, prime };
+}
 
 /** Les natures et les grands pouvoirs donnent les surnoms ; le premier qui correspond l'emporte. */
 const SURNOMS: { si: Condition; surnom: string }[] = [
   { si: { drapeau: 'akatsuki_membre' }, surnom: 'Nuage rouge' },
+  { si: { drapeau: 'crime_kage' }, surnom: 'Celui qui a frappé le Kage' },
+  { si: { drapeau: 'seigneur_routes' }, surnom: 'Le seigneur des routes' },
+  { si: { drapeau: 'chef_bande' }, surnom: 'Le chef de la Pie' },
+  { si: { drapeau: 'crime_meurtres', min: 5 }, surnom: 'Le boucher du col' },
   { si: { maitrise: 'susanoo', palierMin: 1 }, surnom: 'Le géant aux yeux rouges' },
   { si: { drapeau: 'marque_maudite' }, surnom: 'L’enfant du serpent' },
   { si: { maitrise: 'mode_ermite', palierMin: 1 }, surnom: 'L’ermite' },
@@ -66,16 +109,18 @@ const SURNOMS: { si: Condition; surnom: string }[] = [
 
 function score(s: GameState): number {
   const soc = s.social;
-  return EXPLOITS.filter((e) => evaluer(e.si, s)).reduce((n, e) => n + e.poids, 0) + Math.max(soc.reputation, soc.reputationOmbre) / 2;
+  return EXPLOITS.filter((e) => evaluer(e.si, s)).reduce((n, e) => n + e.poids, 0) + crimes(s).poids + Math.max(soc.reputation, soc.reputationOmbre) / 2;
 }
 
 /** Ton nom entre dans le livre quand ce que tu as fait, ou ce qu'on dit de toi, a assez de poids. */
 export function ficheJoueur(s: GameState): FicheJoueur | undefined {
-  if (age(s) < 16) return undefined;
+  const horsLaLoi = !!s.drapeaux['hors_la_loi'];
+  if (age(s) < (horsLaLoi ? 14 : 16)) return undefined;
   const sc = score(s);
   if (sc < 30) return undefined;
   const village = R.villages[s.creation.village];
-  const recherche = s.statut === 'deserteur' || s.statut === 'exile' || !!s.drapeaux['akatsuki_membre'] || s.social.reputationOmbre > s.social.reputation + 10;
+  const recherche = horsLaLoi || s.statut === 'deserteur' || s.statut === 'exile' || !!s.drapeaux['akatsuki_membre'] || s.social.reputationOmbre > s.social.reputation + 10;
+  const cr = crimes(s);
   const rang = sc >= 90 ? 'S' : sc >= 60 ? 'A' : sc >= 40 ? 'B' : 'C';
   const surnom = SURNOMS.find((x) => evaluer(x.si, s))?.surnom ?? 'L’inconnu·e';
   const techniques = Object.values(s.maitrises)
@@ -86,11 +131,12 @@ export function ficheJoueur(s: GameState): FicheJoueur | undefined {
   return {
     nom: [s.creation.prenom, valeurJeton(s, 'nom')].filter(Boolean).join(' '),
     surnom: `${surnom} de ${village?.nom ?? 'nulle part'}`,
-    village: `${village?.nom ?? '?'}${recherche ? ' (déserteur·e)' : ''}`,
+    village: `${village?.nom ?? '?'}${horsLaLoi ? ' (hors-la-loi)' : recherche ? ' (déserteur·e)' : ''}`,
     rang,
     liste: recherche ? 'recherches' : 'legendes',
-    prime: recherche ? Math.round((sc * 250 + s.social.reputationOmbre * 100) / 500) * 500 : 0,
+    prime: recherche ? Math.round((sc * 250 + s.social.reputationOmbre * 100 + cr.prime) / 500) * 500 : 0,
     exploits: EXPLOITS.filter((e) => evaluer(e.si, s)).map((e) => e.texte),
+    crimes: cr.lignes,
     techniques,
     consigne: rang === 'S' ? (recherche ? 'Fuir à vue.' : 'Ne pas engager sans ordre du Kage.') : rang === 'A' ? 'Ne pas engager seul.' : 'Prudence.',
   };

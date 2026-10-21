@@ -57,8 +57,8 @@ describe('Mangekyō et Rinnegan', () => {
 });
 
 describe('Combats : enchaînements et sacoche', () => {
-  const combat = () => {
-    const s = nouvellePartie(creation({ village: 'konoha', clan: 'sans_clan', element: 'katon' }), 13);
+  const combat = (graine = 13) => {
+    const s = nouvellePartie(creation({ village: 'konoha', clan: 'sans_clan', element: 'katon' }), graine);
     s.jour = s.naissance + 15 * 360;
     s.rang = 'genin';
     s.jauges.chakraMax = 150;
@@ -69,7 +69,9 @@ describe('Combats : enchaînements et sacoche', () => {
     return s;
   };
   it('le feu après le vent (ou l’inverse) est un enchaînement, avec un bonus annoncé', () => {
+    // Une partie où le vent frappe et où c'est encore à toi de jouer à la manche suivante (l'initiative est tirée aux dés).
     let s = choisir(combat(), 'frontal@fuuton_rafale');
+    for (let g = 14; g < 200 && (s.scene.type !== 'combat' || vueCombat(s)!.adversaire); g++) s = choisir(combat(g), 'frontal@fuuton_rafale');
     const v = vueCombat(s)!;
     const feu = v.attaques.find((a) => a.id === 'katon_braises')!;
     expect(feu.enchainement).toBeDefined();

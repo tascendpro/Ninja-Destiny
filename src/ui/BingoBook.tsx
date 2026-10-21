@@ -77,6 +77,16 @@ function TaFiche({ f, etat }: { f?: FicheJoueur; etat: GameState }) {
           <li key={e}>{accorder(e, p)}</li>
         ))}
       </ul>
+      {f.crimes.length > 0 && (
+        <div className="fb-crimes">
+          <b>Crimes</b>
+          <ul>
+            {f.crimes.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       {f.techniques.length > 0 && (
         <p className="fb-techniques">
           <b>Techniques connues :</b> {f.techniques.join(', ')}

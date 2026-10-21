@@ -85,7 +85,7 @@ export function valeurJeton(s: GameState, jeton: string): string | undefined {
   const orphelin = s.creation.origine === 'orphelin';
 
   if (jeton.startsWith('@')) return defPnj(s, resoudrePnj(s, jeton))?.nom;
-  const m = /^(il|Il|e|le):(@?[\w-]+)$/.exec(jeton);
+  const m = /^(il|Il|e|le|lui|clan):(@?[\w-]+)$/.exec(jeton);
   if (m) {
     const d = defPnj(s, resoudrePnj(s, m[2]));
     if (!d) return undefined;
@@ -93,6 +93,9 @@ export function valeurJeton(s: GameState, jeton: string): string | undefined {
     if (m[1] === 'il') return f ? 'elle' : 'il';
     if (m[1] === 'Il') return f ? 'Elle' : 'Il';
     if (m[1] === 'le') return f ? 'la' : 'le';
+    // Après une préposition (« avec lui », « sur elle ») : le pronom tonique, pas l'article.
+    if (m[1] === 'lui') return f ? 'elle' : 'lui';
+    if (m[1] === 'clan') return d.clan && d.clan !== 'sans_clan' ? R.clans[d.clan]?.nom : 'sans-clan';
     return f ? 'e' : '';
   }
 

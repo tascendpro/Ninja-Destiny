@@ -87,7 +87,7 @@ export function perteAnnuelle(s: GameState, ctx: Ctx): void {
   st.cause = CAUSES[Math.floor(alea(s) * CAUSES.length)];
   st.gueriLe = undefined;
   ctx.changements.push({ t: 'pnj', pnj: victime.id, etat: 'mort' });
-  const def = R.pnj[victime.id] ?? s.pnjGeneres[victime.id];
+  const def = s.pnjGeneres[victime.id] ?? R.pnj[victime.id];
   ajouterJournal(s, `${def?.nom ?? 'Un proche'} est mort${def?.genre === 'f' ? 'e' : ''} : ${st.cause}.`, 3);
   s.drapeaux['mort_recente'] = victime.id;
   s.drapeaux['derniere_perte_jour'] = s.jour;

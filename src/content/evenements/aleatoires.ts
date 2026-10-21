@@ -174,7 +174,7 @@ export const ALEATOIRES: EventDef[] = [
     choix: [
       {
         id: 'jeux',
-        texte: 'Jouer à tous les jeux avec {le:@coequipierA}',
+        texte: 'Jouer à tous les jeux avec {lui:@coequipierA}',
         effets: [{ relation: '@coequipierA', delta: { amitie: 6 } }, { stat: 'jauges.ryo', delta: -5 }, { stat: 'jauges.fatigue', delta: -10 }],
         resultat: 'Tu perds à tous les jeux sauf celui des kunai, évidemment. Vous rentrez tard, les mains collantes de sucre.',
       },
@@ -183,6 +183,28 @@ export const ALEATOIRES: EventDef[] = [
         texte: 'Regarder les feux d’artifice depuis un toit',
         effets: [{ relation: '@coequipierA', delta: { amitie: 4, confiance: 4 } }, { stat: 'attributs.controleEmotionnel', delta: 2 }],
         resultat: 'Vous ne dites presque rien. Il n’y a rien à dire. C’est une de ces soirées dont on se souvient sans savoir pourquoi.',
+      },
+      {
+        id: 'masques',
+        texte: 'Acheter deux masques de renard et jouer aux ninjas de l’ombre',
+        si: { stat: 'jauges.ryo', min: 6 },
+        verrou: 'Il te faudrait 6 ryō.',
+        effets: [{ stat: 'jauges.ryo', delta: -6 }, { stat: 'attributs.discretion', delta: 2 }, { relation: '@coequipierA', delta: { amitie: 5 } }],
+        resultat: 'Masqués, vous traquez les autres enfants entre les stands toute la soirée. Un vieux jōnin vous repère sans même tourner la tête, et vous fait un clin d’œil. Vous rentrez persuadés d’être les meilleurs espions du monde.',
+      },
+      {
+        id: 'rival',
+        texte: 'Relever le défi de {@rival} au stand de tir',
+        si: { pnj: '@rival', etat: ['vivant', 'blesse'] },
+        verrou: 'Ton rival n’est pas là ce soir.',
+        test: {
+          type: 'competence',
+          difficulte: 42,
+          attributs: { perception: 2, agilite: 1 },
+          maitrises: { famille_kunai: 1 },
+          succes: { texte: 'Cinq cibles, cinq centres. {@rival} en touche quatre. Le marchand te donne un poisson rouge dans un sac d’eau. {@rival} fait semblant de s’en moquer, et revient le lendemain s’entraîner au stand.', effets: [{ relation: '@rival', delta: { rivalite: 6, respect: 4 } }, { entrainer: 'famille_kunai', jours: 5 }] },
+          echec: { texte: '{@rival} gagne d’un point, et repart avec le poisson rouge en le tenant bien haut. {@coequipierA} te console avec une brochette de calamar. Ce n’est pas la même chose.', effets: [{ relation: '@rival', delta: { rivalite: 6 } }, { relation: '@coequipierA', delta: { amitie: 3 } }] },
+        },
       },
     ],
   },
