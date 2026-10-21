@@ -6,10 +6,10 @@ const base = { chapitre: 2, chapitres: [2, 3, 4, 5], arc: 'conflit' as const };
 
 /**
  * La jeunesse (17 à 22 ans) : la veste, les premiers élèves, les amis qui se marient et ceux qui ne reviennent pas.
- * Les fils de l'adolescence (Kaede, Ren) y trouvent leur suite.
+ * Les fils de l'adolescence (Kanon, Chihiro) y trouvent leur suite.
  */
 export const JEUNESSE: EventDef[] = [
-  // ── Fil : Aoi, l'élève d'un jour ──────────────────────────────
+  // ── Fil : Akane, l'élève d'un jour ──────────────────────────────
   {
     ...base,
     id: 'j17_lecon',
@@ -18,32 +18,32 @@ export const JEUNESSE: EventDef[] = [
     lieu: '$academie',
     poids: 5,
     si: { tout: [JEUNE, { rangMin: 'chunin' }] },
-    texte: 'Le directeur de l’Académie te demande de remplacer un professeur malade, pour une journée. Trente enfants de huit ans te regardent comme si tu étais le Kage. Au premier rang, une fillette, Aoi, lève la main avant même que tu aies parlé.',
+    texte: 'Le directeur de l’Académie te demande de remplacer un professeur malade, pour une journée. Trente enfants de huit ans te regardent comme si tu étais le Kage. Au premier rang, une fillette, Akane, lève la main avant même que tu aies parlé.',
     choix: [
       {
         id: 'vrai',
         texte: 'Leur parler de ce qu’est vraiment une mission',
         effets: [{ stat: 'attributs.charisme', delta: 2 }, { stat: 'attributs.controleEmotionnel', delta: 1 }, { drapeau: 'aoi', valeur: 'verite' }, { retour: 'j17_aoi', chance: 0.65, entre: [700, 1300] }],
-        resultat: 'Tu ne mens pas. Tu ne dis pas tout non plus. À la fin, la classe est silencieuse. Aoi reste après la cloche. « Est-ce que vous avez eu peur ? » « Toujours. » Elle hoche la tête, très sérieuse, comme si c’était la réponse qu’elle attendait.',
+        resultat: 'Tu ne mens pas. Tu ne dis pas tout non plus. À la fin, la classe est silencieuse. Akane reste après la cloche. « Est-ce que vous avez eu peur ? » « Toujours. » Elle hoche la tête, très sérieuse, comme si c’était la réponse qu’elle attendait.',
       },
       {
         id: 'jeu',
         texte: 'Transformer la leçon en grand jeu de piste',
         effets: [{ stat: 'attributs.charisme', delta: 2 }, { stat: 'social.reputation', delta: 3 }, { drapeau: 'aoi', valeur: 'jeu' }, { retour: 'j17_aoi', chance: 0.65, entre: [700, 1300] }],
-        resultat: 'Trente enfants qui hurlent dans les couloirs, un professeur outré, et Aoi qui trouve toutes les balises en premier, avec une méthode que tu n’as jamais vue. Le directeur ne te redemandera jamais. Les enfants, si.',
+        resultat: 'Trente enfants qui hurlent dans les couloirs, un professeur outré, et Akane qui trouve toutes les balises en premier, avec une méthode que tu n’as jamais vue. Le directeur ne te redemandera jamais. Les enfants, si.',
       },
     ],
   },
   {
     ...base,
     id: 'j17_aoi',
-    titre: 'Aoi',
+    titre: 'Akane',
     categorie: 'heritage',
     lieu: '$village',
     enchaine: true,
     chapitres: [2, 3, 4, 5, 6],
     si: ACTIF,
-    texte: 'Une jeune genin te salue dans la rue, très droite, le bandeau parfaitement noué. Tu mets une seconde à la reconnaître. Aoi. « Vous ne vous souvenez sûrement pas de moi. Vous avez fait la classe, une fois. J’ai gardé mes notes. »',
+    texte: 'Une jeune genin te salue dans la rue, très droite, le bandeau parfaitement noué. Tu mets une seconde à la reconnaître. Akane. « Vous ne vous souvenez sûrement pas de moi. Vous avez fait la classe, une fois. J’ai gardé mes notes. »',
     choix: [
       {
         id: 'notes',
@@ -118,12 +118,12 @@ export const JEUNESSE: EventDef[] = [
   {
     ...base,
     id: 'j17_kaede',
-    titre: 'Kaede, jōnin',
+    titre: 'Kanon, jōnin',
     categorie: 'amitie',
     lieu: '$village',
     poids: 5,
     si: { tout: [JEUNE, { drapeau: 'kaede' }] },
-    texte: 'Kaede t’attend au pont, le gilet de jōnin sur les épaules. Elle a toujours ce sourire en coin. « J’ai une équipe à moi, maintenant. Trois gamins insupportables. Je comprends enfin notre sensei. » Elle hésite. « Et je pars pour une mission dont personne ne revient vraiment. »',
+    texte: 'Kanon t’attend au pont, le gilet de jōnin sur les épaules. Elle a toujours ce sourire en coin. « J’ai une équipe à moi, maintenant. Trois gamins insupportables. Je comprends enfin notre sensei. » Elle hésite. « Et je pars pour une mission dont personne ne revient vraiment. »',
     choix: [
       {
         id: 'promesse',
@@ -152,14 +152,14 @@ export const JEUNESSE: EventDef[] = [
   {
     ...base,
     id: 'j17_kaede_suite',
-    titre: 'Le retour de l’équipe de Kaede',
+    titre: 'Le retour de l’équipe de Kanon',
     categorie: 'deuil',
     lieu: '$porte',
     enchaine: true,
     chapitres: [2, 3, 4, 5, 6],
     si: ACTIF,
     texte: [
-      { si: { drapeau: 'kaede', egal: 'revenue' }, texte: 'Une équipe passe la porte au crépuscule : trois gamins couverts de poussière, et devant eux, boitant, Kaede. Elle te voit sur le mur. Elle lève le petit doigt.' },
+      { si: { drapeau: 'kaede', egal: 'revenue' }, texte: 'Une équipe passe la porte au crépuscule : trois gamins couverts de poussière, et devant eux, boitant, Kanon. Elle te voit sur le mur. Elle lève le petit doigt.' },
       { si: { drapeau: 'kaede', egal: 'tombee' }, texte: 'Une équipe passe la porte au crépuscule : trois gamins couverts de poussière, qui portent un brancard. Sous le drap, une main dépasse. Elle a encore un kunai noué au poignet, comme elle le faisait toujours.' },
     ],
     choix: [
@@ -180,25 +180,25 @@ export const JEUNESSE: EventDef[] = [
   {
     ...base,
     id: 'j17_ren',
-    titre: 'Ren, au festival',
+    titre: 'Chihiro, au festival',
     categorie: 'romance',
     lieu: '$village',
     poids: 5,
     si: { tout: [JEUNE, { drapeau: 'ren' }] },
     texte: [
-      { si: { drapeau: 'ren', egal: 'oui' }, texte: 'Le festival d’été. Ren t’attend sous la lanterne de l’échoppe, comme chaque année depuis la lettre. Cette année, les mains de Ren tremblent un peu, et l’une d’elles reste cachée dans la manche.' },
-      { si: { drapeau: 'ren', egal: 'non' }, texte: 'Le festival d’été. Tu croises Ren au stand de poissons rouges, avec un enfant sur les épaules. Vos regards se croisent. Ça ne fait plus mal. Presque plus.' },
+      { si: { drapeau: 'ren', egal: 'oui' }, texte: 'Le festival d’été. Chihiro t’attend sous la lanterne de l’échoppe, comme chaque année depuis la lettre. Cette année, les mains de Chihiro tremblent un peu, et l’une d’elles reste cachée dans la manche.' },
+      { si: { drapeau: 'ren', egal: 'non' }, texte: 'Le festival d’été. Tu croises Chihiro au stand de poissons rouges, avec un enfant sur les épaules. Vos regards se croisent. Ça ne fait plus mal. Presque plus.' },
     ],
     choix: [
       {
         id: 'rejoindre',
-        texte: 'Aller vers Ren',
+        texte: 'Aller vers Chihiro',
         effets: [
-          { si: { drapeau: 'ren', egal: 'oui' }, alors: [{ stat: 'attributs.controleEmotionnel', delta: 3 }, { stat: 'jauges.fatigue', delta: -20 }, { drapeau: 'ren', valeur: 'fiance' }], sinon: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { stat: 'attributs.charisme', delta: 1 }] },
+          { si: { drapeau: 'ren', egal: 'oui' }, alors: [{ stat: 'attributs.controleEmotionnel', delta: 3 }, { stat: 'jauges.fatigue', delta: -20 }, { drapeau: 'ren', valeur: 'promesse' }], sinon: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { stat: 'attributs.charisme', delta: 1 }] },
         ],
         resultat: [
-          { si: { drapeau: 'ren', egal: 'fiance' }, texte: 'Dans la manche, il y a un peigne en laque, et une question que Ren n’arrive pas à poser jusqu’au bout. Tu réponds avant la fin. Les feux d’artifice éclatent juste à ce moment-là, ce qui est très injuste pour les feux d’artifice.' },
-          { si: { drapeau: 'ren', egal: 'non' }, texte: 'Ren te présente l’enfant. Vous parlez de l’échoppe, de la grand-mère partie l’hiver dernier, de rien. Au moment de partir, Ren dit : « Ta lettre, je l’ai gardée. » Tu ne sais pas quoi en faire. Tu la gardes aussi, cette phrase.' },
+          { si: { drapeau: 'ren', egal: 'promesse' }, texte: 'Dans la manche, il y a un peigne en laque, et une demande que Chihiro n’arrive pas à formuler jusqu’au bout : « Reviens de chaque mission. Même si un jour ce n’est plus vers moi. » Tu promets. Les feux d’artifice éclatent juste à ce moment-là, ce qui est très injuste pour les feux d’artifice.' },
+          { si: { drapeau: 'ren', egal: 'non' }, texte: 'Chihiro te présente l’enfant. Vous parlez de l’échoppe, de la grand-mère partie l’hiver dernier, de rien. Au moment de partir, Chihiro dit : « Ta lettre, je l’ai gardée. » Tu ne sais pas quoi en faire. Tu la gardes aussi, cette phrase.' },
         ],
       },
     ],

@@ -10,7 +10,7 @@ const plus = { chapitre: 2, chapitres: [2, 3, 4, 5, 6], arc: 'heritage' as const
  * Et les visages de l'enfance qui reviennent, adultes, quand on ne les attend plus.
  */
 export const ADOLESCENCE: EventDef[] = [
-  // ── Fil : Kaede, la genin de l'autre équipe ───────────────────
+  // ── Fil : Kanon, la genin de l'autre équipe ───────────────────
   {
     ...ado,
     id: 'a11_kaede',
@@ -19,7 +19,7 @@ export const ADOLESCENCE: EventDef[] = [
     lieu: '$terrain',
     poids: 6,
     si: { tout: [ADO, { rangMin: 'genin' }] },
-    texte: 'Kaede, de l’équipe sept, s’entraîne seule au terrain trois tous les soirs, à la même heure que toi. Depuis une semaine, vous faites semblant de ne pas vous voir. Ce soir, elle lance un kunai qui se plante à un doigt de ta cible. « Oups. »',
+    texte: 'Kanon, de l’équipe sept, s’entraîne seule au terrain trois tous les soirs, à la même heure que toi. Depuis une semaine, vous faites semblant de ne pas vous voir. Ce soir, elle lance un kunai qui se plante à un doigt de ta cible. « Oups. »',
     choix: [
       {
         id: 'duel',
@@ -56,15 +56,15 @@ export const ADOLESCENCE: EventDef[] = [
   {
     ...ado,
     id: 'a11_kaede_examen',
-    titre: 'Kaede, de l’autre côté',
+    titre: 'Kanon, de l’autre côté',
     categorie: 'rivalite',
     lieu: '$village',
     enchaine: true,
     chapitres: [1, 2, 3, 4],
     si: ACTIF,
     texte: [
-      { si: { drapeau: 'kaede', egal: 'rivale' }, texte: 'Kaede t’attrape par la manche dans la rue principale. Elle a une veste de chūnin sur le dos, toute neuve, encore pliée aux coudes. « Je l’ai eue avant toi. Je voulais que tu le saches par moi. » Elle sourit. Elle est fière, et un peu gênée de l’être.' },
-      { si: { drapeau: 'kaede', egal: 'amie' }, texte: 'Kaede t’attrape par la manche dans la rue principale. Elle a le bras en écharpe, le visage tiré. « Mission de rang B. On était quatre. On est rentrés trois. » Elle ne pleure pas. Elle veut juste marcher avec quelqu’un.' },
+      { si: { drapeau: 'kaede', egal: 'rivale' }, texte: 'Kanon t’attrape par la manche dans la rue principale. Elle a une veste de chūnin sur le dos, toute neuve, encore pliée aux coudes. « Je l’ai eue avant toi. Je voulais que tu le saches par moi. » Elle sourit. Elle est fière, et un peu gênée de l’être.' },
+      { si: { drapeau: 'kaede', egal: 'amie' }, texte: 'Kanon t’attrape par la manche dans la rue principale. Elle a le bras en écharpe, le visage tiré. « Mission de rang B. On était quatre. On est rentrés trois. » Elle ne pleure pas. Elle veut juste marcher avec quelqu’un.' },
     ],
     choix: [
       {
@@ -94,7 +94,7 @@ export const ADOLESCENCE: EventDef[] = [
     lieu: '$maison',
     poids: 5,
     si: { tout: [ACTIF, { age: { min: 13, max: 16 } }] },
-    texte: 'Ren, qui tient l’échoppe de thé avec sa grand-mère, a une façon de rire qui te fait oublier ce que tu allais commander. Ça fait trois semaines. Tu as écrit une lettre. Elle est dans ta poche depuis trois jours, et elle commence à s’user aux pliures.',
+    texte: 'Chihiro, qui tient l’échoppe de thé avec sa grand-mère, a une façon de rire qui te fait oublier ce que tu allais commander. Ça fait trois semaines. Tu as écrit une lettre. Elle est dans ta poche depuis trois jours, et elle commence à s’user aux pliures.',
     choix: [
       {
         id: 'envoyer',
@@ -110,27 +110,27 @@ export const ADOLESCENCE: EventDef[] = [
         id: 'bruler',
         texte: 'La brûler : un·e ninja n’a pas le temps pour ça',
         effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { ethique: { ambition: 3 } }],
-        resultat: 'Le papier se recroqueville dans la lampe. Tu te sens fort·e, une minute. Puis tu te demandes ce qu’aurait répondu Ren, et tu te le demanderas longtemps.',
+        resultat: 'Le papier se recroqueville dans la lampe. Tu te sens fort·e, une minute. Puis tu te demandes ce qu’aurait répondu Chihiro, et tu te le demanderas longtemps.',
       },
     ],
   },
   {
     ...ado,
     id: 'a11_lettre_reponse',
-    titre: 'La réponse de Ren',
+    titre: 'La réponse de Chihiro',
     categorie: 'romance',
     lieu: '$village',
     enchaine: true,
     si: ACTIF,
-    texte: 'Ren t’attend devant l’échoppe fermée, au crépuscule. Il y a ta lettre dans sa main, pliée en quatre.',
+    texte: 'Chihiro t’attend devant l’échoppe fermée, au crépuscule. Il y a ta lettre dans sa main, pliée en quatre.',
     choix: [
       {
         id: 'ecouter',
         texte: 'Écouter',
         effets: [{ si: { drapeau: 'ren', egal: 'oui' }, alors: [{ stat: 'attributs.charisme', delta: 2 }, { stat: 'jauges.fatigue', delta: -15 }], sinon: [{ stat: 'attributs.controleEmotionnel', delta: 3 }] }],
         resultat: [
-          { si: { drapeau: 'ren', egal: 'oui' }, texte: '« Tu écris mal, dit Ren. Mais c’est la plus belle lettre que j’aie reçue. » Vous marchez jusqu’au bout du village sans vous toucher la main. Au retour, si. Le monde a la même forme qu’hier, et pourtant rien n’est pareil.' },
-          { si: { drapeau: 'ren', egal: 'non' }, texte: '« Pardon. Ce n’est pas toi. Il y a quelqu’un d’autre. » Ren te rend la lettre, doucement, comme on rend un objet fragile. Tu rentres par les toits pour que personne ne te voie. C’est la première fois que ça fait aussi mal sans une seule blessure.' },
+          { si: { drapeau: 'ren', egal: 'oui' }, texte: '« Tu écris mal, dit Chihiro. Mais c’est la plus belle lettre que j’aie reçue. » Vous marchez jusqu’au bout du village sans vous toucher la main. Au retour, si. Le monde a la même forme qu’hier, et pourtant rien n’est pareil.' },
+          { si: { drapeau: 'ren', egal: 'non' }, texte: '« Pardon. Ce n’est pas toi. Il y a quelqu’un d’autre. » Chihiro te rend la lettre, doucement, comme on rend un objet fragile. Tu rentres par les toits pour que personne ne te voie. C’est la première fois que ça fait aussi mal sans une seule blessure.' },
         ],
       },
     ],
@@ -597,13 +597,13 @@ export const ADOLESCENCE: EventDef[] = [
   {
     ...plus,
     id: 'x_daichi_examen',
-    titre: 'Daichi, à l’examen',
+    titre: 'Ryūji, à l’examen',
     categorie: 'examen',
     lieu: '$village',
     poids: 7,
     chapitres: [1, 2, 3],
     si: { tout: [ACTIF, { age: { min: 12, max: 16 } }, { drapeau: 'daichi' }, { rangMin: 'genin' }] },
-    texte: 'Dans la liste des candidats affichée au mur, un nom te saute aux yeux. Daichi. Il te trouve avant que tu le cherches. Il a une cicatrice neuve au menton et le même regard qu’au terrain, des années plus tôt. « Si on se retrouve face à face, je ne retiendrai pas mes coups. »',
+    texte: 'Dans la liste des candidats affichée au mur, un nom te saute aux yeux. Ryūji. Il te trouve avant que tu le cherches. Il a une cicatrice neuve au menton et le même regard qu’au terrain, des années plus tôt. « Si on se retrouve face à face, je ne retiendrai pas mes coups. »',
     choix: [
       {
         id: 'promettre',
@@ -667,19 +667,19 @@ export const ADOLESCENCE: EventDef[] = [
   {
     ...plus,
     id: 'x_mei_caravane',
-    titre: 'La caravane de Mei',
+    titre: 'La caravane de Nanami',
     categorie: 'amitie',
     lieu: 'route_commerce',
     poids: 5,
     si: { tout: [{ age: { min: 17, max: 30 } }, { drapeau: 'mei' }] },
-    texte: 'Une caravane te dépasse sur la route, douze chariots bâchés de bleu. En tête, une femme debout sur le siège du cocher crie des ordres d’une voix que tu reconnais avant de la voir. Mei. Elle a sa propre caravane, maintenant. « Toi ! Tu me dois toujours une histoire ! »',
+    texte: 'Une caravane te dépasse sur la route, douze chariots bâchés de bleu. En tête, une femme debout sur le siège du cocher crie des ordres d’une voix que tu reconnais avant de la voir. Nanami. Elle a sa propre caravane, maintenant. « Toi ! Tu me dois toujours une histoire ! »',
     choix: [
       {
         id: 'escorter',
         texte: 'Escorter la caravane jusqu’à la prochaine ville',
         duree: 5,
         effets: [{ stat: 'jauges.ryo', delta: 60 }, { stat: 'attributs.charisme', delta: 2 }, { decouvrir: ['lieu:pays_fer', 'lieu:frontiere_herbe'] }],
-        resultat: 'Cinq jours de route, des feux de camp, des histoires échangées comme autrefois. Le quatrième soir, des bandits renoncent en voyant ton bandeau. Mei te paie le double de ce qu’elle avait promis. « Pour l’histoire. Elle était bonne. »',
+        resultat: 'Cinq jours de route, des feux de camp, des histoires échangées comme autrefois. Le quatrième soir, des bandits renoncent en voyant ton bandeau. Nanami te paie le double de ce qu’elle avait promis. « Pour l’histoire. Elle était bonne. »',
       },
       {
         id: 'nouvelles',
@@ -768,13 +768,13 @@ export const ADOLESCENCE: EventDef[] = [
   {
     ...plus,
     id: 'x_chat_vieux',
-    titre: 'Le chat de Tomoe',
+    titre: 'Le chat de Fumi',
     categorie: 'deuil',
     lieu: '$maison',
     poids: 4,
     chapitres: [1, 2, 3, 4],
     si: { tout: [ACTIF, { age: { min: 14 } }, { drapeau: 'chat_tomoe' }] },
-    texte: 'Le chat de Tomoe ne mange plus. Il a quinze ans, peut-être plus. Il dort au soleil sur le rebord de ta fenêtre, et ce matin, il ne se lève pas quand tu entres.',
+    texte: 'Le chat de Fumi ne mange plus. Il a quinze ans, peut-être plus. Il dort au soleil sur le rebord de ta fenêtre, et ce matin, il ne se lève pas quand tu entres.',
     choix: [
       {
         id: 'rester',

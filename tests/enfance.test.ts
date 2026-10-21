@@ -7,6 +7,7 @@ import { TRAITS } from '../src/content/monde';
 import { ENFANCE } from '../src/content/evenements/enfance';
 import { ADOLESCENCE } from '../src/content/evenements/adolescence';
 import { JEUNESSE } from '../src/content/evenements/jeunesse';
+import { MATURITE } from '../src/content/evenements/maturite';
 import { creation } from './aide';
 import { evaluer as evaluerSi } from '../src/engine/conditions';
 
@@ -61,7 +62,7 @@ describe('Les fils qui reviennent', () => {
       if ('retour' in x && typeof (x as { retour: unknown }).retour === 'string') rappels.add((x as { retour: string }).retour);
       for (const v of Object.values(x)) fouiller(v);
     };
-    const tout = [...ENFANCE, ...ADOLESCENCE, ...JEUNESSE];
+    const tout = [...ENFANCE, ...ADOLESCENCE, ...JEUNESSE, ...MATURITE];
     fouiller(tout);
     for (const ev of tout.filter((e) => e.enchaine)) expect(rappels.has(ev.id), ev.id).toBe(true);
     expect(rappels.size).toBeGreaterThanOrEqual(15);
@@ -73,7 +74,7 @@ describe('Les fils qui reviennent', () => {
   });
 
   it('les visages de l’enfance reviennent plus tard, seulement si on les a croisés', () => {
-    for (const id of ['x_daichi_examen', 'x_sho_route', 'x_mei_caravane', 'x_gonta_fils', 'x_ermite_nom', 'x_boite_dix_ans', 'x_chat_vieux', 'j17_kaede', 'j17_ren']) {
+    for (const id of ['x_daichi_examen', 'x_sho_route', 'x_mei_caravane', 'x_gonta_fils', 'x_ermite_nom', 'x_boite_dix_ans', 'x_chat_vieux', 'j17_kaede', 'j17_ren', 'x_ryuji_vieux', 'x_akane_jonin', 'x_yuta_maitre', 'x_kanon_dango']) {
       const ev = R.evenements[id];
       expect(ev, id).toBeDefined();
       expect(JSON.stringify(ev.si), id).toMatch(/drapeau|"vu"/);
@@ -82,8 +83,9 @@ describe('Les fils qui reviennent', () => {
     }
   });
 
-  it('chaque âge a son réservoir : au moins 15 scènes du temps libre propres à 11-16 ans et 10 à 17-22 ans', () => {
+  it('chaque âge a son réservoir : au moins 15 scènes pour 11-16 ans, 10 pour 17-22 ans et 15 après 30 ans', () => {
     expect(ADOLESCENCE.filter((e) => (e.poids ?? 0) > 0).length).toBeGreaterThanOrEqual(15);
     expect(JEUNESSE.filter((e) => (e.poids ?? 0) > 0).length).toBeGreaterThanOrEqual(10);
+    expect(MATURITE.filter((e) => (e.poids ?? 0) > 0).length).toBeGreaterThanOrEqual(15);
   });
 });

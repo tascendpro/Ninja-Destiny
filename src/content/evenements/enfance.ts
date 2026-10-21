@@ -155,7 +155,7 @@ export const ENFANCE: EventDef[] = [
     ],
   },
 
-  // ── Fil : Daichi, le duel au bâton ────────────────────────────
+  // ── Fil : Ryūji, le duel au bâton ────────────────────────────
   {
     ...base,
     id: 'e6_daichi',
@@ -164,7 +164,7 @@ export const ENFANCE: EventDef[] = [
     lieu: '$terrain',
     poids: 6,
     si: { tout: [ENFANT, { age: { min: 7 } }] },
-    texte: 'Daichi, d’une autre classe, a planté deux bâtons dans la terre. « Le premier qui touche trois fois. » Une dizaine d’élèves font déjà cercle. Il te regarde toi, et personne d’autre.',
+    texte: 'Ryūji, d’une autre classe, a planté deux bâtons dans la terre. « Le premier qui touche trois fois. » Une dizaine d’élèves font déjà cercle. Il te regarde toi, et personne d’autre.',
     choix: [
       {
         id: 'duel',
@@ -175,7 +175,7 @@ export const ENFANCE: EventDef[] = [
           attributs: { agilite: 2, perception: 1 },
           maitrises: { taijutsu: 1 },
           succes: {
-            texte: 'Trois touches à deux. Daichi jette son bâton dans la poussière et serre les poings. « Encore une fois. Pas aujourd’hui. Je m’entraînerai, et je reviendrai. » Il a les larmes aux yeux et il les déteste.',
+            texte: 'Trois touches à deux. Ryūji jette son bâton dans la poussière et serre les poings. « Encore une fois. Pas aujourd’hui. Je m’entraînerai, et je reviendrai. » Il a les larmes aux yeux et il les déteste.',
             effets: [{ entrainer: 'taijutsu', jours: 12 }, { stat: 'social.reputation', delta: 2 }, { drapeau: 'daichi', valeur: 'battu' }, { retour: 'e6_daichi_revanche', chance: 0.8, entre: [120, 330] }],
           },
           echec: {
@@ -195,15 +195,15 @@ export const ENFANCE: EventDef[] = [
   {
     ...base,
     id: 'e6_daichi_revanche',
-    titre: 'Daichi a tenu parole',
+    titre: 'Ryūji a tenu parole',
     categorie: 'rivalite',
     lieu: '$terrain',
     enchaine: true,
     si: ACTIF,
     texte: [
-      { si: { drapeau: 'daichi', egal: 'battu' }, texte: 'Daichi t’attend au même endroit, deux bâtons plantés dans la terre. Ses paumes sont couvertes de cals. « J’ai dit que je reviendrais. »' },
-      { si: { drapeau: 'daichi', egal: 'vainqueur' }, texte: 'Daichi t’attend au même endroit, deux bâtons plantés dans la terre. « On m’a dit que tu t’entraînais en cachette. Montre. »' },
-      { si: { drapeau: 'daichi', egal: 'egalite' }, texte: 'Daichi, encore. Les bâtons, encore. Le cercle d’élèves s’est agrandi : votre duel est devenu un spectacle. « La belle, cette fois. »' },
+      { si: { drapeau: 'daichi', egal: 'battu' }, texte: 'Ryūji t’attend au même endroit, deux bâtons plantés dans la terre. Ses paumes sont couvertes de cals. « J’ai dit que je reviendrais. »' },
+      { si: { drapeau: 'daichi', egal: 'vainqueur' }, texte: 'Ryūji t’attend au même endroit, deux bâtons plantés dans la terre. « On m’a dit que tu t’entraînais en cachette. Montre. »' },
+      { si: { drapeau: 'daichi', egal: 'egalite' }, texte: 'Ryūji, encore. Les bâtons, encore. Le cercle d’élèves s’est agrandi : votre duel est devenu un spectacle. « La belle, cette fois. »' },
     ],
     choix: [
       {
@@ -237,7 +237,7 @@ export const ENFANCE: EventDef[] = [
     ],
   },
 
-  // ── Fil : Mei, la fille de la caravane ────────────────────────
+  // ── Fil : Nanami, la fille de la caravane ────────────────────────
   {
     ...base,
     id: 'e6_mei',
@@ -246,7 +246,7 @@ export const ENFANCE: EventDef[] = [
     lieu: '$porte',
     poids: 5,
     si: ENFANT,
-    texte: 'Une caravane de marchands campe deux jours devant la porte du village. Une fille de ton âge, Mei, vend des noix grillées et des histoires de pays que tu ne connais que sur les cartes. Elle parle vite et rit fort.',
+    texte: 'Une caravane de marchands campe deux jours devant la porte du village. Une fille de ton âge, Nanami, vend des noix grillées et des histoires de pays que tu ne connais que sur les cartes. Elle parle vite et rit fort.',
     choix: [
       {
         id: 'ecouter',
@@ -258,7 +258,7 @@ export const ENFANCE: EventDef[] = [
         id: 'echanger',
         texte: 'Échanger ton plus beau kunai d’entraînement contre une carte',
         effets: [{ stat: 'attributs.perception', delta: 1 }, { objet: 'carte_mei' }, { drapeau: 'mei', valeur: 'echange' }, { retour: 'e6_mei_retour', chance: 0.65, entre: [300, 700] }],
-        resultat: 'La carte est mal dessinée, tachée de thé, et tu la gardes sous ton oreiller. Mei a ton kunai à la ceinture quand la caravane s’en va. « Je te le rapporterai affûté ! »',
+        resultat: 'La carte est mal dessinée, tachée de thé, et tu la gardes sous ton oreiller. Nanami a ton kunai à la ceinture quand la caravane s’en va. « Je te le rapporterai affûté ! »',
       },
       {
         id: 'mefier',
@@ -276,7 +276,7 @@ export const ENFANCE: EventDef[] = [
     lieu: '$porte',
     enchaine: true,
     si: ACTIF,
-    texte: 'Des grelots devant la porte. La même caravane, les mêmes bâches rapiécées. Et Mei, qui a grandi d’une main, saute du chariot avant qu’il s’arrête. « Je t’avais dit qu’on repasserait ! Alors, mon histoire ? »',
+    texte: 'Des grelots devant la porte. La même caravane, les mêmes bâches rapiécées. Et Nanami, qui a grandi d’une main, saute du chariot avant qu’il s’arrête. « Je t’avais dit qu’on repasserait ! Alors, mon histoire ? »',
     choix: [
       {
         id: 'raconter',
@@ -439,16 +439,16 @@ export const ENFANCE: EventDef[] = [
     ],
   },
 
-  // ── Fil : la vieille Tomoe et son chat ────────────────────────
+  // ── Fil : la vieille Fumi et son chat ────────────────────────
   {
     ...base,
     id: 'e6_tomoe',
-    titre: 'Le chat de la vieille Tomoe',
+    titre: 'Le chat de la vieille Fumi',
     categorie: 'civils',
     lieu: '$village',
     poids: 5,
     si: ENFANT,
-    texte: 'La vieille Tomoe, qui vend des pickles au coin de ta rue, a perdu son chat. Elle ne pleure pas. Elle reste juste assise devant sa porte, à appeler un nom, doucement, comme si le chat pouvait avoir honte d’être parti.',
+    texte: 'La vieille Fumi, qui vend des pickles au coin de ta rue, a perdu son chat. Elle ne pleure pas. Elle reste juste assise devant sa porte, à appeler un nom, doucement, comme si le chat pouvait avoir honte d’être parti.',
     choix: [
       {
         id: 'chercher',
@@ -458,10 +458,10 @@ export const ENFANCE: EventDef[] = [
           difficulte: 40,
           attributs: { perception: 2, discretion: 1 },
           succes: {
-            texte: 'Tu le trouves coincé sous le plancher de l’entrepôt à riz, furieux et affamé. Tomoe le serre contre elle et te fourre un pot de pickles dans les bras. « Reviens me voir, petit·e. Les vieux ont des choses à raconter. »',
+            texte: 'Tu le trouves coincé sous le plancher de l’entrepôt à riz, furieux et affamé. Fumi le serre contre elle et te fourre un pot de pickles dans les bras. « Reviens me voir, petit·e. Les vieux ont des choses à raconter. »',
             effets: [{ stat: 'attributs.perception', delta: 2 }, { stat: 'social.reputation', delta: 2 }, { drapeau: 'tomoe', valeur: 'amie' }, { retour: 'e6_tomoe_retour', chance: 0.6, entre: [250, 600] }],
           },
-          echec: { texte: 'Tu cherches jusqu’à la nuit, en vain. Le lendemain, le chat revient tout seul. Tomoe te remercie quand même, et tu ne sais pas très bien de quoi.', effets: [{ stat: 'attributs.perception', delta: 1 }, { drapeau: 'tomoe', valeur: 'connue' }] },
+          echec: { texte: 'Tu cherches jusqu’à la nuit, en vain. Le lendemain, le chat revient tout seul. Fumi te remercie quand même, et tu ne sais pas très bien de quoi.', effets: [{ stat: 'attributs.perception', delta: 1 }, { drapeau: 'tomoe', valeur: 'connue' }] },
         },
       },
       {
@@ -475,12 +475,12 @@ export const ENFANCE: EventDef[] = [
   {
     ...base,
     id: 'e6_tomoe_retour',
-    titre: 'La porte de Tomoe',
+    titre: 'La porte de Fumi',
     categorie: 'deuil',
     lieu: '$village',
     enchaine: true,
     si: ACTIF,
-    texte: 'Tu passes devant la boutique de pickles. Les volets sont fermés. Sur la marche, le chat est assis, seul. Une voisine t’explique, à voix basse : Tomoe est partie dans son sommeil, il y a trois jours. « Elle parlait de toi, tu sais. »',
+    texte: 'Tu passes devant la boutique de pickles. Les volets sont fermés. Sur la marche, le chat est assis, seul. Une voisine t’explique, à voix basse : Fumi est partie dans son sommeil, il y a trois jours. « Elle parlait de toi, tu sais. »',
     choix: [
       {
         id: 'chat',
