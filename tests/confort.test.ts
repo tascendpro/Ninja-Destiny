@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { creation } from './aide';
 import { activite, nouvellePartie, repartir } from '../src/engine/moteur';
 import { cleScene } from '../src/ui/defilement';
+import { genererActivites } from '../src/engine/tempsLibre';
 
 const tempsLibre = () => {
   const s = nouvellePartie(creation(), 11);
@@ -39,4 +40,21 @@ describe('Confort : le défilement et la répartition', () => {
     expect(s.pointsStat).toBe(1);
   });
 
+});
+
+describe('Temps libre : gain prévu et bilan de période', () => {
+  it('chaque entraînement possible annonce ce que la période devrait rapporter', () => {
+    const s = tempsLibre();
+    const entrainements = genererActivites(s).filter((a) => a.id.startsWith('entrainer:') && a.disponible && a.progression?.prochain);
+    expect(entrainements.length).toBeGreaterThan(0);
+    for (const a of entrainements) expect(a.gain).toMatch(/Palier \d probable|Vers \d+ % du palier \d/);
+  });
+  it('une période d’entraînement laisse un bilan daté', () => {
+    let s = tempsLibre();
+    s.pointsStat = 0;
+    const id = genererActivites(s).find((a) => a.id.startsWith('entrainer:') && a.disponible)!.id;
+    s = activite(s, id);
+    expect(s.bilanPeriode?.libelle).toBeTruthy();
+    expect(s.bilanPeriode?.jour).toBe(s.jour);
+  });
 });

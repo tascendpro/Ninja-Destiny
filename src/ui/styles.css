@@ -3198,22 +3198,7 @@ p.entree.inconnue {
 }
 
 
-/* ── Couleurs des natures : chaque nature a la sienne, partout où elle apparaît ── */
-:root {
-  --n-katon: #e8643c;
-  --n-suiton: #3f9ee0;
-  --n-fuuton: #5fc48a;
-  --n-raiton: #e9c23a;
-  --n-doton: #b4865a;
-  --n-yoton: #d9480f;
-  --n-futton: #e07b9c;
-  --n-hyoton: #8fd6ef;
-  --n-ranton: #7f86f0;
-  --n-mokuton: #5f9e4a;
-  --n-jiton: #8d939e;
-  --n-bakuton: #f08c2e;
-  --n-shakuton: #f5a742;
-}
+/* ── Couleurs des natures : pastilles et attaques (jetons définis plus bas, par thème) ── */
 .badges-nature {
   display: inline-flex;
   gap: 3px;
@@ -3432,4 +3417,369 @@ p.entree.inconnue {
   text-decoration: underline;
   text-underline-offset: 3px;
   min-height: 44px;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   Encre et papier de riz — fondations du design
+   Une échelle d'espacement unique, les couleurs de nature et de village,
+   le grain du papier et la voix du pinceau. Tout ce qui suit s'appuie dessus.
+   ════════════════════════════════════════════════════════════════ */
+:root {
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 12px;
+  --e4: 16px;
+  --e5: 24px;
+  --e6: 32px;
+  --pinceau: 'Yuji Syuku', var(--mincho);
+  --texte-2: #a9b2ba;
+
+  /* Natures (thème nuit) */
+  --n-katon: #d9482b;
+  --n-fuuton: #3fa37c;
+  --n-raiton: #e8c33a;
+  --n-doton: #9a6b3f;
+  --n-suiton: #2f7fc1;
+  --n-yoton: #d9480f;
+  --n-futton: #d97a95;
+  --n-hyoton: #7fcbe6;
+  --n-ranton: #7f86f0;
+  --n-mokuton: #5f9e4a;
+  --n-jiton: #8d939e;
+  --n-bakuton: #f08c2e;
+  --n-shakuton: #f2a33a;
+
+  /* Villages (thème nuit) */
+  --v-konoha: #5daa4f;
+  --v-suna: #c9a15a;
+  --v-kiri: #7f95a8;
+  --v-kumo: #8a6bc9;
+  --v-iwa: #9c7b5b;
+  --accent: var(--or);
+}
+:root[data-ambiance='washi'] {
+  --texte-2: #5a4f42;
+  --n-katon: #b5361c;
+  --n-fuuton: #2b7a5b;
+  --n-raiton: #8a6d0a;
+  --n-doton: #7a5230;
+  --n-suiton: #1f5f96;
+  --n-yoton: #a8380a;
+  --n-futton: #a8475f;
+  --n-hyoton: #2f7fa0;
+  --n-ranton: #4a50b8;
+  --n-mokuton: #3f7a2e;
+  --n-jiton: #5a606b;
+  --n-bakuton: #a85a10;
+  --n-shakuton: #9a6410;
+  --v-konoha: #3f7d33;
+  --v-suna: #8f6a28;
+  --v-kiri: #4f6578;
+  --v-kumo: #5f4396;
+  --v-iwa: #6f5236;
+}
+/* L'accent de l'interface prend la couleur du village du personnage. */
+:root[data-village='konoha'] { --accent: var(--v-konoha); }
+:root[data-village='suna'] { --accent: var(--v-suna); }
+:root[data-village='kiri'] { --accent: var(--v-kiri); }
+:root[data-village='kumo'] { --accent: var(--v-kumo); }
+:root[data-village='iwa'] { --accent: var(--v-iwa); }
+
+/* Le grain du papier : un bruit très léger, derrière tout le contenu. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.45  0 0 0 0 0.4  0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+}
+:root[data-ambiance='washi'] body::before {
+  opacity: 0.12;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Un trait de pinceau sous les titres de section. */
+.trait-pinceau,
+.temps-libre .sous-groupe h3::after {
+  content: '';
+  flex: 1;
+  height: 6px;
+  background: none;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 6' preserveAspectRatio='none'><path d='M1 3.4 C40 1.6 90 4.6 150 2.8 S260 3.8 299 2.2 L299 3.6 C250 5 180 3.6 120 4.4 S30 4.8 1 4.2 Z'/></svg>") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 6' preserveAspectRatio='none'><path d='M1 3.4 C40 1.6 90 4.6 150 2.8 S260 3.8 299 2.2 L299 3.6 C250 5 180 3.6 120 4.4 S30 4.8 1 4.2 Z'/></svg>") center / 100% 100% no-repeat;
+  background-color: color-mix(in srgb, var(--accent) 55%, var(--trait));
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Temps libre
+   ════════════════════════════════════════════════════════════════ */
+.recit-texte.temps-libre {
+  max-width: var(--colonne);
+}
+.tl-grille {
+  display: grid;
+  gap: var(--e4);
+}
+.tl-cote {
+  display: grid;
+  gap: var(--e3);
+  align-content: start;
+}
+.tl-principal {
+  min-width: 0;
+}
+@media (min-width: 1100px) {
+  .recit-texte.temps-libre {
+    max-width: 1180px;
+  }
+  .tl-grille {
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: var(--e6);
+    align-items: start;
+  }
+  .tl-cote {
+    position: sticky;
+    top: var(--e4);
+  }
+}
+
+/* Titre : le kanji de l'entraînement, au pinceau, derrière le mot. */
+.tl-titre {
+  position: relative;
+  margin: var(--e2) 0 0;
+  padding-left: var(--e1);
+}
+.tl-titre-kanji {
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--pinceau);
+  font-size: 4.6rem;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+/* La frise de l'année */
+.frise {
+  display: grid;
+  gap: var(--e2);
+}
+.frise-ligne {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 3px;
+}
+.frise-mois {
+  position: relative;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--trait-doux);
+}
+.frise-mois.passe {
+  background: color-mix(in srgb, var(--accent) 35%, var(--trait-doux));
+}
+.frise-mois.present {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.frise-mois b {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-family: var(--pinceau);
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--texte-2);
+}
+.frise-ligne {
+  margin-top: 20px;
+}
+.frise-mois.marque::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--vermillon-clair);
+  box-shadow: 0 0 0 2px var(--encre);
+}
+.frise-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e1) var(--e3);
+  margin: 0;
+  font-size: var(--t-s);
+  color: var(--texte-2);
+}
+.frise-legende span:first-child {
+  color: var(--papier);
+  font-family: var(--mincho);
+  font-weight: 700;
+}
+.frise-approche {
+  color: var(--vermillon-clair);
+}
+
+/* La carte d'humeur */
+.carte-humeur {
+  display: grid;
+  gap: var(--e2);
+  padding: var(--e4);
+  border: 1px solid var(--trait);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--rayon-m);
+  background: color-mix(in srgb, var(--accent) 5%, var(--ardoise));
+}
+.carte-humeur p {
+  margin: 0;
+}
+.humeur-phrase {
+  font-family: var(--mincho);
+  font-size: var(--t-l);
+  line-height: 1.5;
+  color: var(--papier);
+}
+.humeur-pnj {
+  font-size: var(--t-s);
+  color: var(--texte-2);
+}
+.humeur-pnj b {
+  color: var(--papier);
+}
+.humeur-duree {
+  font-size: var(--t-xs);
+  color: var(--texte-2);
+}
+
+/* Le mini-bilan */
+.bilan-periode {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: var(--e2) var(--e3);
+  border-radius: var(--rayon-s);
+  background: var(--encre-2);
+  font-size: var(--t-s);
+}
+.bilan-titre {
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-2);
+}
+
+/* Les onglets : une grille qui passe à la ligne, jamais de défilement horizontal. */
+.tl-categories {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  overflow: visible;
+  margin: 0 0 var(--e4);
+}
+.tl-categories button {
+  min-height: 60px;
+}
+.tl-categories button[aria-selected='true'] {
+  border-color: var(--cat);
+}
+
+/* Les cartes d'activité, compactes */
+.temps-libre .sous-groupe {
+  margin-top: var(--e5);
+}
+.temps-libre .sous-groupe:first-of-type {
+  margin-top: 0;
+}
+.temps-libre .sous-groupe h3 {
+  margin: 0 0 var(--e3);
+}
+.temps-libre .activite {
+  padding: var(--e3) var(--e3) var(--e3) var(--e4);
+  gap: var(--e1) var(--e3);
+}
+.temps-libre .act-nom {
+  display: flex;
+  align-items: center;
+  gap: var(--e1);
+  line-height: 1.25;
+}
+.temps-libre .act-progression {
+  margin: var(--e1) 0 0;
+}
+.temps-libre .act-progression small,
+.temps-libre .act-detail {
+  color: var(--texte-2);
+}
+.act-gain {
+  grid-column: 1 / -1;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--cat);
+}
+.sceau-bloque {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: var(--e1);
+  border-radius: 3px;
+  background: var(--vermillon);
+  color: var(--texte-bouton);
+  font-family: var(--pinceau);
+  font-size: 0.7rem;
+  vertical-align: 1px;
+}
+.programme-aide,
+.tl-note,
+.tl-vide {
+  margin: 0 0 var(--e3);
+  font-size: var(--t-s);
+  color: var(--texte-2);
+}
+.temps-libre .programme.actif {
+  margin-top: var(--e4);
+  border-color: var(--accent);
+}
+.lien-bloquees {
+  color: var(--texte-2);
+}
+
+/* Téléphone : l'essentiel d'abord. La carte d'humeur se resserre, les points restent dans l'en-tête. */
+@media (max-width: 1099px) {
+  .tl-points {
+    display: none;
+  }
+  .carte-humeur {
+    padding: var(--e3);
+    gap: var(--e1);
+  }
+  .humeur-phrase {
+    font-size: var(--t-m);
+  }
+  .humeur-duree {
+    display: none;
+  }
+  .tl-titre-kanji {
+    font-size: 3.6rem;
+  }
+}
+.tl-categories {
+  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+}
+@media (min-width: 1100px) {
+  .tl-categories {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  }
 }

@@ -1040,6 +1040,14 @@ export type Scene =
       dojutsu?: string;
     };
 
+/** Ce que la dernière période de temps libre a rapporté (pour le mini-bilan). */
+export interface BilanPeriode {
+  jour: number;
+  libelle: string;
+  paliers: { maitrise: string; palier: number }[];
+  stats: { chemin: StatPath; delta: number }[];
+}
+
 export type Action =
   | { a: 'choix'; id: string }
   | { a: 'continuer' }
@@ -1114,4 +1122,6 @@ export interface GameState {
   consommables: Record<string, number>;
   /** Retour d'une action instantanée du temps libre (achat, dés…), affiché une fois. */
   annonce?: string;
+  /** Ce que la dernière période de temps libre a rapporté. */
+  bilanPeriode?: BilanPeriode;
 }

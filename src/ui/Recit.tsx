@@ -10,7 +10,7 @@ import { decorScene } from '../engine/decors';
 import type { VueDecor } from '../engine/decors';
 import { duoPossible, genererActivites, naturesActivite, periodeMax } from '../engine/tempsLibre';
 import type { Activite } from '../engine/tempsLibre';
-import { libelleDuree, libellePeriode, saisonDe } from '../engine/calendrier';
+import { age, libelleDuree, libellePeriode, moisDe, saisonDe } from '../engine/calendrier';
 import Portrait from './Portrait';
 import { cleScene, remonter } from './defilement';
 import { ATTRIBUT_LIBELLE, ETAT_PNJ, KANJI_SAISON, vueChangements } from './libelles';
@@ -360,9 +360,14 @@ function LigneActivite({
           </span>
         )}
         <span className={`act-detail${!a.disponible ? ' rouge' : ''}`}>
-          {!a.disponible && <span aria-hidden="true">🔒 </span>}
+          {!a.disponible && (
+            <span className="sceau-bloque" aria-hidden="true">
+              封
+            </span>
+          )}
           {accorder((a.disponible ? a.description : a.raison) ?? '', p)}
         </span>
+        {a.disponible && a.gain && <span className="act-gain">{a.gain}</span>}
         {a.disponible && a.alerte && <span className="act-detail rouge">{accorder(a.alerte, p)}</span>}
         {a.duree > 0 && <span className="act-duree">{libelleDuree(a.duree)}</span>}
       </button>
@@ -449,103 +454,200 @@ function TempsLibre({
     <div className="recit">
       <ColonneScene lieu={lieu} graine={`${lieu.id}-libre`} theme={theme} anime={anime} saison={KANJI_SAISON[saisonDe(etat.jour)]} etat={etat} decor={decorScene(etat, undefined, '$village')} />
       <section className="recit-texte temps-libre" data-cat={cat}>
-        <h1 className="titre-scene">Temps libre</h1>
-        <p className="tl-intro">
-          Une seule décision pour les {periodeMax(etat) >= 360 ? 'mois' : 'semaines'} qui viennent : à quoi les consacres-tu ? Le temps passera jusqu’au prochain moment important, {periodeMax(etat) >= 360 ? 'un an' : 'six mois'} au plus.
-        </p>
-        {alertes.map((a) => (
-          <p key={a} className="alerte">
-            {accorder(a, p)}
-          </p>
-        ))}
-        {etat.annonce && (
-          <p className="annonce" role="status">
-            {accorder(etat.annonce, p)}
-          </p>
-        )}
-        {etat.pointsStat > 0 && (
-          <button type="button" className="points-bandeau" onClick={onOuvrirPoints}>
-            <strong>{etat.pointsStat}</strong> {etat.pointsStat > 1 ? 'points de stat à répartir' : 'point de stat à répartir'}
-            <span>Répartir</span>
-          </button>
-        )}
-        <div className="tl-categories" role="tablist" aria-label="Catégories d’activités">
-          {visibles.map((c) => (
-            <button key={c.id} role="tab" aria-selected={cat === c.id} onClick={() => setChoisie(c.id)}>
-              <span className="tl-kanji" aria-hidden="true">
-                {c.kanji}
+        <div className="tl-grille">
+          <aside className="tl-cote">
+            <h1 className="titre-scene tl-titre">
+              <span className="tl-titre-kanji" aria-hidden="true">
+                修
               </span>
-              <span className="tl-nom">{c.nom}</span>
-              <span className="compte">{parCategorie[c.id].filter((a) => a.disponible).length}</span>
-            </button>
-          ))}
-        </div>
-        {cat === 'entrainement' ? (
-          SOUS_GROUPES_ENTRAINEMENT.map((g) => {
-            const l = principales.filter(g.filtre);
-            if (!l.length) return null;
-            return (
-              <div className="sous-groupe" key={g.titre}>
-                <h3>{g.titre}</h3>
+              Temps libre
+            </h1>
+            <FriseAnnee etat={etat} />
+            <CarteHumeur etat={etat} />
+            <BilanDernierePeriode etat={etat} />
+            {alertes.map((a) => (
+              <p key={a} className="alerte">
+                {accorder(a, p)}
+              </p>
+            ))}
+            {etat.annonce && (
+              <p className="annonce" role="status">
+                {accorder(etat.annonce, p)}
+              </p>
+            )}
+            {etat.pointsStat > 0 && (
+              <button type="button" className="points-bandeau tl-points" onClick={onOuvrirPoints}>
+                <strong>{etat.pointsStat}</strong> {etat.pointsStat > 1 ? 'points de stat à répartir' : 'point de stat à répartir'}
+                <span>Répartir</span>
+              </button>
+            )}
+          </aside>
+          <div className="tl-principal">
+            <div className="tl-categories" role="tablist" aria-label="Catégories d’activités">
+              {visibles.map((c) => (
+                <button key={c.id} role="tab" aria-selected={cat === c.id} onClick={() => setChoisie(c.id)}>
+                  <span className="tl-kanji" aria-hidden="true">
+                    {c.kanji}
+                  </span>
+                  <span className="tl-nom">{c.nom}</span>
+                  <span className="compte">{parCategorie[c.id].filter((a) => a.disponible).length}</span>
+                </button>
+              ))}
+            </div>
+            {double && (cat === 'techniques' || cat === 'entrainement') && !valides.sort && !valides.discipline && (
+              <p className="programme-aide">Coche une discipline et une technique : les deux progressent pendant la même période.</p>
+            )}
+            {cat === 'entrainement' ? (
+              SOUS_GROUPES_ENTRAINEMENT.map((g) => {
+                const l = principales.filter(g.filtre);
+                if (!l.length) return null;
+                return (
+                  <div className="sous-groupe" key={g.titre}>
+                    <h3>{g.titre}</h3>
+                    <ul className="activites">
+                      {l.map((a) => (
+                        <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })
+            ) : (
+              <ul className="activites sous-groupe">
+                {principales.map((a) => (
+                  <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
+                ))}
+              </ul>
+            )}
+            {principales.length === 0 && <p className="tl-vide">Rien à faire ici pour l’instant.</p>}
+            {bloquees.length > 0 && (
+              <button type="button" className="lien-bloquees" aria-expanded={voirBloquees} onClick={() => basculerBloquees(!voirBloquees)}>
+                {voirBloquees ? 'Masquer' : 'Voir'} {bloquees.length === 1 ? 'l’activité bloquée' : `les ${bloquees.length} activités bloquées`}
+              </button>
+            )}
+            {bloquees.length > 0 && voirBloquees && (
+              <div className="sous-groupe bloquees">
+                <h3>Bloqué ou impossible à améliorer pour l’instant</h3>
                 <ul className="activites">
-                  {l.map((a) => (
+                  {bloquees.map((a) => (
                     <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
                   ))}
                 </ul>
               </div>
-            );
-          })
-        ) : (
-          <ul className="activites sous-groupe">
-            {principales.map((a) => (
-              <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
-            ))}
-          </ul>
-        )}
-        {bloquees.length > 0 && (
-          <button type="button" className="lien-bloquees" aria-expanded={voirBloquees} onClick={() => basculerBloquees(!voirBloquees)}>
-            {voirBloquees ? 'Masquer' : 'Voir'} {bloquees.length === 1 ? 'l’activité bloquée' : `les ${bloquees.length} activités bloquées`}
-          </button>
-        )}
-        {bloquees.length > 0 && voirBloquees && (
-          <div className="sous-groupe bloquees">
-            <h3>Bloqué ou impossible à améliorer pour l’instant</h3>
-            <ul className="activites">
-              {bloquees.map((a) => (
-                <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
-              ))}
-            </ul>
+            )}
+            {cat === 'forge' && <p className="tl-note">Achats, réparations et changement d’arme sont instantanés : ils ne comptent pas comme ta décision. Pilules, parchemins et fumigènes s’utilisent pendant les combats en manches.</p>}
+            {achatsHorsPortee.length > 0 && (
+              <details className="hors-portee">
+                <summary>Hors de portée pour l’instant ({achatsHorsPortee.length})</summary>
+                <ul className="activites">
+                  {achatsHorsPortee.map((a) => (
+                    <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
+                  ))}
+                </ul>
+              </details>
+            )}
+            {double && (valides.sort || valides.discipline) && (
+              <div className="programme actif" role="region" aria-label="Programme d’entraînement">
+                <span className="programme-choix">
+                  {[valides.discipline, valides.sort].filter(Boolean).map((a) => (
+                    <b key={a!.id}>{accorder(a!.libelle.replace(/^Apprendre /, ''), p)}</b>
+                  ))}
+                  {!(valides.sort && valides.discipline) && <small>{valides.sort ? '+ une discipline ?' : '+ une technique ?'}</small>}
+                </span>
+                <button className="btn-principal" onClick={lancer}>
+                  Commencer
+                </button>
+              </div>
+            )}
           </div>
-        )}
-        {double && (cat === 'techniques' || cat === 'entrainement') && !valides.sort && !valides.discipline && (
-          <p className="programme-aide">Coche une discipline et une technique : les deux progressent pendant la même période.</p>
-        )}
-        {double && (valides.sort || valides.discipline) && (
-          <div className="programme actif" role="region" aria-label="Programme d’entraînement">
-            <span className="programme-choix">
-              {[valides.discipline, valides.sort].filter(Boolean).map((a) => (
-                <b key={a!.id}>{accorder(a!.libelle.replace(/^Apprendre /, ''), p)}</b>
-              ))}
-              {!(valides.sort && valides.discipline) && <small>{valides.sort ? '+ une discipline ?' : '+ une technique ?'}</small>}
-            </span>
-            <button className="btn-principal" onClick={lancer}>
-              Lancer
-            </button>
-          </div>
-        )}
-        {cat === 'forge' && <p className="sous-titre" style={{ marginTop: 12 }}>Achats, réparations et changement d’arme sont instantanés : ils ne comptent pas comme ta décision. Pilules, parchemins et fumigènes s’utilisent pendant les combats en manches.</p>}
-        {achatsHorsPortee.length > 0 && (
-          <details className="hors-portee">
-            <summary>Hors de portée pour l’instant ({achatsHorsPortee.length})</summary>
-            <ul className="activites">
-              {achatsHorsPortee.map((a) => (
-                <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
-              ))}
-            </ul>
-          </details>
-        )}
+        </div>
       </section>
     </div>
+  );
+}
+
+// ── Temps libre : frise, humeur, bilan ─────────────────────────
+
+const KANJI_SAISONS = ['春', '夏', '秋', '冬'];
+const NOMS_MOIS = ['Mois du réveil', 'Mois des pruniers', 'Mois des cerisiers', 'Mois des pluies', 'Mois des cigales', 'Mois brûlant', 'Mois des lanternes', 'Mois des récoltes', 'Mois des érables', 'Mois du givre', 'Mois des neiges', 'Mois du silence'];
+
+/** La frise de l'année : les quatre saisons, le mois en cours, et un point là où un moment d'histoire approche. */
+function FriseAnnee({ etat }: { etat: GameState }) {
+  const mois = moisDe(etat.jour);
+  const debutAnnee = etat.jour - (((etat.jour % 360) + 360) % 360);
+  const marques = new Set(
+    etat.planifies.filter((pl) => pl.jour > etat.jour && pl.jour <= debutAnnee + 360).map((pl) => moisDe(pl.jour)),
+  );
+  const proche = etat.planifies.some((pl) => pl.jour > etat.jour && pl.jour - etat.jour <= 90);
+  return (
+    <div className="frise" aria-label={`${NOMS_MOIS[mois]}, ${age(etat)} ans`}>
+      <div className="frise-ligne">
+        {Array.from({ length: 12 }, (_, m) => (
+          <span key={m} className={`frise-mois${m < mois ? ' passe' : m === mois ? ' present' : ''}${marques.has(m) ? ' marque' : ''}`}>
+            {m % 3 === 0 && <b aria-hidden="true">{KANJI_SAISONS[m / 3]}</b>}
+          </span>
+        ))}
+      </div>
+      <p className="frise-legende">
+        <span>{NOMS_MOIS[mois]}</span>
+        <span>{age(etat)} ans</span>
+        {proche && <span className="frise-approche">● un événement approche</span>}
+      </p>
+    </div>
+  );
+}
+
+/** Un nombre stable tiré du jour : l'ambiance change d'une période à l'autre sans toucher au hasard de la partie. */
+const graineJour = (jour: number, sel: number) => Math.abs(Math.imul(jour + sel, 2654435761) | 0);
+
+const AMBIANCES: Record<string, string[]> = {
+  printemps: ['Les cerisiers perdent leurs pétales sur les toits.', 'La boue du dégel colle aux sandales.', 'Les hirondelles sont revenues sous l’auvent.'],
+  ete: ['L’air sent la poussière chaude et le cèdre.', 'Les cigales couvrent le bruit des kunai.', 'Même l’ombre est tiède.'],
+  automne: ['Les érables rougissent au-dessus du terrain.', 'Le vent apporte l’odeur des feux de feuilles.', 'Les soirées raccourcissent ; on rentre plus tôt.'],
+  hiver: ['Le givre craque sous les pas.', 'La neige étouffe tous les bruits du village.', 'On s’entraîne en soufflant sur ses doigts.'],
+};
+
+/** La carte d'humeur : saison, phrase d'ambiance, et le personnage du moment. */
+function CarteHumeur({ etat }: { etat: GameState }) {
+  const saison = saisonDe(etat.jour);
+  const phrases = AMBIANCES[saison] ?? AMBIANCES.ete;
+  const phrase = phrases[graineJour(etat.jour, 7) % phrases.length];
+  const proches = ['coequipierA', 'sensei', 'rival', 'coequipierB']
+    .map((r) => etat.roles[r])
+    .filter((id): id is string => !!id && (etat.pnj[id]?.etat === 'vivant' || etat.pnj[id]?.etat === 'blesse'));
+  const qui = proches.length ? defPnj(etat, proches[graineJour(etat.jour, 13) % proches.length]) : undefined;
+  const scenes = ['t’attend au terrain d’entraînement.', 'cherche quelqu’un pour s’entraîner.', 'est rentré de mission, fatigué, et a demandé de tes nouvelles.', 'mange seul au comptoir de ramen.'];
+  const scene = scenes[graineJour(etat.jour, 29) % scenes.length];
+  return (
+    <div className="carte-humeur">
+      <p className="humeur-phrase">{phrase}</p>
+      {qui && (
+        <p className="humeur-pnj">
+          <b>{qui.nom}</b> {scene}
+        </p>
+      )}
+      <p className="humeur-duree">Une seule décision : le temps passera jusqu’au prochain moment important, {periodeMax(etat) >= 360 ? 'un an' : 'six mois'} au plus.</p>
+    </div>
+  );
+}
+
+/** Ce que la dernière période a rapporté : paliers franchis, aptitudes gagnées. */
+function BilanDernierePeriode({ etat }: { etat: GameState }) {
+  const b = etat.bilanPeriode;
+  if (!b || etat.jour - b.jour > 400) return null;
+  // Plusieurs paliers franchis d'un coup : on ne garde que le plus haut atteint.
+  const paliers = new Map<string, number>();
+  for (const x of b.paliers) paliers.set(x.maitrise, Math.max(paliers.get(x.maitrise) ?? 0, x.palier));
+  const lignes = [
+    ...[...paliers].map(([m, pal]) => `${R.maitrises[m]?.nom ?? m} palier ${pal}`),
+    ...b.stats.map((x) => `${ATTRIBUT_LIBELLE[x.chemin.slice(10) as AttributId] ?? x.chemin} +${Math.round(x.delta)}`),
+  ];
+  if (!lignes.length) return null;
+  return (
+    <p className="bilan-periode">
+      <span className="bilan-titre">La dernière période</span>
+      {lignes.join(' · ')}
+    </p>
   );
 }
 

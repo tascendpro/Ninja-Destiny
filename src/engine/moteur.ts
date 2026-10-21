@@ -1356,6 +1356,15 @@ function activiteMut(s: GameState, id: string): void {
     s.annonce = r.texte;
     return;
   }
+  // Le mini-bilan de la période : paliers franchis et aptitudes gagnées, pour sentir la progression.
+  s.bilanPeriode = {
+    jour: s.jour,
+    libelle: r.libelle,
+    paliers: ctx.changements.filter((c): c is Extract<Changement, { t: 'palier' }> => c.t === 'palier').map((c) => ({ maitrise: c.maitrise, palier: c.palier })),
+    stats: ctx.changements
+      .filter((c): c is Extract<Changement, { t: 'stat' }> => c.t === 'stat' && c.chemin.startsWith('attributs.') && c.delta > 0)
+      .map((c) => ({ chemin: c.chemin, delta: c.delta })),
+  };
   s.scene = {
     type: 'resultat',
     evenementId: '__temps_libre',

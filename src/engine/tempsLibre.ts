@@ -13,7 +13,7 @@ import { age, libelleDuree } from './calendrier';
 import { Ctx, ajouterJournal, clamp, defPnj, decouvrir, drapeauVrai, estProdige, rangIndex, relationDe } from './etat';
 import { evaluer } from './conditions';
 import { alea, aleaEntier } from './rng';
-import { apprendreTechnique, applyTraining, blocageApprentissage, blocagePalier, etatProgression, nouvelleMaitrise, porteurJoueur } from './maitrise';
+import { apprendreTechnique, applyTraining, blocageApprentissage, blocagePalier, etatProgression, nouvelleMaitrise, porteurJoueur, tauxProgression } from './maitrise';
 import { equiper, estUtilisable, instanceArme, obtenirArme, reparerArme } from './armes';
 import { appliquerEffet } from './effets';
 import { avancerTemps } from './temps';
@@ -49,9 +49,23 @@ export interface Activite {
   progression?: { tier: number; prochain?: number; pct: number };
   /** Avertissement affiché en rouge (palier suivant bloqué par l'âge, l'expérience…). */
   alerte?: string;
+  /** Ce que la période devrait rapporter, en clair (« Palier 3 probable »). */
+  gain?: string;
 }
 
 const ROLES_NON_SOCIAUX = ['kage', 'recruteur', 'ennemi', 'deserteur', 'marchand'];
+
+/**
+ * Ce qu'une période d'entraînement devrait rapporter : le palier suivant s'il est à portée,
+ * sinon l'avancée attendue. Une estimation (la période peut s'arrêter plus tôt), jamais un tirage.
+ */
+function gainPrevu(s: GameState, id: string, prog: { prochain?: number; jours: number; requis: number }): string | undefined {
+  if (!prog.prochain || prog.requis <= 0) return undefined;
+  const jours = tauxProgression(s, id, !!s.drapeaux[`mentor:${id}`]) * periodeMax(s);
+  if (prog.jours + jours >= prog.requis) return `Palier ${prog.prochain} probable`;
+  const pct = Math.round((Math.min(prog.requis, prog.jours + jours) / prog.requis) * 100);
+  return `Vers ${pct} % du palier ${prog.prochain}`;
+}
 
 /** Les natures d'une maîtrise : la nature elle-même, la lignée de fusion, ou les natures d'une technique. */
 export function naturesMaitrise(id: string): string[] {
@@ -168,6 +182,7 @@ export function genererActivites(s: GameState): Activite[] {
       groupe: sort ? 'sort' : 'discipline',
       progression: prog ? { tier: prog.tier, prochain: prog.prochain, pct: prog.pct } : undefined,
       alerte: !raison && prog?.mur ? prog.murTexte : undefined,
+      gain: !raison && prog ? gainPrevu(s, ms.id, prog) : undefined,
     });
   }
 

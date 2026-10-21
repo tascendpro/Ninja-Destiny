@@ -77,6 +77,12 @@ export default function Game() {
     stockage.ecrire(CLE_REGLAGES, JSON.stringify(reglages));
   }, [reglages, stockage]);
 
+  // L'accent de l'interface prend la couleur du village du personnage.
+  useEffect(() => {
+    if (etat?.creation.village) document.documentElement.dataset.village = etat.creation.village;
+    else delete document.documentElement.dataset.village;
+  }, [etat?.creation.village]);
+
   useEffect(() => {
     if (!pret) return;
     if (reglages.son) {
