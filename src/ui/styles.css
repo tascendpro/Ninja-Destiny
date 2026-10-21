@@ -3783,3 +3783,459 @@ body::before {
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   }
 }
+
+
+/* ════════════════════════════════════════════════════════════════
+   Création du personnage : chaque village et chaque nature a sa couleur
+   ════════════════════════════════════════════════════════════════ */
+.etapes i.fait {
+  background: var(--accent);
+}
+.tuile-couleur {
+  position: relative;
+  overflow: hidden;
+  border-top: 3px solid color-mix(in srgb, var(--c) 70%, transparent);
+  transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.tuile-couleur .kanji {
+  color: var(--c);
+}
+.tuile-couleur:hover:not(:disabled) {
+  border-color: var(--c);
+  transform: translateY(-1px);
+}
+.tuile-couleur[aria-pressed='true'] {
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 16%, var(--ardoise));
+  box-shadow: 0 0 0 1px var(--c), 0 10px 26px -16px var(--c);
+}
+.tuile-couleur[aria-pressed='true']::after {
+  content: '✓';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--c);
+  color: var(--encre);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.detail-couleur {
+  border-left: 3px solid var(--c);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c) 9%, var(--ardoise)), var(--ardoise) 60%);
+}
+.detail-couleur h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+}
+.detail-kanji {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--c) 22%, transparent);
+  border: 1px solid var(--c);
+  color: var(--c);
+  font-family: var(--pinceau);
+  font-size: 1.4rem;
+}
+.pastilles-natures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+.pastille-nature {
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--c);
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+  color: var(--papier);
+  font-size: var(--t-s);
+}
+
+/* Identité : la présentation et l'âge en cartes */
+.identite-choix {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e2);
+}
+.identite-carte {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: var(--e3) var(--e2);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon-m);
+  background: var(--ardoise);
+  color: var(--papier);
+  min-height: 96px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.identite-kanji {
+  font-family: var(--pinceau);
+  font-size: 2rem;
+  line-height: 1.1;
+  color: var(--texte-2);
+}
+.identite-carte strong {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+}
+.identite-carte small {
+  color: var(--texte-2);
+  font-size: var(--t-xs);
+}
+.identite-carte[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--ardoise));
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.identite-carte[aria-pressed='true'] .identite-kanji {
+  color: var(--accent);
+}
+.age-carte {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--e4);
+}
+.age-chiffre {
+  font-family: var(--mincho);
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+}
+.option[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--ardoise));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.tuile-couleur .kanji,
+.tuile-couleur[aria-pressed='true'] .kanji {
+  color: var(--c);
+}
+
+/* Personnalité : chaque trait dit ce qu'il booste. */
+.trait-gains {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e1);
+}
+.trait-gain {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  color: var(--jade);
+  background: color-mix(in srgb, var(--jade) 14%, transparent);
+}
+.trait-gain.perte {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+.point-fort {
+  margin: var(--e4) 0 0;
+  padding: var(--e3) var(--e4);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--rayon-s);
+  background: color-mix(in srgb, var(--accent) 8%, var(--ardoise));
+  font-size: var(--t-s);
+}
+.point-fort strong {
+  color: var(--accent);
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   Accueil : la reprise de partie, les pétales, le trait d'encre
+   ════════════════════════════════════════════════════════════════ */
+.logo {
+  position: relative;
+  padding-bottom: 14px;
+}
+.logo::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: min(78%, 420px);
+  height: 10px;
+  background: #c32a38;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 10' preserveAspectRatio='none'><path d='M2 6 C50 2 120 3 180 4.5 S270 3 298 1.5 L297 4 C250 7 190 8 130 7.5 S40 9 3 8.5 Z'/></svg>") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 10' preserveAspectRatio='none'><path d='M2 6 C50 2 120 3 180 4.5 S270 3 298 1.5 L297 4 C250 7 190 8 130 7.5 S40 9 3 8.5 Z'/></svg>") center / 100% 100% no-repeat;
+  opacity: 0.9;
+}
+.reprise {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--e3);
+  width: 100%;
+  padding: var(--e3) var(--e4);
+  border: 1px solid #c32a38;
+  border-radius: var(--rayon-m);
+  background: linear-gradient(135deg, #c32a38, #8f1d29);
+  color: #fff3ec;
+  text-align: left;
+  box-shadow: 0 14px 30px -18px #c32a38;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.reprise:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px -16px #c32a38;
+}
+.reprise-sceau {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #fff3ec;
+  color: #8f1d29;
+  font-family: var(--pinceau);
+  font-size: 1.3rem;
+  transform: rotate(-5deg);
+}
+.reprise-texte {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.reprise-texte strong {
+  font-size: var(--t-m);
+}
+.reprise-texte small {
+  font-size: var(--t-xs);
+  color: #f5dcd6;
+}
+.reprise-village {
+  color: #fff;
+  font-weight: 700;
+  border-bottom: 2px solid var(--c);
+}
+.reprise-fleche {
+  font-size: 1.3rem;
+}
+.btn-kanji {
+  font-family: var(--pinceau);
+  margin-right: 6px;
+  color: #e5545a;
+}
+.accueil-secondaires .btn-secondaire {
+  background: rgba(11, 10, 13, 0.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+/* Les pétales d'érable, en écho à l'image */
+.petales {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.petales i {
+  position: absolute;
+  top: -20px;
+  width: 9px;
+  height: 7px;
+  border-radius: 70% 0 70% 0;
+  background: #d8263b;
+  opacity: 0.75;
+  animation: petale linear infinite;
+}
+.petales i:nth-child(3n) {
+  width: 6px;
+  height: 5px;
+  opacity: 0.55;
+}
+@keyframes petale {
+  0% {
+    transform: translate(0, -20px) rotate(0deg);
+  }
+  50% {
+    transform: translate(-40px, 50vh) rotate(200deg);
+  }
+  100% {
+    transform: translate(20px, 105vh) rotate(420deg);
+  }
+}
+:root[data-animations='reduites'] .petales {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .petales {
+    display: none;
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   Écran de fin : la stèle, les chiffres d'une vie, le bilan en cartes
+   ════════════════════════════════════════════════════════════════ */
+.fin-ecran {
+  --f: #c32a38;
+}
+.fin-capture { --f: #a07a3c; }
+.fin-exil { --f: #6c7fa6; }
+.fin-civile { --f: #6f9a5b; }
+.fin-desertion { --f: #8d5a9e; }
+.fin-secrete { --f: #8d6cc4; }
+.fin-accomplie { --f: #c9a227; }
+.fin-chapitre { --f: var(--v, var(--accent)); }
+.fin-stele {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  justify-items: center;
+  gap: var(--e2);
+  margin: var(--e4) auto var(--e4);
+  max-width: 760px;
+  padding: var(--e6) var(--e4) var(--e5);
+  text-align: center;
+  border: 1px solid color-mix(in srgb, var(--f) 45%, var(--trait));
+  border-radius: var(--rayon-m);
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--f) 22%, transparent), transparent 70%),
+    var(--ardoise);
+}
+.fin-kanji {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--pinceau);
+  font-size: clamp(12rem, 48vw, 20rem);
+  line-height: 1;
+  color: var(--f);
+  opacity: 0.1;
+  pointer-events: none;
+}
+.fin-type {
+  position: relative;
+  font-size: var(--t-xs);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--f);
+  font-weight: 700;
+}
+.fin-nom {
+  position: relative;
+  margin: 0;
+  font-family: var(--mincho);
+  font-weight: 800;
+  font-size: clamp(2rem, 8vw, 3.4rem);
+  line-height: 1.1;
+  color: var(--papier);
+}
+.fin-origine {
+  position: relative;
+  margin: 0;
+  color: var(--texte-2);
+}
+.fin-village {
+  color: var(--papier);
+  font-weight: 700;
+  border-bottom: 2px solid var(--v);
+}
+.fin-vie {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  margin: var(--e2) 0 0;
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+}
+.fin-vie i {
+  width: 64px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--f), transparent);
+}
+.fin-cause {
+  position: relative;
+  margin: 0;
+  max-width: 46ch;
+  font-style: italic;
+  color: var(--texte-2);
+}
+.fin-hanko {
+  position: absolute;
+  top: var(--e4);
+  right: var(--e4);
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--f);
+  border-radius: 10px;
+  color: var(--f);
+  font-family: var(--mincho);
+  font-size: 2rem;
+  font-weight: 800;
+  transform: rotate(8deg);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--f) 30%, transparent);
+}
+.fin-chiffres {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e2);
+  max-width: 760px;
+  margin: 0 auto var(--e4);
+  padding: 0;
+  list-style: none;
+}
+.fin-chiffres li {
+  display: grid;
+  gap: 2px;
+  padding: var(--e3) var(--e2);
+  text-align: center;
+  border: 1px solid var(--trait);
+  border-top: 2px solid var(--f);
+  border-radius: var(--rayon-m);
+  background: var(--ardoise);
+  min-width: 0;
+}
+.fin-chiffres strong {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  overflow-wrap: anywhere;
+}
+.fin-chiffres small {
+  font-size: var(--t-xs);
+  color: var(--texte-2);
+}
+.fin-titre {
+  color: var(--f);
+}
+.fin-cartes {
+  display: grid;
+  gap: var(--e3);
+  margin-top: var(--e5);
+}
+.fin-cartes > .groupe {
+  margin: 0;
+  padding: var(--e4);
+  border: 1px solid var(--trait);
+  border-left: 3px solid var(--f);
+  border-radius: var(--rayon-m);
+  background: var(--ardoise);
+}
+.fin-cartes > .groupe h3 {
+  margin-top: 0;
+}
+@media (min-width: 900px) {
+  .fin-chiffres {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .fin-cartes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

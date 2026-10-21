@@ -1,6 +1,6 @@
 'use client';
 
-import type { GameState } from '../engine/types';
+import type { EndingDef, GameState } from '../engine/types';
 import { R } from '../engine/registre';
 import { chapitreSuivantDisponible } from '../engine/moteur';
 import { age } from '../engine/calendrier';
@@ -10,12 +10,16 @@ import { noteFinale, texteFin } from '../engine/fins';
 import type { Meta } from '../engine/sauvegarde';
 import { ETAT_PNJ, RANG_LIBELLE } from './libelles';
 
-const SCENE_VILLAGE: Record<string, string> = {
-  konoha: 'village_feu',
-  suna: 'village_vent',
-  kiri: 'village_brume',
-  kumo: 'village_foudre',
-  iwa: 'village_terre',
+/** Chaque genre de fin a sa stèle : un kanji, un mot et une couleur. */
+const STELES: Record<EndingDef['type'], { kanji: string; libelle: string }> = {
+  mort: { kanji: '死', libelle: 'Tombé·e' },
+  capture: { kanji: '囚', libelle: 'Captif·ve' },
+  exil: { kanji: '流', libelle: 'Exilé·e' },
+  civile: { kanji: '民', libelle: 'Rendu·e à la vie civile' },
+  desertion: { kanji: '抜', libelle: 'Déserteur·se' },
+  secrete: { kanji: '秘', libelle: 'Une fin que peu connaissent' },
+  accomplie: { kanji: '成', libelle: 'Une vie accomplie' },
+  chapitre: { kanji: '章', libelle: 'Chapitre clos' },
 };
 
 export default function Fin({
@@ -50,26 +54,51 @@ export default function Fin({
   const legendaires = etat.arsenal.filter((a) => ['legendaire', 'maudite'].includes(R.armes[a.defId]?.rarete));
 
   const P = etat.creation.presentation;
+  const type = (etat.fin && R.fins[etat.fin.id]?.type) || 'mort';
+  const stele = STELES[type];
+  const clan = R.clans[etat.creation.clan];
+  const missions = Object.values(etat.missions).filter((m) => m === 'reussie').length;
+  const liens = Object.values(etat.relations).filter((r) => !r.rompue && r.amitie + r.confiance >= 80).length;
+  const chiffres: [string, string | number][] = [
+    ['Rang', etat.rang === 'eleve' ? 'Élève' : accorder(RANG_LIBELLE[etat.rang], P)],
+    ['Missions', missions],
+    ['Pouvoirs', pouvoirs.length],
+    ['Liens solides', liens],
+    ['Secrets', etat.secrets.length],
+    ['Ryō', Math.max(0, Math.round(etat.jauges.ryo))],
+  ];
   return (
-    <div className="recit">
-      <header className="lieu-bandeau">
-        <span className="sceau-texte" aria-hidden="true">
-          終
+    <div className={`recit fin-ecran fin-${type}`} style={{ '--v': `var(--v-${etat.creation.village})` } as React.CSSProperties}>
+      <header className="fin-stele apparition">
+        <span className="fin-kanji" aria-hidden="true">
+          {stele.kanji}
         </span>
-        <div>
-          <strong>{village.nom}</strong>
-          <span>{suite ? `Fin du chapitre ${etat.chapitre}` : `Fin de la vie de ${etat.creation.prenom}`}</span>
-        </div>
+        <span className="fin-type">{suite ? `Fin du chapitre ${etat.chapitre}` : accorder(stele.libelle, P)}</span>
+        <h1 className="fin-nom">{nomComplet(etat)}</h1>
+        <p className="fin-origine">
+          {clan && clan.id !== 'sans_clan' ? `Clan ${clan.nom} · ` : ''}
+          <span className="fin-village">{village.nom}</span>
+        </p>
+        <p className="fin-vie">
+          <span>{etat.creation.ageDepart} ans</span>
+          <i aria-hidden="true" />
+          <span>{age(etat)} ans</span>
+        </p>
+        {etat.fin?.cause && <p className="fin-cause">{accorder(etat.fin.cause.charAt(0).toUpperCase() + etat.fin.cause.slice(1), P)}.</p>}
+        <span className="fin-hanko" aria-label={`Note finale ${note.note}`}>
+          {note.note}
+        </span>
       </header>
+      <ul className="fin-chiffres apparition d2">
+        {chiffres.map(([l, v]) => (
+          <li key={l}>
+            <strong>{v}</strong>
+            <small>{l}</small>
+          </li>
+        ))}
+      </ul>
       <article className="recit-texte">
-      <h1 className="titre-scene">{accorder(titre, P)}</h1>
-      <span className="note" aria-label={`Note finale ${note.note}`}>
-        {note.note}
-      </span>
-      <p className="sous-titre">
-        {nomComplet(etat)}, {accorder(RANG_LIBELLE[etat.rang], P)}, {age(etat)} ans.
-        {etat.fin?.cause ? ` ${etat.fin.cause.charAt(0).toUpperCase()}${etat.fin.cause.slice(1)}.` : ''}
-      </p>
+      <h2 className="titre-scene fin-titre">{accorder(titre, P)}</h2>
       <div className="texte-recit" style={{ marginTop: 14 }}>
         {accorder(texte, P)
           .split(/\n\n+/)
@@ -85,6 +114,7 @@ export default function Fin({
         </div>
       )}
 
+      <div className="fin-cartes">
       <section className="groupe">
         <h3>{village.nom}</h3>
         <p>
@@ -180,6 +210,8 @@ export default function Fin({
           </ol>
         </section>
       )}
+
+      </div>
 
       <p className="bourse" style={{ marginTop: 22 }}>
         <span className="bourse-montant">
