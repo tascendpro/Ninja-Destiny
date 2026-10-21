@@ -467,7 +467,8 @@ export function periodeMax(s: GameState): number {
 }
 
 /** Chance, après chaque bloc d'une période, qu'un imprévu vienne l'interrompre. */
-const IMPREVU = { enfant: 0.2, adulte: 0.12 };
+/** Chance d'imprévu par bloc de temps libre : l'enfance déborde de petites choses, l'âge adulte se resserre. */
+const IMPREVU = { enfant: 0.7, ado: 0.4, jeune: 0.22, adulte: 0.12 };
 
 const BOUCLABLES = new Set(['duo', 'entrainer', 'nature', 'technique', 'repos', 'famille', 'social', 'travail', 'etudier', 'metier', 'route']);
 const ENTRAINEMENT = new Set(['duo', 'entrainer', 'nature', 'technique', 'route']);
@@ -600,7 +601,8 @@ export function faireActivite(s: GameState, id: string, ctx: Ctx): ResultatActiv
     if (s.fin || s.jauges.sante <= 0) break;
     if (trameDisponible(s)) break;
     if (s.jour - debut >= max) break;
-    const chance = (age(s) < 12 ? IMPREVU.enfant : IMPREVU.adulte) * ((s.jour - avant) / dureeBase(s));
+    const a = age(s);
+    const chance = (a < 11 ? IMPREVU.enfant : a < 17 ? IMPREVU.ado : a < 23 ? IMPREVU.jeune : IMPREVU.adulte) * ((s.jour - avant) / dureeBase(s));
     if (alea(s) < chance) {
       suite = tirerAleatoire(s);
       if (suite) {

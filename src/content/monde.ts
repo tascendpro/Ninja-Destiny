@@ -155,16 +155,16 @@ export const ELEMENTS: ElementDef[] = [
 ];
 
 export const TRAITS: TraitDef[] = [
-  { id: 'determine', nom: 'Déterminé·e', description: 'Tu ne lâches jamais. Entraînement légèrement plus efficace.', bonus: { controleEmotionnel: 3 }, tag: 'travail' },
+  { id: 'determine', nom: 'Déterminé·e', description: 'Tu ne lâches jamais. Entraînement légèrement plus efficace.', bonus: { controleEmotionnel: 5, force: 3 }, tag: 'travail' },
   { id: 'calme', nom: 'Calme', description: 'Rien ne te fait perdre pied facilement.', bonus: { controleEmotionnel: 8 }, tag: 'prudence' },
-  { id: 'impulsif', nom: 'Impulsif·ve', description: 'Tu agis avant de réfléchir — parfois à raison.', bonus: { force: 4, agilite: 3, controleEmotionnel: -8 }, tag: 'audace' },
+  { id: 'impulsif', nom: 'Impulsif·ve', description: 'Tu agis avant de réfléchir — parfois à raison.', bonus: { force: 6, agilite: 6, controleEmotionnel: -4 }, tag: 'audace' },
   { id: 'curieux', nom: 'Curieux·se', description: 'Tu veux comprendre, quitte à fouiller où il ne faut pas.', bonus: { perception: 5, intellect: 3 }, tag: 'curiosite' },
-  { id: 'loyal', nom: 'Loyal·e', description: 'Ta parole et tes liens comptent plus que tout.', bonus: { charisme: 3 }, social: { loyaute: 10 }, tag: 'loyaute' },
-  { id: 'mefiant', nom: 'Méfiant·e', description: 'Tu doutes de tout le monde, et tu vois venir les coups.', bonus: { perception: 6, charisme: -4 }, tag: 'prudence' },
-  { id: 'compatissant', nom: 'Compatissant·e', description: 'La souffrance des autres te touche, ennemis compris.', bonus: { charisme: 3 }, ethique: { compassion: 20 }, tag: 'pitie' },
-  { id: 'ambitieux', nom: 'Ambitieux·se', description: 'Tu vises haut, et tu le sais.', bonus: { intellect: 2, charisme: 2 }, ethique: { ambition: 20 }, tag: 'ambition' },
+  { id: 'loyal', nom: 'Loyal·e', description: 'Ta parole et tes liens comptent plus que tout.', bonus: { charisme: 5, controleEmotionnel: 3 }, social: { loyaute: 10 }, tag: 'loyaute' },
+  { id: 'mefiant', nom: 'Méfiant·e', description: 'Tu doutes de tout le monde, et tu vois venir les coups.', bonus: { perception: 10, charisme: -2 }, tag: 'prudence' },
+  { id: 'compatissant', nom: 'Compatissant·e', description: 'La souffrance des autres te touche, ennemis compris.', bonus: { charisme: 5, perception: 3 }, ethique: { compassion: 20 }, tag: 'pitie' },
+  { id: 'ambitieux', nom: 'Ambitieux·se', description: 'Tu vises haut, et tu le sais.', bonus: { intellect: 4, charisme: 4 }, ethique: { ambition: 20 }, tag: 'ambition' },
   { id: 'discret', nom: 'Discret·e', description: 'On t’oublie dans une pièce. C’est une arme.', bonus: { discretion: 8 }, tag: 'discretion' },
-  { id: 'fier', nom: 'Fier·ère', description: 'Ton honneur ne se négocie pas.', bonus: { force: 2 }, ethique: { honneur: 15 }, tag: 'fierte' },
+  { id: 'fier', nom: 'Fier·ère', description: 'Ton honneur ne se négocie pas.', bonus: { force: 5, controleEmotionnel: 3 }, ethique: { honneur: 15 }, tag: 'fierte' },
   { id: 'joyeux', nom: 'Rieur·se', description: 'Tu ris de tout, même quand tu as peur.', bonus: { charisme: 6, controleEmotionnel: 2 }, tag: 'humour' },
   {
     id: 'prodige',

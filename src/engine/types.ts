@@ -189,6 +189,8 @@ export type Effect =
   | { statut: Statut }
   | { mission: string; statut: MissionStatut }
   | { planifier: string; dansJours: number }
+  /** Un fil laissé ouvert : avec cette chance (tirée par la partie), la scène reviendra entre ces deux délais, en jours. */
+  | { retour: string; chance: number; entre: [number, number] }
   | { temps: number }
   | { journal: string; importance?: 1 | 2 | 3 }
   | { decouvrir: string | string[] }

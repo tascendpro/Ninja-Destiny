@@ -122,6 +122,11 @@ export function diagnostiquer(): Probleme[] {
         references.add(e.planifier);
         if (!R.evenements[e.planifier]) err('evenement_inconnu', `${ou} : planification d’un événement inconnu ${e.planifier}.`);
       }
+      if ('retour' in e) {
+        references.add(e.retour);
+        if (!R.evenements[e.retour]) err('evenement_inconnu', `${ou} : retour d’un événement inconnu ${e.retour}.`);
+        if (!(e.chance > 0 && e.chance <= 1) || e.entre[0] > e.entre[1]) err('retour_invalide', `${ou} : retour de ${e.retour} mal réglé.`);
+      }
       if ('fin' in e) {
         references.add(`fin:${e.fin}`);
         if (!R.fins[e.fin]) err('fin_inconnue', `${ou} : fin inconnue ${e.fin}.`);
@@ -247,6 +252,7 @@ export function diagnostiquer(): Probleme[] {
           if (i.suite) pile.push(i.suite);
           for (const e of effetsDe(i.effets)) {
             if ('planifier' in e) pile.push(e.planifier);
+            if ('retour' in e) pile.push(e.retour);
             if ('obtenirArme' in e && e.obtenirArme === w.id) obtention = true;
           }
         }

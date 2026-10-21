@@ -1,0 +1,787 @@
+import type { Condition, EventDef } from '../../engine/types';
+
+const ACTIF: Condition = { statut: 'actif' };
+const ADO: Condition = { tout: [ACTIF, { age: { min: 11, max: 16 } }] };
+const ado = { chapitre: 1, chapitres: [1, 2, 3], arc: 'premieres_missions' as const };
+const plus = { chapitre: 2, chapitres: [2, 3, 4, 5, 6], arc: 'heritage' as const };
+
+/**
+ * L'adolescence (11 à 16 ans) : le bandeau, les premières paies, les premiers amours, les dettes.
+ * Et les visages de l'enfance qui reviennent, adultes, quand on ne les attend plus.
+ */
+export const ADOLESCENCE: EventDef[] = [
+  // ── Fil : Kaede, la genin de l'autre équipe ───────────────────
+  {
+    ...ado,
+    id: 'a11_kaede',
+    titre: 'La genin de l’équipe sept',
+    categorie: 'rivalite',
+    lieu: '$terrain',
+    poids: 6,
+    si: { tout: [ADO, { rangMin: 'genin' }] },
+    texte: 'Kaede, de l’équipe sept, s’entraîne seule au terrain trois tous les soirs, à la même heure que toi. Depuis une semaine, vous faites semblant de ne pas vous voir. Ce soir, elle lance un kunai qui se plante à un doigt de ta cible. « Oups. »',
+    choix: [
+      {
+        id: 'duel',
+        texte: 'Lui proposer un échange de coups',
+        test: {
+          type: 'combat',
+          difficulte: 52,
+          attributs: { agilite: 2, perception: 1 },
+          maitrises: { taijutsu: 1, famille_kunai: 1 },
+          succes: {
+            texte: 'Elle est rapide, et elle triche avec élégance. Tu gagnes de justesse. Elle rit, essoufflée. « Demain, même heure. » Et le lendemain, elle est là.',
+            effets: [{ entrainer: 'taijutsu', jours: 15 }, { drapeau: 'kaede', valeur: 'rivale' }, { retour: 'a11_kaede_examen', chance: 0.75, entre: [150, 400] }],
+          },
+          echec: {
+            texte: 'Elle te met à terre trois fois, sans forcer. Elle te tend la main. « Tu baisses l’épaule avant de frapper. Tout le monde le voit. Sauf toi. »',
+            effets: [{ entrainer: 'taijutsu', jours: 12 }, { stat: 'attributs.perception', delta: 1 }, { drapeau: 'kaede', valeur: 'rivale' }, { retour: 'a11_kaede_examen', chance: 0.75, entre: [150, 400] }],
+          },
+        },
+      },
+      {
+        id: 'ensemble',
+        texte: 'Lui proposer de s’entraîner ensemble au lancer',
+        effets: [{ entrainer: 'famille_kunai', jours: 18 }, { stat: 'attributs.charisme', delta: 1 }, { drapeau: 'kaede', valeur: 'amie' }, { retour: 'a11_kaede_examen', chance: 0.75, entre: [150, 400] }],
+        resultat: 'Elle lance des deux mains. Toi, d’une seule, mal. À la fin du mois, tu lances des deux mains, mal aussi, mais deux fois plus. Vous rentrez ensemble par la rue des lanternes.',
+      },
+      {
+        id: 'ignorer',
+        texte: 'Changer de terrain',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 1 }],
+        resultat: 'Tu t’entraînes au terrain cinq, désormais. Il est plus loin, plus boueux, et personne n’y lance de kunai à un doigt de ta cible.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_kaede_examen',
+    titre: 'Kaede, de l’autre côté',
+    categorie: 'rivalite',
+    lieu: '$village',
+    enchaine: true,
+    chapitres: [1, 2, 3, 4],
+    si: ACTIF,
+    texte: [
+      { si: { drapeau: 'kaede', egal: 'rivale' }, texte: 'Kaede t’attrape par la manche dans la rue principale. Elle a une veste de chūnin sur le dos, toute neuve, encore pliée aux coudes. « Je l’ai eue avant toi. Je voulais que tu le saches par moi. » Elle sourit. Elle est fière, et un peu gênée de l’être.' },
+      { si: { drapeau: 'kaede', egal: 'amie' }, texte: 'Kaede t’attrape par la manche dans la rue principale. Elle a le bras en écharpe, le visage tiré. « Mission de rang B. On était quatre. On est rentrés trois. » Elle ne pleure pas. Elle veut juste marcher avec quelqu’un.' },
+    ],
+    choix: [
+      {
+        id: 'feliciter',
+        texte: 'Rester avec elle, et l’écouter',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { stat: 'attributs.charisme', delta: 1 }],
+        resultat: [
+          { si: { drapeau: 'kaede', egal: 'rivale' }, texte: 'Tu le penses. Ça te surprend toi-même. Elle te tape sur l’épaule. « La prochaine veste, c’est toi. Sinon je viendrai te la mettre de force. »' },
+          { si: { drapeau: 'kaede', egal: 'amie' }, texte: 'Vous faites le tour du village deux fois. Au pont, elle dit le nom de son coéquipier, une seule fois. Tu le retiens. Quelqu’un doit le retenir.' },
+        ],
+      },
+      {
+        id: 'defi',
+        texte: 'Lui dire que tu la rattraperas',
+        effets: [{ entrainer: 'taijutsu', jours: 20 }, { stat: 'jauges.fatigue', delta: 12 }],
+        resultat: 'Elle hausse un sourcil. « On verra. » Cette nuit-là, tu t’entraînes jusqu’à ne plus sentir tes bras. Ce n’est plus contre elle. C’est avec elle, d’une certaine façon.',
+      },
+    ],
+  },
+
+  // ── Fil : la lettre ───────────────────────────────────────────
+  {
+    ...ado,
+    id: 'a11_lettre',
+    titre: 'La lettre que tu n’as pas envoyée',
+    categorie: 'romance',
+    lieu: '$maison',
+    poids: 5,
+    si: { tout: [ACTIF, { age: { min: 13, max: 16 } }] },
+    texte: 'Ren, qui tient l’échoppe de thé avec sa grand-mère, a une façon de rire qui te fait oublier ce que tu allais commander. Ça fait trois semaines. Tu as écrit une lettre. Elle est dans ta poche depuis trois jours, et elle commence à s’user aux pliures.',
+    choix: [
+      {
+        id: 'envoyer',
+        texte: 'La donner, enfin',
+        effets: [
+          { stat: 'attributs.controleEmotionnel', delta: 1 },
+          { hasard: [{ poids: 55, effets: [{ drapeau: 'ren', valeur: 'oui' }] }, { poids: 45, effets: [{ drapeau: 'ren', valeur: 'non' }] }] },
+          { retour: 'a11_lettre_reponse', chance: 1, entre: [5, 20] },
+        ],
+        resultat: 'Tu la poses sur le comptoir, à côté de ta tasse, et tu pars trop vite pour voir son visage. Les jours suivants, tu passes trois fois par jour devant l’échoppe, sans jamais entrer.',
+      },
+      {
+        id: 'bruler',
+        texte: 'La brûler : un·e ninja n’a pas le temps pour ça',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { ethique: { ambition: 3 } }],
+        resultat: 'Le papier se recroqueville dans la lampe. Tu te sens fort·e, une minute. Puis tu te demandes ce qu’aurait répondu Ren, et tu te le demanderas longtemps.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_lettre_reponse',
+    titre: 'La réponse de Ren',
+    categorie: 'romance',
+    lieu: '$village',
+    enchaine: true,
+    si: ACTIF,
+    texte: 'Ren t’attend devant l’échoppe fermée, au crépuscule. Il y a ta lettre dans sa main, pliée en quatre.',
+    choix: [
+      {
+        id: 'ecouter',
+        texte: 'Écouter',
+        effets: [{ si: { drapeau: 'ren', egal: 'oui' }, alors: [{ stat: 'attributs.charisme', delta: 2 }, { stat: 'jauges.fatigue', delta: -15 }], sinon: [{ stat: 'attributs.controleEmotionnel', delta: 3 }] }],
+        resultat: [
+          { si: { drapeau: 'ren', egal: 'oui' }, texte: '« Tu écris mal, dit Ren. Mais c’est la plus belle lettre que j’aie reçue. » Vous marchez jusqu’au bout du village sans vous toucher la main. Au retour, si. Le monde a la même forme qu’hier, et pourtant rien n’est pareil.' },
+          { si: { drapeau: 'ren', egal: 'non' }, texte: '« Pardon. Ce n’est pas toi. Il y a quelqu’un d’autre. » Ren te rend la lettre, doucement, comme on rend un objet fragile. Tu rentres par les toits pour que personne ne te voie. C’est la première fois que ça fait aussi mal sans une seule blessure.' },
+        ],
+      },
+    ],
+  },
+
+  // ── Fil : Hiro, le marchand d'informations ────────────────────
+  {
+    ...ado,
+    id: 'a11_hiro',
+    titre: 'Le garçon qui sait tout',
+    categorie: 'politique',
+    lieu: '$village',
+    poids: 5,
+    si: { tout: [ACTIF, { age: { min: 13, max: 16 } }, { rangMin: 'genin' }] },
+    texte: 'Hiro n’est pas ninja. Il est fils de tenancier, il sert le saké aux jōnin, et il entend tout. « Je sais quelle équipe partira pour la frontière le mois prochain. Je sais pourquoi ton sensei boite. Je te fais crédit. Tu me rendras un service, un jour. »',
+    choix: [
+      {
+        id: 'credit',
+        texte: 'Accepter, à crédit',
+        effets: [{ stat: 'attributs.intellect', delta: 2 }, { indice: 'hiro_info' }, { drapeau: 'hiro', valeur: 'dette' }, { retour: 'a11_hiro_dette', chance: 0.85, entre: [90, 300] }],
+        resultat: 'Il te dit tout, à voix basse, en essuyant un verre. Ce qu’il sait est vrai, tu le vérifieras. Ce qu’il voudra en échange, tu ne le sais pas encore.',
+      },
+      {
+        id: 'payer',
+        texte: 'Payer comptant',
+        si: { stat: 'jauges.ryo', min: 30 },
+        verrou: 'Il demande 30 ryō.',
+        effets: [{ stat: 'jauges.ryo', delta: -30 }, { stat: 'attributs.intellect', delta: 2 }, { indice: 'hiro_info' }, { drapeau: 'hiro', valeur: 'client' }],
+        resultat: '« Comptant ? Tu es la première personne raisonnable de ce village. » Il te dit tout. Tu ne lui dois rien, et il le regrette un peu.',
+      },
+      {
+        id: 'refuser',
+        texte: 'Refuser : on ne vend pas les secrets du village',
+        effets: [{ stat: 'social.loyaute', delta: 4 }, { ethique: { honneur: 3 } }],
+        resultat: 'Il hausse les épaules. « Comme tu veux. Mais les autres achètent. » Tu te demandes lesquels, et ça te gâche la soirée.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_hiro_dette',
+    titre: 'Le service',
+    categorie: 'politique',
+    lieu: '$village',
+    enchaine: true,
+    chapitres: [1, 2, 3, 4],
+    si: ACTIF,
+    texte: 'Hiro t’attend dans l’arrière-salle, entre deux tonneaux. « Le service. Rien de grave. Un paquet à déposer au poste de la porte est, de nuit, sans que personne le voie. Tu es ninja, non ? »',
+    choix: [
+      {
+        id: 'faire',
+        texte: 'Le faire, sans ouvrir le paquet',
+        test: {
+          type: 'competence',
+          difficulte: 50,
+          attributs: { discretion: 2, perception: 1 },
+          succes: { texte: 'Personne ne te voit. Le paquet est léger, il cliquette un peu. Hiro te sert un verre, sur la maison. « Quittes. » Tu ne sauras jamais ce que tu as transporté, et c’est peut-être mieux.', effets: [{ stat: 'attributs.discretion', delta: 2 }, { stat: 'social.reputationOmbre', delta: 4 }, { drapeau: 'hiro', valeur: 'quittes' }] },
+          echec: { texte: 'Un garde te voit. Tu files, le paquet tombe, s’ouvre : des sceaux de passage, vierges. Le lendemain, il y a une enquête. Ton nom n’y est pas. Pas encore.', effets: [{ stat: 'social.suspicion', delta: 8 }, { drapeau: 'hiro', valeur: 'brule' }] },
+        },
+      },
+      {
+        id: 'ouvrir',
+        texte: 'Ouvrir le paquet d’abord',
+        effets: [{ stat: 'attributs.perception', delta: 1 }, { stat: 'social.loyaute', delta: 5 }, { drapeau: 'hiro', valeur: 'denonce' }],
+        resultat: 'Des sceaux de passage, vierges. De quoi faire sortir n’importe qui du village. Tu les rapportes au poste de garde. Hiro disparaît de son comptoir la semaine suivante. Personne ne sait où il est passé.',
+      },
+      {
+        id: 'refuser',
+        texte: 'Refuser : la dette s’arrête là',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { drapeau: 'hiro', valeur: 'ennemi' }],
+        resultat: 'Il te regarde longtemps. « D’accord. Mais je n’oublie jamais une dette. Ni un refus. » Pendant des mois, des rumeurs sur toi circulent au marché. Elles ont toutes un petit goût de saké.',
+      },
+    ],
+  },
+
+  // ── Fil : Yuta, le petit frère ────────────────────────────────
+  {
+    ...ado,
+    id: 'a11_yuta',
+    titre: 'Le petit frère',
+    categorie: 'amitie',
+    lieu: '$terrain',
+    poids: 5,
+    si: { tout: [ACTIF, { age: { min: 13, max: 16 } }, { rangMin: 'genin' }] },
+    texte: 'Un gamin de huit ans t’attend tous les soirs au bord du terrain. Yuta. Son grand frère était genin. Il ne l’est plus : il est sur la stèle depuis le printemps. « Tu peux m’apprendre ? Je veux être fort. Pour que ça ne recommence pas. »',
+    choix: [
+      {
+        id: 'apprendre',
+        texte: 'Lui apprendre, chaque soir',
+        duree: 10,
+        effets: [{ stat: 'attributs.charisme', delta: 2 }, { stat: 'attributs.intellect', delta: 1 }, { ethique: { compassion: 4 } }, { drapeau: 'yuta', valeur: 'eleve' }, { retour: 'a11_yuta_retour', chance: 0.7, entre: [500, 900] }],
+        resultat: 'Il est maladroit, têtu, et il ne pleure jamais quand il tombe. En lui apprenant à tomber, tu comprends enfin pourquoi ton sensei répétait toujours la même chose. On apprend en enseignant. Tu ne le savais pas.',
+      },
+      {
+        id: 'verite',
+        texte: 'Lui dire que la force n’empêche rien',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { drapeau: 'yuta', valeur: 'verite' }, { retour: 'a11_yuta_retour', chance: 0.5, entre: [500, 900] }],
+        resultat: 'Il te regarde avec colère, puis avec autre chose. « Alors pourquoi tu t’entraînes ? » Tu n’as pas de réponse. Il revient le lendemain quand même.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_yuta_retour',
+    titre: 'Yuta a son bandeau',
+    categorie: 'amitie',
+    lieu: '$academie',
+    enchaine: true,
+    chapitres: [1, 2, 3, 4, 5],
+    si: ACTIF,
+    texte: 'Une voix crie ton nom à travers la cour de l’Académie. Yuta. Il a grandi d’un coup, il a un bandeau tout neuf sur le front, et il court vers toi comme s’il avait encore huit ans. « Je l’ai ! Premier au lancer ! Tu avais dit que je n’y arriverais pas ! »',
+    choix: [
+      {
+        id: 'fier',
+        texte: 'Lui dire que tu es fier·ère de lui',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { stat: 'social.reputation', delta: 3 }],
+        resultat: [
+          { si: { drapeau: 'yuta', egal: 'eleve' }, texte: 'Il rougit jusqu’aux oreilles. « C’est grâce à toi. » Ce n’est pas vrai. C’est grâce à lui. Mais tu gardes la phrase quelque part, pour les jours mauvais.' },
+          { si: { drapeau: 'yuta', egal: 'verite' }, texte: '« Tu avais raison, tu sais. La force n’empêche rien. Mais elle aide à rester debout après. » Il a douze ans. Il a compris quelque chose que tu cherches encore.' },
+        ],
+      },
+      {
+        id: 'cadeau',
+        texte: 'Lui donner ton premier kunai',
+        effets: [{ stat: 'attributs.charisme', delta: 2 }, { ethique: { compassion: 3 } }],
+        resultat: 'Il le prend à deux mains, comme une relique. Tu repars plus léger·ère, avec la sensation étrange d’avoir transmis quelque chose qui ne t’appartenait pas tout à fait.',
+      },
+    ],
+  },
+
+  // ── Scènes de l'adolescence ───────────────────────────────────
+  {
+    ...ado,
+    id: 'a11_premiere_paie',
+    titre: 'La première paie',
+    categorie: 'quotidien',
+    lieu: '$village',
+    poids: 4,
+    si: { tout: [ADO, { rangMin: 'genin' }, { stat: 'jauges.ryo', min: 30 }] },
+    texte: 'Le bureau des missions t’a remis ta première vraie paie, dans une enveloppe scellée à ton nom. Ce n’est pas grand-chose. C’est à toi.',
+    choix: [
+      {
+        id: 'parent',
+        texte: 'Offrir quelque chose à {parent}',
+        effets: [{ stat: 'jauges.ryo', delta: -20 }, { relation: '@parent', delta: { attachement: 8, respect: 4 } }, { stat: 'attributs.charisme', delta: 1 }],
+        resultat: 'Un châle, un peigne, une bouteille de bon saké : peu importe. {Parent} le tient longtemps dans ses mains, sans rien dire. Le soir, tu l’entends le raconter aux voisins, trois fois.',
+      },
+      {
+        id: 'equipe',
+        texte: 'Inviter ton équipe aux brochettes',
+        effets: [{ stat: 'jauges.ryo', delta: -15 }, { relation: '@coequipierA', delta: { amitie: 5 } }, { relation: '@coequipierB', delta: { amitie: 5 } }],
+        resultat: 'Vous commandez trop. Vous mangez tout. {@coequipierA} renverse le thé, {@coequipierB} rit jusqu’à s’étouffer. Le patron vous met dehors à minuit. C’était la meilleure soirée de l’année.',
+      },
+      {
+        id: 'epargner',
+        texte: 'Tout mettre de côté',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 1 }, { ethique: { ambition: 2 } }],
+        resultat: 'L’enveloppe va sous le plancher, avec les autres à venir. Tu ne sais pas encore pour quoi tu économises. Tu sais seulement que tu ne veux jamais manquer.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_garde_mur',
+    titre: 'La nuit sur le mur',
+    categorie: 'quotidien',
+    lieu: '$porte',
+    poids: 4,
+    si: { tout: [ADO, { rangMin: 'genin' }] },
+    texte: 'Garde de nuit sur le mur d’enceinte, avec un vieux chūnin qui fume sans arrêt et ne parle pas. Le vent souffle du nord. À la troisième heure, tu crois voir une lumière bouger dans la forêt.',
+    choix: [
+      {
+        id: 'signaler',
+        texte: 'Le signaler',
+        test: {
+          type: 'competence',
+          difficulte: 48,
+          attributs: { perception: 3 },
+          succes: { texte: 'Le vieux chūnin éteint sa pipe. Il regarde, longtemps. « Bien vu. » Une équipe sort. À l’aube, ils ramènent deux éclaireurs d’un autre village. Ton nom est cité dans le rapport.', effets: [{ stat: 'attributs.perception', delta: 2 }, { stat: 'social.reputation', delta: 4 }] },
+          echec: { texte: 'Le vieux chūnin regarde. « Une luciole. » Il rallume sa pipe. Tu passes le reste de la nuit à te demander si c’était vraiment une luciole.', effets: [{ stat: 'attributs.perception', delta: 1 }] },
+        },
+      },
+      {
+        id: 'parler',
+        texte: 'Lui demander pourquoi il ne parle jamais',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { decouvrir: 'histoire:deuxieme_guerre' }],
+        resultat: '« Parce que la dernière fois que j’ai parlé de garde, mon coéquipier m’a répondu, et il n’a pas entendu la flèche. » Il ne dit plus rien jusqu’à l’aube. Toi non plus.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_foret_interdite',
+    titre: 'La nuit dans la forêt interdite',
+    categorie: 'enfance',
+    lieu: '$terrain',
+    poids: 4,
+    si: { tout: [ACTIF, { age: { min: 11, max: 14 } }] },
+    texte: 'Une tradition que les adultes font semblant d’ignorer : la nuit de la fin de l’Académie, les élèves passent la nuit seuls dans la forêt interdite, et rapportent une plume de hibou comme preuve.',
+    choix: [
+      {
+        id: 'aller',
+        texte: 'Y aller, seul·e',
+        test: {
+          type: 'competence',
+          difficulte: 50,
+          attributs: { controleEmotionnel: 2, perception: 1, discretion: 1 },
+          succes: { texte: 'Les bruits, les ombres, ton propre souffle trop fort. À l’aube, tu ramasses une plume grise au pied d’un chêne. Tu n’as jamais eu aussi peur, et tu n’as jamais été aussi fier·ère de ne pas avoir couru.', effets: [{ stat: 'attributs.controleEmotionnel', delta: 3 }, { stat: 'attributs.perception', delta: 1 }] },
+          echec: { texte: 'Un craquement, puis un autre, puis tu cours. Tu ressors à minuit, couvert·e de ronces. Personne ne se moque : la moitié de la classe a fait pareil.', effets: [{ stat: 'jauges.sante', delta: -4 }, { stat: 'attributs.controleEmotionnel', delta: 1 }] },
+        },
+      },
+      {
+        id: 'equipe',
+        texte: 'Y aller avec {@coequipierA}',
+        effets: [{ relation: '@coequipierA', delta: { amitie: 6, confiance: 5 } }, { stat: 'attributs.controleEmotionnel', delta: 1 }],
+        resultat: 'À deux, la peur se partage mal mais se partage. Vous racontez des histoires de fantômes jusqu’à ce que les vraies ombres ne fassent plus peur. Vous ramenez deux plumes, et un secret chacun.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_admirateur',
+    titre: 'Le petit qui te suit',
+    categorie: 'reputation',
+    lieu: '$village',
+    poids: 4,
+    si: { tout: [ADO, { stat: 'social.reputation', min: 15 }] },
+    texte: 'Depuis quelques jours, un élève de l’Académie te suit à distance. Il imite ta démarche, ta façon de porter ton bandeau. Quand tu te retournes, il plonge derrière une charrette, très mal.',
+    choix: [
+      {
+        id: 'saluer',
+        texte: 'Aller lui parler',
+        effets: [{ stat: 'attributs.charisme', delta: 2 }, { stat: 'social.reputation', delta: 2 }],
+        resultat: '« Tu es ninja ! Un vrai ! » Il te pose cent questions en une minute. Tu réponds à toutes. En repartant, tu te tiens un peu plus droit·e. On ne sait jamais qui regarde.',
+      },
+      {
+        id: 'semer',
+        texte: 'Le semer pour lui donner une leçon',
+        effets: [{ stat: 'attributs.discretion', delta: 2 }],
+        resultat: 'Tu disparais d’un saut. Le lendemain, il est là, avec un plan du quartier griffonné. Le surlendemain, il te trouve. Ce gamin ira loin.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_dispute',
+    titre: 'La dispute',
+    categorie: 'secret_familial',
+    lieu: '$maison',
+    poids: 4,
+    si: { tout: [ACTIF, { age: { min: 13, max: 16 } }] },
+    texte: 'Au dîner, {parent} pose ses baguettes. « Tu rentres tard, tu pars tôt, tu ne parles plus. Je ne sais même plus quelles missions tu fais. » La soupe refroidit. Tout le monde attend ta réponse.',
+    choix: [
+      {
+        id: 'expliquer',
+        texte: 'Tout lui raconter, même ce qui fait peur',
+        effets: [{ relation: '@parent', delta: { confiance: 8, attachement: 5 } }, { stat: 'attributs.controleEmotionnel', delta: 2 }],
+        resultat: 'Tu parles longtemps. {Parent} ne t’interrompt pas une seule fois. À la fin, {il:@parent} dit seulement : « Merci. » La soupe est froide. Personne ne la réchauffe.',
+      },
+      {
+        id: 'claquer',
+        texte: 'Claquer la porte',
+        effets: [{ relation: '@parent', delta: { confiance: -6 } }, { stat: 'attributs.force', delta: 1 }, { entrainer: 'taijutsu', jours: 8 }],
+        resultat: 'Tu passes la nuit à frapper un poteau d’entraînement. Au matin, il y a un bol de riz devant ta porte, encore tiède. Aucun mot. Il n’en fallait pas.',
+      },
+      {
+        id: 'secret',
+        texte: '« Il y a des choses que je n’ai pas le droit de dire »',
+        effets: [{ stat: 'social.loyaute', delta: 3 }, { relation: '@parent', delta: { respect: 4, confiance: -2 } }],
+        resultat: '{Parent} te regarde comme on regarde quelqu’un qu’on vient de rencontrer. « Alors tu es vraiment ninja, maintenant. » Ce n’est pas un compliment. Ce n’est pas un reproche non plus.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_sources',
+    titre: 'Les sources chaudes',
+    categorie: 'amitie',
+    lieu: '$village',
+    poids: 4,
+    personnages: ['@coequipierA', '@coequipierB'],
+    si: { tout: [ADO, { rangMin: 'genin' }, { pnj: '@coequipierA', etat: ['vivant', 'blesse'] }, { pnj: '@coequipierB', etat: ['vivant', 'blesse'] }] },
+    texte: 'Après une mission épuisante, {@sensei} vous offre une soirée aux sources chaudes. La vapeur, les étoiles, et pour une fois, personne qui donne d’ordres.',
+    choix: [
+      {
+        id: 'confidences',
+        texte: 'Lancer le jeu des confidences',
+        effets: [{ relation: '@coequipierA', delta: { amitie: 6, confiance: 4 } }, { relation: '@coequipierB', delta: { amitie: 6, confiance: 4 } }, { stat: 'jauges.fatigue', delta: -25 }],
+        resultat: '{@coequipierA} avoue avoir peur du noir. {@coequipierB} avoue avoir toujours rêvé de tenir un restaurant. Toi, tu avoues quelque chose que tu n’avais jamais dit. Personne ne rit. C’est ça, une équipe.',
+      },
+      {
+        id: 'repos',
+        texte: 'Fermer les yeux et ne penser à rien',
+        effets: [{ stat: 'jauges.fatigue', delta: -35 }, { stat: 'jauges.sante', delta: 10 }],
+        resultat: 'L’eau brûlante dénoue tout ce que la mission a serré. Quand tu rouvres les yeux, la lune a bougé, et tes coéquipiers dorment à moitié dans l’eau. Tu les réveilles avant qu’ils se noient.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_main_tremble',
+    titre: 'La main qui tremble',
+    categorie: 'blessure',
+    lieu: '$terrain',
+    poids: 4,
+    si: { tout: [ADO, { rangMin: 'genin' }, { missionsReussies: 2 }] },
+    texte: 'Au lancer du matin, ta main droite tremble. Pas beaucoup. Assez pour que le kunai se plante à côté. Tu sais d’où ça vient : de la dernière mission, de ce que tu as vu, de ce que tu as fait.',
+    choix: [
+      {
+        id: 'sensei',
+        texte: 'En parler à {@sensei}',
+        effets: [{ relation: '@sensei', delta: { confiance: 6 } }, { stat: 'attributs.controleEmotionnel', delta: 3 }],
+        resultat: '{@sensei} ne te dit pas que ça passera. {@sensei} te montre sa propre main, qui tremble aussi, un peu, les jours de froid. « On ne guérit pas de ça. On apprend à lancer avec. »',
+      },
+      {
+        id: 'forcer',
+        texte: 'Lancer jusqu’à ce que ça s’arrête',
+        effets: [{ entrainer: 'famille_kunai', jours: 15 }, { stat: 'jauges.fatigue', delta: 15 }, { stat: 'attributs.controleEmotionnel', delta: 1 }],
+        resultat: 'Mille lancers. Deux mille. Au soir, ta main ne tremble plus, parce qu’elle ne sent plus rien. Le lendemain, ça recommence, un peu moins.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_bibliotheque',
+    titre: 'La section fermée',
+    categorie: 'secret_familial',
+    lieu: '$academie',
+    poids: 4,
+    si: { tout: [ADO, { age: { min: 12 } }] },
+    texte: 'La bibliothèque de l’Académie a une porte avec un sceau rouge. Le bibliothécaire s’absente une heure tous les jeudis. Le sceau est vieux, et ses bords s’effritent.',
+    choix: [
+      {
+        id: 'entrer',
+        texte: 'Profiter du jeudi',
+        test: {
+          type: 'competence',
+          difficulte: 52,
+          attributs: { discretion: 2, intellect: 1, controleChakra: 1 },
+          succes: { texte: 'Derrière la porte : des rapports de guerre, des noms barrés, une carte du village avec des tunnels qui n’existent pas. Tu remets tout en place, exactement. Tu ne regarderas plus jamais certaines rues de la même façon.', effets: [{ stat: 'attributs.intellect', delta: 2 }, { decouvrir: ['histoire:deuxieme_guerre', 'histoire:traite_vallee'] }, { indice: 'tunnels_village' }] },
+          echec: { texte: 'Le sceau brûle tes doigts et une cloche sonne quelque part. Tu files avant qu’on te voie. Le jeudi suivant, il y a un garde devant la porte.', effets: [{ stat: 'jauges.sante', delta: -4 }, { stat: 'social.suspicion', delta: 3 }] },
+        },
+      },
+      {
+        id: 'demander',
+        texte: 'Demander poliment au bibliothécaire',
+        effets: [{ stat: 'attributs.charisme', delta: 1 }, { stat: 'attributs.intellect', delta: 1 }],
+        resultat: 'Il rit. « Personne n’a jamais demandé. » Il ne t’ouvre pas la porte, mais il te prête un livre qui « n’aurait pas dû sortir de là ». Tu le rends en avance.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_shogi',
+    titre: 'Le vieux joueur de shōgi',
+    categorie: 'quotidien',
+    lieu: '$village',
+    poids: 4,
+    si: ADO,
+    texte: 'Sous l’auvent du salon de thé, un vieil homme joue au shōgi contre lui-même. Il perd. Il lève les yeux. « Toi. Assieds-toi. J’ai besoin d’un adversaire qui ne connaît pas mes coups. »',
+    choix: [
+      {
+        id: 'jouer',
+        texte: 'Jouer',
+        test: {
+          type: 'competence',
+          difficulte: 48,
+          attributs: { intellect: 3 },
+          succes: { texte: 'Tu gagnes. Il te fixe, ravi et vexé. « Encore. » Tu reviens toutes les semaines pendant un an. Tu ne gagneras plus jamais, et tu apprendras plus qu’à l’Académie.', effets: [{ stat: 'attributs.intellect', delta: 3 }] },
+          echec: { texte: 'Il te bat en vingt coups, en t’expliquant chaque erreur. « Un ninja qui ne voit pas trois coups d’avance n’est qu’un kunai qui marche. »', effets: [{ stat: 'attributs.intellect', delta: 2 }] },
+        },
+      },
+      {
+        id: 'regarder',
+        texte: 'Le regarder jouer contre lui-même',
+        effets: [{ stat: 'attributs.perception', delta: 1 }, { stat: 'attributs.intellect', delta: 1 }],
+        resultat: 'Il perd contre lui-même, encore. « Le plus dur, dit-il sans lever les yeux, c’est de ne pas tricher pour le camp qu’on préfère. » Tu y repenseras souvent, en mission.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_rumeur',
+    titre: 'Ce qu’on dit de toi',
+    categorie: 'reputation',
+    lieu: '$village',
+    poids: 3,
+    si: { tout: [ACTIF, { age: { min: 14, max: 16 } }] },
+    texte: 'Au marché, deux genin parlent de toi sans savoir que tu les entends. Ce qu’ils racontent est faux. Pas tout à fait. Assez pour faire mal.',
+    choix: [
+      {
+        id: 'confronter',
+        texte: 'Aller les voir',
+        effets: [{ stat: 'attributs.charisme', delta: 1 }, { stat: 'social.reputation', delta: 2 }],
+        resultat: 'Ils pâlissent. Ils s’excusent, mal. Tu as gagné. Tu te sens quand même plus petit·e qu’avant.',
+      },
+      {
+        id: 'laisser',
+        texte: 'Les laisser parler',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 3 }],
+        resultat: 'La rumeur meurt seule, comme elles meurent toutes, remplacée par une autre. Tu apprends que ton nom ne t’appartient pas tout à fait. Ce qui t’appartient, c’est ce que tu fais.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_dette_ami',
+    titre: 'L’emprunt',
+    categorie: 'amitie',
+    lieu: '$village',
+    poids: 3,
+    personnages: ['@coequipierB'],
+    si: { tout: [ADO, { rangMin: 'genin' }, { pnj: '@coequipierB', etat: ['vivant', 'blesse'] }, { stat: 'jauges.ryo', min: 40 }] },
+    texte: '{@coequipierB} te prend à part, l’air gêné. « J’ai besoin de 40 ryō. Je ne peux pas te dire pourquoi. Je te les rends, je te le jure. »',
+    choix: [
+      {
+        id: 'preter',
+        texte: 'Prêter sans poser de question',
+        effets: [
+          { stat: 'jauges.ryo', delta: -40 },
+          { relation: '@coequipierB', delta: { confiance: 8 } },
+          { hasard: [{ poids: 70, effets: [{ drapeau: 'emprunt', valeur: 'rendu' }] }, { poids: 30, effets: [{ drapeau: 'emprunt', valeur: 'perdu' }] }] },
+          { retour: 'a11_dette_ami_retour', chance: 1, entre: [60, 200] },
+        ],
+        resultat: '{@coequipierB} prend l’argent en évitant ton regard. « Merci. Vraiment. » Tu ne sais pas ce que tu viens d’acheter. Peut-être rien. Peut-être beaucoup.',
+      },
+      {
+        id: 'pourquoi',
+        texte: 'Exiger de savoir pourquoi',
+        effets: [{ relation: '@coequipierB', delta: { confiance: -4, amitie: -2 } }, { stat: 'attributs.perception', delta: 1 }],
+        resultat: '« Laisse tomber. » {@coequipierB} s’en va. Le lendemain, {il:@coequipierB} a un œil au beurre noir et ne dit pas d’où ça vient. Tu ne demandes plus.',
+      },
+    ],
+  },
+  {
+    ...ado,
+    id: 'a11_dette_ami_retour',
+    titre: 'Ce que {@coequipierB} devait',
+    categorie: 'amitie',
+    lieu: '$village',
+    enchaine: true,
+    personnages: ['@coequipierB'],
+    si: ACTIF,
+    texte: [
+      { si: { drapeau: 'emprunt', egal: 'rendu' }, texte: '{@coequipierB} pose une bourse devant toi. 45 ryō. « Avec les intérêts. » Puis, plus bas : « C’était pour les médicaments de ma mère. Elle va mieux. »' },
+      { si: { drapeau: 'emprunt', egal: 'perdu' }, texte: '{@coequipierB} t’évite depuis des semaines. Aujourd’hui, {il:@coequipierB} vient. {Il:@coequipierB} n’a pas l’argent. « Je l’ai perdu au jeu. Je voulais le doubler pour te le rendre. Je suis désolé{e:@coequipierB}. »' },
+    ],
+    choix: [
+      {
+        id: 'reagir',
+        texte: 'Lui répondre',
+        effets: [
+          { si: { drapeau: 'emprunt', egal: 'rendu' }, alors: [{ stat: 'jauges.ryo', delta: 45 }, { relation: '@coequipierB', delta: { amitie: 8, confiance: 6 } }], sinon: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { relation: '@coequipierB', delta: { confiance: -6, attachement: 3 } }] },
+        ],
+        resultat: [
+          { si: { drapeau: 'emprunt', egal: 'rendu' }, texte: 'Tu ne prends que les 40. {Il:@coequipierB} insiste. Vous vous disputez cinq minutes pour 5 ryō, et vous finissez par les dépenser ensemble en brochettes.' },
+          { si: { drapeau: 'emprunt', egal: 'perdu' }, texte: 'Tu as envie de crier. Tu ne cries pas. « Ne recommence jamais. » {Il:@coequipierB} hoche la tête. Tu ne sauras jamais si la parole sera tenue, mais tu sais que la honte était sincère, et c’est déjà ça.' },
+        ],
+      },
+    ],
+  },
+
+  // ── Les visages de l'enfance, plus tard ───────────────────────
+  {
+    ...plus,
+    id: 'x_daichi_examen',
+    titre: 'Daichi, à l’examen',
+    categorie: 'examen',
+    lieu: '$village',
+    poids: 7,
+    chapitres: [1, 2, 3],
+    si: { tout: [ACTIF, { age: { min: 12, max: 16 } }, { drapeau: 'daichi' }, { rangMin: 'genin' }] },
+    texte: 'Dans la liste des candidats affichée au mur, un nom te saute aux yeux. Daichi. Il te trouve avant que tu le cherches. Il a une cicatrice neuve au menton et le même regard qu’au terrain, des années plus tôt. « Si on se retrouve face à face, je ne retiendrai pas mes coups. »',
+    choix: [
+      {
+        id: 'promettre',
+        texte: '« Moi non plus. »',
+        effets: [{ entrainer: 'taijutsu', jours: 20 }, { stat: 'attributs.controleEmotionnel', delta: 1 }, { drapeau: 'daichi', valeur: 'examen' }],
+        resultat: 'Il sourit. Vous vous serrez la main, à l’ancienne, comme au terrain avec les bâtons. Tout le monde regarde. Ni toi ni lui ne lâchez le premier.',
+      },
+      {
+        id: 'souvenir',
+        texte: 'Lui parler des bâtons plantés dans la terre',
+        effets: [{ stat: 'attributs.charisme', delta: 2 }, { drapeau: 'daichi', valeur: 'ami' }],
+        resultat: 'Il éclate de rire. « Tu t’en souviens ? Tu tenais ton bâton comme une cuillère. » Vous parlez une heure, et pas une fois de l’examen. C’est la meilleure préparation possible.',
+      },
+    ],
+  },
+  {
+    ...plus,
+    id: 'x_sho_route',
+    titre: 'Un visage sur la route',
+    categorie: 'trahison',
+    lieu: 'route_commerce',
+    poids: 5,
+    si: { tout: [{ age: { min: 17, max: 26 } }, { drapeau: 'sho' }] },
+    texte: [
+      { texte: 'Un barrage de fortune sur la route, trois hommes sans bandeau. Le chef baisse son foulard. Shō. Le gamin au dango est devenu un homme maigre aux yeux durs, et son visage est dans le Bingo Book.' },
+      { si: { un: [{ drapeau: 'sho', egal: 'allie' }, { drapeau: 'sho', egal: 'sauve' }, { drapeau: 'sho', egal: 'paye' }] }, texte: '« Toi, dit-il. Passe. Les autres paient. » Ses hommes s’écartent. Il te regarde comme on regarde le seul souvenir propre qu’on ait.' },
+      { si: { un: [{ drapeau: 'sho', egal: 'ennemi' }, { drapeau: 'sho', egal: 'denonce' }] }, texte: '« Tiens. Le héros du marché. » Il ne sourit pas. Ses hommes non plus. La route est étroite et le soleil se couche.' },
+    ],
+    choix: [
+      {
+        id: 'arreter',
+        texte: 'L’arrêter : c’est un criminel recherché',
+        test: {
+          type: 'combat',
+          difficulte: 58,
+          attributs: { agilite: 1, force: 1, perception: 1 },
+          maitrises: { taijutsu: 1, ninjutsu: 1 },
+          succes: { texte: 'Le combat est court. Shō ne se bat pas vraiment, à la fin. Pendant le trajet vers le poste, il ne dit qu’une phrase : « J’aurais dû rester dans ta rue. »', effets: [{ stat: 'social.reputation', delta: 6 }, { stat: 'jauges.ryo', delta: 80 }, { ethique: { honneur: 4 } }, { drapeau: 'sho', valeur: 'arrete' }] },
+          echec: { texte: 'Ils sont trois, et ils connaissent la route. Tu te retrouves dans le fossé, ta bourse en moins. Shō s’arrête, une seconde. « On est quittes, maintenant. Ne reviens pas. »', effets: [{ stat: 'jauges.sante', delta: -15 }, { stat: 'jauges.ryo', delta: -30 }, { drapeau: 'sho', valeur: 'perdu' }] },
+        },
+      },
+      {
+        id: 'parler',
+        texte: 'Lui proposer de devenir informateur',
+        test: {
+          type: 'competence',
+          difficulte: 54,
+          attributs: { charisme: 2, perception: 1 },
+          succes: { texte: 'Il réfléchit longtemps. « Ce que je vois sur les routes, contre ta protection si un jour ils me prennent. » Vous vous serrez la main au-dessus du feu. Ses rapports arriveront, irréguliers, toujours exacts.', effets: [{ stat: 'social.reputationOmbre', delta: 6 }, { stat: 'attributs.intellect', delta: 1 }, { indice: 'reseau_sho' }, { drapeau: 'sho', valeur: 'informateur' }] },
+          echec: { texte: '« Les chiens du village ne font pas d’affaires avec les loups. » Il te laisse passer, quand même. C’est sa façon de dire non poliment.', effets: [{ stat: 'attributs.controleEmotionnel', delta: 1 }] },
+        },
+      },
+      {
+        id: 'passer',
+        texte: 'Passer sans un mot',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { ethique: { compassion: 2, honneur: -2 } }],
+        resultat: 'Vous vous croisez. Ni l’un ni l’autre ne se retourne. Le soir, au camp, tu te demandes ce qui se serait passé si, ce jour-là, au marché, tu avais fait un autre choix.',
+      },
+    ],
+  },
+  {
+    ...plus,
+    id: 'x_mei_caravane',
+    titre: 'La caravane de Mei',
+    categorie: 'amitie',
+    lieu: 'route_commerce',
+    poids: 5,
+    si: { tout: [{ age: { min: 17, max: 30 } }, { drapeau: 'mei' }] },
+    texte: 'Une caravane te dépasse sur la route, douze chariots bâchés de bleu. En tête, une femme debout sur le siège du cocher crie des ordres d’une voix que tu reconnais avant de la voir. Mei. Elle a sa propre caravane, maintenant. « Toi ! Tu me dois toujours une histoire ! »',
+    choix: [
+      {
+        id: 'escorter',
+        texte: 'Escorter la caravane jusqu’à la prochaine ville',
+        duree: 5,
+        effets: [{ stat: 'jauges.ryo', delta: 60 }, { stat: 'attributs.charisme', delta: 2 }, { decouvrir: ['lieu:pays_fer', 'lieu:frontiere_herbe'] }],
+        resultat: 'Cinq jours de route, des feux de camp, des histoires échangées comme autrefois. Le quatrième soir, des bandits renoncent en voyant ton bandeau. Mei te paie le double de ce qu’elle avait promis. « Pour l’histoire. Elle était bonne. »',
+      },
+      {
+        id: 'nouvelles',
+        texte: 'Lui demander ce qu’elle a vu',
+        effets: [{ stat: 'attributs.intellect', delta: 2 }, { indice: 'rumeur_routes' }],
+        resultat: 'Elle a tout vu : les ponts brûlés à l’ouest, les ninjas sans bandeau qui recrutent dans les ports, un homme au masque orange qui pose des questions sur les bêtes à queues. Elle te le dit comme une amie, pas comme une marchande.',
+      },
+    ],
+  },
+  {
+    ...plus,
+    id: 'x_gonta_fils',
+    titre: 'Le fils de Gonta',
+    categorie: 'heritage',
+    lieu: '$academie',
+    poids: 5,
+    si: { tout: [ACTIF, { age: { min: 24 } }, { un: [{ drapeau: 'gonta', egal: 'ami' }, { drapeau: 'gonta', egal: 'respect' }, { drapeau: 'gonta', egal: 'compris' }] }] },
+    texte: 'Devant l’Académie, un boucher massif tient par la main un garçon de six ans qui a ses épaules. Gonta. Il te voit, rougit comme à douze ans. « C’est son premier jour. Il veut devenir ninja. Moi, je n’ai jamais réussi. Tu pourrais… garder un œil sur lui ? »',
+    choix: [
+      {
+        id: 'promettre',
+        texte: 'Promettre',
+        effets: [{ stat: 'attributs.charisme', delta: 2 }, { stat: 'social.reputation', delta: 3 }, { ethique: { compassion: 3 } }],
+        resultat: 'Tu t’accroupis devant le garçon. « Si un grand t’embête, tu me le dis. » Gonta éclate de rire, un rire énorme qui fait se retourner toute la rue. Il sait exactement à quoi tu penses.',
+      },
+      {
+        id: 'conseil',
+        texte: 'Donner un conseil au garçon',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }],
+        resultat: '« Ne frappe jamais en premier. Mais si tu dois frapper, frappe une seule fois, au bon endroit. » Gonta te regarde. Il se souvient aussi. Il te serre la main, très fort, et cette fois, il ne le fait pas exprès.',
+      },
+    ],
+  },
+  {
+    ...plus,
+    id: 'x_ermite_nom',
+    titre: 'Le nom de l’homme à la feuille',
+    categorie: 'secret_familial',
+    lieu: '$village',
+    poids: 4,
+    si: { tout: [ACTIF, { age: { min: 16 } }, { un: [{ drapeau: 'ermite', egal: 'reussi' }, { drapeau: 'ermite', egal: 'eleve' }, { drapeau: 'ermite', egal: 'essai' }] }] },
+    texte: 'Aux archives, en cherchant autre chose, tu tombes sur un vieux portrait. Un jeune jōnin, l’air grave. Sous l’encre fanée, tu reconnais les yeux : l’homme à la feuille d’érable. La fiche dit : « Disparu au combat, Deuxième Guerre. Corps jamais retrouvé. »',
+    choix: [
+      {
+        id: 'lire',
+        texte: 'Lire tout son dossier',
+        effets: [{ stat: 'attributs.intellect', delta: 2 }, { stat: 'attributs.controleChakra', delta: 1 }, { decouvrir: 'histoire:deuxieme_guerre' }],
+        resultat: 'Il a tenu un pont seul pendant deux jours pour qu’un convoi d’enfants passe. Après, plus rien. Il n’est pas mort. Il a seulement cessé d’être ninja. Tu comprends enfin ce qu’il voulait dire : « Je l’ai laissé dans une guerre. »',
+      },
+      {
+        id: 'garder',
+        texte: 'Refermer le dossier et garder son secret',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }, { ethique: { honneur: 3 } }],
+        resultat: 'Il a choisi de disparaître. Ce n’est pas à toi de le ramener. Tu reposes le portrait à sa place, face contre l’étagère, comme on ferme les yeux de quelqu’un.',
+      },
+    ],
+  },
+  {
+    ...plus,
+    id: 'x_boite_dix_ans',
+    titre: 'Dix ans plus tard',
+    categorie: 'amitie',
+    lieu: '$academie',
+    poids: 4,
+    si: { tout: [ACTIF, { age: { min: 20 } }, { vu: 'e6_boite_retour' }] },
+    texte: 'Tu avais dit « dans dix ans ». Tu passes devant le grand cèdre, il a encore grandi, et la terre à son pied a la même forme que dans ton souvenir. Il n’y a qu’une pelle à prendre.',
+    choix: [
+      {
+        id: 'creuser',
+        texte: 'Creuser',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 3 }, { si: { pnj: '@coequipierA', etat: ['vivant', 'blesse'] }, alors: [{ relation: '@coequipierA', delta: { attachement: 8 } }] }],
+        resultat: [
+          { texte: 'La boîte est rouillée, les lettres jaunies. Celle de tes six ans, et celle que tu as écrite à la deuxième ouverture, quand tu croyais déjà être grand·e.' },
+          { si: { pnj: '@coequipierA', etat: ['vivant', 'blesse'] }, texte: 'Une ombre sur toi. {@coequipierA}, avec la même pelle trop grande. « Je savais que tu viendrais aujourd’hui. » Vous écrivez une troisième lettre. Pour dans dix ans encore.' },
+          { si: { non: { pnj: '@coequipierA', etat: ['vivant', 'blesse'] } }, texte: 'Tu ajoutes une lettre pour {@coequipierA}, que personne ne lira, et tu tasses la terre avec les pieds, solennellement, comme vous le faisiez.' },
+        ],
+      },
+      {
+        id: 'laisser',
+        texte: 'La laisser dormir encore',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 1 }],
+        resultat: 'Certaines choses sont plus belles enterrées. Tu poses la main sur l’écorce du cèdre, une seconde, et tu repars.',
+      },
+    ],
+  },
+  {
+    ...plus,
+    id: 'x_chat_vieux',
+    titre: 'Le chat de Tomoe',
+    categorie: 'deuil',
+    lieu: '$maison',
+    poids: 4,
+    chapitres: [1, 2, 3, 4],
+    si: { tout: [ACTIF, { age: { min: 14 } }, { drapeau: 'chat_tomoe' }] },
+    texte: 'Le chat de Tomoe ne mange plus. Il a quinze ans, peut-être plus. Il dort au soleil sur le rebord de ta fenêtre, et ce matin, il ne se lève pas quand tu entres.',
+    choix: [
+      {
+        id: 'rester',
+        texte: 'Rester avec lui',
+        effets: [{ stat: 'attributs.controleEmotionnel', delta: 3 }, { ethique: { compassion: 3 } }],
+        resultat: 'Tu restes assis·e à côté de lui toute la matinée, la main sur son flanc qui se soulève de moins en moins. Il part vers midi, dans le soleil. Tu l’enterres près de la boutique de pickles, qui est devenue une boutique de thé.',
+      },
+    ],
+  },
+];

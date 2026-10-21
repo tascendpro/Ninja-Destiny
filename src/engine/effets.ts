@@ -302,6 +302,12 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
     s.planifies.push({ evenementId: e.planifier, jour: s.jour + e.dansJours });
     return;
   }
+  if ('retour' in e) {
+    if (s.planifies.some((x) => x.evenementId === e.retour) || alea(s) >= e.chance) return;
+    const [min, max] = e.entre;
+    s.planifies.push({ evenementId: e.retour, jour: s.jour + min + Math.floor(alea(s) * (max - min + 1)) });
+    return;
+  }
   if ('temps' in e) return avancerTemps(s, e.temps, ctx);
   if ('journal' in e) return ajouterJournal(s, interpoler(e.journal, s), e.importance ?? 2);
   if ('decouvrir' in e) {
