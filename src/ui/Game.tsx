@@ -11,6 +11,7 @@ import Accueil from './Accueil';
 import Creation from './Creation';
 import Recit from './Recit';
 import Tableau from './Tableau';
+import { ModalePoints } from './Repartition';
 import Journal from './Journal';
 import Encyclopedie from './Encyclopedie';
 import BingoBook from './BingoBook';
@@ -48,6 +49,16 @@ export default function Game() {
   const [toast, setToast] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const ambiance = useRef<Ambiance | null>(null);
+  // La modale de points s'ouvre d'elle-même quand de nouveaux points arrivent ; « Plus tard » la referme jusqu'aux suivants.
+  const [modalePoints, setModalePoints] = useState(false);
+  const pointsVus = useRef<number | null>(null);
+  useEffect(() => {
+    const n = etat?.pointsStat ?? 0;
+    if (pointsVus.current !== null && n > pointsVus.current && !etat?.fin) setModalePoints(true);
+    if (n === 0) setModalePoints(false);
+    pointsVus.current = n;
+  }, [etat?.pointsStat, etat?.fin]);
+  const fermerPoints = useCallback(() => setModalePoints(false), []);
 
   useEffect(() => {
     try {
@@ -266,10 +277,7 @@ export default function Game() {
             <button
               className="points-pastille"
               title="Points de stat à répartir"
-              onClick={() => {
-                setOnglet('ninja');
-                remonter();
-              }}
+              onClick={() => setModalePoints(true)}
             >
               +{etat.pointsStat} <span className="visuellement-cache">points de stat à répartir</span>
               <span aria-hidden="true">pts</span>
@@ -313,7 +321,7 @@ export default function Game() {
               onChoisir={(id) => appliquer((s) => choisir(s, id))}
               onContinuer={() => appliquer((s) => continuer(s))}
               onActivite={(id) => appliquer((s) => activite(s, id))}
-              onRepartir={(rep) => appliquer((s) => repartir(s, rep))}
+              onOuvrirPoints={() => setModalePoints(true)}
               onManche={(id) => appliquer((s) => manche(s, id))}
             />
           ))}
@@ -325,13 +333,16 @@ export default function Game() {
               appliquer((s) => activite(s, `equiper:${id}`));
               setToast(`${R.armes[id]?.nom} en main.`);
             }}
-            onRepartir={(rep) => appliquer((s) => repartir(s, rep))}
+            onOuvrirPoints={() => setModalePoints(true)}
           />
         )}
         {onglet === 'journal' && <Journal etat={etat} />}
         {onglet === 'bingo' && <BingoBook etat={etat} />}
         {onglet === 'savoir' && <Encyclopedie etat={etat} meta={meta} />}
       </main>
+      {modalePoints && etat.pointsStat > 0 && (
+        <ModalePoints etat={etat} onRepartir={(rep) => appliquer((x) => repartir(x, rep))} onFermer={fermerPoints} />
+      )}
       <nav className="nav" aria-label="Navigation">
         <span className="nav-sceau" aria-hidden="true">
           忍

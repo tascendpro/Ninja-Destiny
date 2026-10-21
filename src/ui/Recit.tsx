@@ -12,8 +12,7 @@ import { duoPossible, genererActivites, naturesActivite, periodeMax } from '../e
 import type { Activite } from '../engine/tempsLibre';
 import { libelleDuree, libellePeriode, saisonDe } from '../engine/calendrier';
 import Portrait from './Portrait';
-import Repartition from './Repartition';
-import { remonter } from './defilement';
+import { cleScene, remonter } from './defilement';
 import { ATTRIBUT_LIBELLE, ETAT_PNJ, KANJI_SAISON, vueChangements } from './libelles';
 import { defPnj } from '../engine/etat';
 import type { AttributId } from '../engine/types';
@@ -112,7 +111,7 @@ export default function Recit({
   onChoisir,
   onContinuer,
   onActivite,
-  onRepartir,
+  onOuvrirPoints,
   onManche,
 }: {
   etat: GameState;
@@ -121,11 +120,11 @@ export default function Recit({
   onChoisir: (id: string) => void;
   onContinuer: () => void;
   onActivite: (id: string) => void;
-  onRepartir: (rep: Partial<Record<AttributId, number>>) => void;
+  onOuvrirPoints: () => void;
   onManche: (id: string) => void;
 }) {
   const [scelle, setScelle] = useState<string | null>(null);
-  const cle = etat.scene.type === 'evenement' ? etat.scene.id : `${etat.scene.type}-${etat.actions.length}`;
+  const cle = cleScene(etat);
   const p = etat.creation.presentation;
   // En Légende, les chances exactes restent cachées : seul le niveau de risque est affiché.
   const precis = etat.creation.difficulte !== 'legende';
@@ -276,7 +275,7 @@ export default function Recit({
   }
 
   if (etat.scene.type === 'temps_libre') {
-    return <TempsLibre etat={etat} theme={theme} anime={anime} onActivite={onActivite} onRepartir={onRepartir} />;
+    return <TempsLibre etat={etat} theme={theme} anime={anime} onActivite={onActivite} onOuvrirPoints={onOuvrirPoints} />;
   }
 
   if (etat.scene.type === 'combat') {
@@ -376,13 +375,13 @@ function TempsLibre({
   theme,
   anime,
   onActivite,
-  onRepartir,
+  onOuvrirPoints,
 }: {
   etat: GameState;
   theme: 'nuit' | 'washi';
   anime: boolean;
   onActivite: (id: string) => void;
-  onRepartir: (rep: Partial<Record<AttributId, number>>) => void;
+  onOuvrirPoints: () => void;
 }) {
   const acts = useMemo(() => genererActivites(etat), [etat]);
   const p = etat.creation.presentation;
@@ -416,6 +415,22 @@ function TempsLibre({
     else if (sort || discipline) onActivite((sort ?? discipline)!.id);
   };
   const estChoisie = (a: Activite) => !!a.groupe && programme[a.groupe] === a.id;
+  // Ce qu'on ne peut pas améliorer est masqué ; le choix d'afficher ou non est retenu pour la session.
+  const [voirBloquees, setVoirBloquees] = useState(() => {
+    try {
+      return typeof window !== 'undefined' && window.sessionStorage.getItem('ninja-destiny:voir-bloquees') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const basculerBloquees = (v: boolean) => {
+    setVoirBloquees(v);
+    try {
+      window.sessionStorage.setItem('ninja-destiny:voir-bloquees', v ? '1' : '0');
+    } catch {
+      /* stockage indisponible : le choix vaut pour cet écran */
+    }
+  };
 
   const alertes: string[] = [];
   if (etat.jauges.fatigue >= 60) alertes.push('La fatigue s’accumule : t’entraîner encore expose à la blessure.');
@@ -448,7 +463,12 @@ function TempsLibre({
             {accorder(etat.annonce, p)}
           </p>
         )}
-        {etat.pointsStat > 0 && <Repartition etat={etat} onRepartir={onRepartir} compact />}
+        {etat.pointsStat > 0 && (
+          <button type="button" className="points-bandeau" onClick={onOuvrirPoints}>
+            <strong>{etat.pointsStat}</strong> {etat.pointsStat > 1 ? 'points de stat à répartir' : 'point de stat à répartir'}
+            <span>Répartir</span>
+          </button>
+        )}
         <div className="tl-categories" role="tablist" aria-label="Catégories d’activités">
           {visibles.map((c) => (
             <button key={c.id} role="tab" aria-selected={cat === c.id} onClick={() => setChoisie(c.id)}>
@@ -483,6 +503,11 @@ function TempsLibre({
           </ul>
         )}
         {bloquees.length > 0 && (
+          <button type="button" className="lien-bloquees" aria-expanded={voirBloquees} onClick={() => basculerBloquees(!voirBloquees)}>
+            {voirBloquees ? 'Masquer' : 'Voir'} {bloquees.length === 1 ? 'l’activité bloquée' : `les ${bloquees.length} activités bloquées`}
+          </button>
+        )}
+        {bloquees.length > 0 && voirBloquees && (
           <div className="sous-groupe bloquees">
             <h3>Bloqué ou impossible à améliorer pour l’instant</h3>
             <ul className="activites">

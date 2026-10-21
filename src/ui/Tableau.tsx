@@ -47,12 +47,12 @@ export default function Tableau({
   etat,
   enTempsLibre,
   onEquiper,
-  onRepartir,
+  onOuvrirPoints,
 }: {
   etat: GameState;
   enTempsLibre: boolean;
   onEquiper: (id: string) => void;
-  onRepartir: (rep: Partial<Record<AttributId, number>>) => void;
+  onOuvrirPoints: () => void;
 }) {
   const [onglet, setOnglet] = useState<Onglet>('Profil');
   const p = etat.creation.presentation;
@@ -73,7 +73,7 @@ export default function Tableau({
           </button>
         ))}
       </div>
-      {onglet === 'Profil' && <Profil etat={etat} onRepartir={onRepartir} />}
+      {onglet === 'Profil' && <Profil etat={etat} onOuvrirPoints={onOuvrirPoints} />}
       {onglet === 'Maîtrise' && <Maitrise etat={etat} />}
       {onglet === 'Arsenal' && <Arsenal etat={etat} enTempsLibre={enTempsLibre} onEquiper={onEquiper} />}
       {onglet === 'Métier' && <Metier etat={etat} />}
@@ -86,7 +86,7 @@ export default function Tableau({
 
 const ELEMENTS_BASE = ['katon', 'suiton', 'fuuton', 'raiton', 'doton'] as const;
 
-function Profil({ etat, onRepartir }: { etat: GameState; onRepartir: (rep: Partial<Record<AttributId, number>>) => void }) {
+function Profil({ etat, onOuvrirPoints }: { etat: GameState; onOuvrirPoints: () => void }) {
   const c = etat.creation;
   const p = c.presentation;
   const note = noteFinale(etat);
@@ -206,10 +206,14 @@ function Profil({ etat, onRepartir }: { etat: GameState; onRepartir: (rep: Parti
               <Jauge key={a} nom={ATTRIBUT_LIBELLE[a]} valeur={etat.attributs[a]} detail={qualificatif(etat.attributs[a])} masquer={masquer} />
             ))}
           </div>
-          {etat.pointsStat > 0 && <Repartition etat={etat} onRepartir={onRepartir} compact />}
+          {etat.pointsStat > 0 && (
+            <button type="button" className="btn-principal points-ouvrir" onClick={onOuvrirPoints}>
+              Répartir {etat.pointsStat} {etat.pointsStat > 1 ? 'points' : 'point'}
+            </button>
+          )}
         </section>
       ) : (
-        <Repartition etat={etat} onRepartir={onRepartir} />
+        <Repartition etat={etat} onOuvrir={onOuvrirPoints} />
       )}
 
       <section className="panneau l7">

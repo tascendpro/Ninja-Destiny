@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import type { AttributId, GameState } from '../engine/types';
 import { ATTRIBUTS } from '../engine/types';
 import { coutPoint, coutRepartition, gainsAnnuels } from '../engine/progression';
@@ -19,32 +20,25 @@ const USAGE: Record<AttributId, string> = {
   controleEmotionnel: 'Garder son sang-froid, résister à la peur et aux illusions.',
 };
 
-/**
- * Répartition des points de stat gagnés aux anniversaires. Chaque « + » est enregistré tout de suite :
- * un brouillon à valider se perdait quand on passait à autre chose sans cliquer sur « Valider ».
- */
-export default function Repartition({ etat, onRepartir, compact = false }: { etat: GameState; onRepartir: (rep: Partial<Record<AttributId, number>>) => void; compact?: boolean }) {
-  const reste = etat.pointsStat;
-  const valeur = (a: AttributId) => etat.attributs[a];
-  const ajouter = (a: AttributId) => {
-    if (coutRepartition(etat, { [a]: 1 }) <= etat.pointsStat) onRepartir({ [a]: 1 });
-  };
+type Brouillon = Partial<Record<AttributId, number>>;
+
+/** Les aptitudes, en lecture, avec l'accès à la modale de répartition quand des points attendent. */
+export default function Repartition({ etat, onOuvrir }: { etat: GameState; onOuvrir: () => void }) {
   const prochain = gainsAnnuels(etat, age(etat) + 1);
   const dernier = etat.anniversaires.at(-1);
-
   return (
-    <section className={`panneau l7 repartition${compact ? ' compact' : ''}`} aria-label="Aptitudes et points de stat">
+    <section className="panneau l7 repartition" aria-label="Aptitudes et points de stat">
       <h2>
         Aptitudes <small>sur 100</small>
       </h2>
-      <p className={`points-bourse${etat.pointsStat > 0 ? ' actif' : ''}`}>
-        <strong>{reste}</strong> {reste > 1 ? 'points à répartir' : 'point à répartir'}
-        <small> · 1 point par niveau jusqu’à 60, 2 jusqu’à 80, 3 au-delà · chaque ajout est définitif</small>
-      </p>
+      {etat.pointsStat > 0 && (
+        <button className="btn-principal points-ouvrir" onClick={onOuvrir}>
+          Répartir {etat.pointsStat} {etat.pointsStat > 1 ? 'points' : 'point'}
+        </button>
+      )}
       <ul className="repartition-liste">
         {ATTRIBUTS.map((a) => {
-          const v = valeur(a);
-          const c = coutPoint(v);
+          const v = etat.attributs[a];
           return (
             <li key={a}>
               <div className="r-tete">
@@ -57,20 +51,7 @@ export default function Repartition({ etat, onRepartir, compact = false }: { eta
               <span className="piste c-chakra" aria-hidden="true">
                 <i style={{ width: `${Math.min(100, v)}%` }} />
               </span>
-              {!compact && <p className="r-usage">{USAGE[a]}</p>}
-              {etat.pointsStat > 0 && (
-                <div className="r-boutons">
-                  <button
-                    className="btn-mini"
-                    onClick={() => ajouter(a)}
-                    disabled={c > reste || v >= 100}
-                    title={c > reste ? `Au-delà de ${v < 80 ? 60 : 80}, un niveau coûte ${c} points : il t’en faut plus.` : undefined}
-                    aria-label={`Ajouter un point en ${ATTRIBUT_LIBELLE[a]}`}
-                  >
-                    +{c > 1 ? ` (${c} pts)` : ''}
-                  </button>
-                </div>
-              )}
+              <p className="r-usage">{USAGE[a]}</p>
             </li>
           );
         })}
@@ -91,5 +72,124 @@ export default function Repartition({ etat, onRepartir, compact = false }: { eta
         )}
       </details>
     </section>
+  );
+}
+
+/**
+ * La modale de répartition. Les points sont d'abord un brouillon (« + » et « − » libres, rien n'est envoyé au moteur) ;
+ * « Valider » affiche le récapitulatif, et seule la confirmation envoie une action « points » avec toute la répartition.
+ * « Plus tard » ferme sans rien appliquer. Un toucher sur le fond ne fait rien.
+ */
+export function ModalePoints({ etat, onRepartir, onFermer }: { etat: GameState; onRepartir: (rep: Brouillon) => void; onFermer: () => void }) {
+  const [brouillon, setBrouillon] = useState<Brouillon>({});
+  const [recap, setRecap] = useState(false);
+  const boite = useRef<HTMLDivElement>(null);
+  const cout = coutRepartition(etat, brouillon);
+  const reste = etat.pointsStat - cout;
+  const choisis = ATTRIBUTS.filter((a) => (brouillon[a] ?? 0) > 0);
+  const ajouter = (a: AttributId, d: number) => setBrouillon((b) => ({ ...b, [a]: Math.max(0, (b[a] ?? 0) + d) }));
+
+  useEffect(() => {
+    boite.current?.focus();
+    const echap = (e: KeyboardEvent) => e.key === 'Escape' && onFermer();
+    window.addEventListener('keydown', echap);
+    return () => window.removeEventListener('keydown', echap);
+  }, [onFermer]);
+
+  return (
+    <div className="modale-fond" role="presentation">
+      <div ref={boite} className="modale" role="dialog" aria-modal="true" aria-labelledby="modale-points-titre" tabIndex={-1}>
+        <header className="modale-tete">
+          <h2 id="modale-points-titre">{recap ? 'Confirmer la répartition' : 'Répartir tes points'}</h2>
+          <p className={`modale-compteur${reste === 0 ? ' fini' : ''}`}>
+            <strong>{reste}</strong> {reste > 1 ? 'points restants' : 'point restant'}
+          </p>
+        </header>
+        <div className="modale-corps">
+          {recap ? (
+            <ul className="recap-liste">
+              {choisis.map((a) => (
+                <li key={a}>
+                  <span>{ATTRIBUT_LIBELLE[a]}</span>
+                  <span>
+                    {etat.attributs[a]} → <b>{etat.attributs[a] + (brouillon[a] ?? 0)}</b>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <>
+              <p className="modale-aide">1 point par niveau jusqu’à 60, 2 jusqu’à 80, 3 au-delà. Rien n’est appliqué avant ta confirmation.</p>
+              <ul className="points-liste">
+                {ATTRIBUTS.map((a) => {
+                  const plus = brouillon[a] ?? 0;
+                  const v = etat.attributs[a] + plus;
+                  const c = coutPoint(v);
+                  return (
+                    <li key={a} className={plus > 0 ? 'modifie' : undefined}>
+                      <span className="pl-nom">
+                        {ATTRIBUT_LIBELLE[a]}
+                        <small>{USAGE[a]}</small>
+                      </span>
+                      <span className="pl-valeur">
+                        {plus > 0 ? (
+                          <>
+                            <s>{etat.attributs[a]}</s> <b>{v}</b>
+                          </>
+                        ) : (
+                          v
+                        )}
+                      </span>
+                      <span className="pl-boutons">
+                        <button type="button" className="pl-bouton" onClick={() => ajouter(a, -1)} disabled={plus === 0} aria-label={`Retirer un point en ${ATTRIBUT_LIBELLE[a]}`}>
+                          −
+                        </button>
+                        <button
+                          type="button"
+                          className="pl-bouton"
+                          onClick={() => ajouter(a, 1)}
+                          disabled={c > reste || v >= 100}
+                          aria-label={`Ajouter un point en ${ATTRIBUT_LIBELLE[a]}${c > 1 ? ` (${c} points)` : ''}`}
+                        >
+                          +{c > 1 && <small>{c}</small>}
+                        </button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+        </div>
+        <footer className="modale-pied">
+          {recap ? (
+            <>
+              <button type="button" className="btn-secondaire" onClick={() => setRecap(false)}>
+                Retour
+              </button>
+              <button
+                type="button"
+                className="btn-principal"
+                onClick={() => {
+                  onRepartir(brouillon);
+                  onFermer();
+                }}
+              >
+                Confirmer
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className="btn-secondaire" onClick={onFermer}>
+                Plus tard
+              </button>
+              <button type="button" className="btn-principal" onClick={() => setRecap(true)} disabled={choisis.length === 0}>
+                Valider{cout > 0 ? ` (${cout})` : ''}
+              </button>
+            </>
+          )}
+        </footer>
+      </div>
+    </div>
   );
 }

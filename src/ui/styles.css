@@ -3241,3 +3241,195 @@ p.entree.inconnue {
 .attaque.a-nature:hover:not(:disabled) {
   border-color: var(--nat);
 }
+
+
+/* ── Modale de répartition des points (bas d'écran sur téléphone, centrée sur PC) ── */
+.modale-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: color-mix(in srgb, #000 55%, transparent);
+}
+.modale {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  max-height: 88dvh;
+  background: var(--encre-2);
+  color: var(--papier);
+  border: 1px solid var(--trait);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 40px color-mix(in srgb, #000 40%, transparent);
+  outline: none;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (min-width: 700px) {
+  .modale-fond {
+    align-items: center;
+  }
+  .modale {
+    border-radius: 16px;
+  }
+}
+.modale-tete {
+  padding: 16px 16px 8px;
+  border-bottom: 1px solid var(--trait-doux);
+}
+.modale-tete h2 {
+  margin: 0;
+  font-family: var(--mincho);
+  font-size: var(--t-l);
+}
+.modale-compteur {
+  margin: 4px 0 0;
+  font-size: var(--t-s);
+  color: var(--brume);
+}
+.modale-compteur strong {
+  font-size: 1.6rem;
+  color: var(--or);
+  margin-right: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.modale-compteur.fini strong {
+  color: var(--brume);
+}
+.modale-corps {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 16px;
+}
+.modale-aide {
+  margin: 4px 0 8px;
+  font-size: var(--t-xs);
+  color: var(--brume);
+}
+.points-liste,
+.recap-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.points-liste li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--trait-doux);
+}
+.points-liste li.modifie .pl-nom {
+  color: var(--or);
+}
+.pl-nom {
+  display: grid;
+  font-weight: 700;
+  min-width: 0;
+}
+.pl-nom small {
+  font-weight: 400;
+  font-size: var(--t-xs);
+  color: var(--brume);
+}
+.pl-valeur {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 64px;
+}
+.pl-valeur s {
+  color: var(--brume);
+}
+.pl-valeur b {
+  color: var(--or);
+  font-size: 1.1rem;
+}
+.pl-boutons {
+  display: flex;
+  gap: 6px;
+}
+.pl-bouton {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  background: var(--ardoise);
+  color: var(--papier);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.pl-bouton small {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-size: 0.6rem;
+  color: var(--brume);
+}
+.pl-bouton:disabled {
+  opacity: 0.35;
+}
+.recap-liste li {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--trait-doux);
+  font-size: var(--t-m);
+}
+.recap-liste b {
+  color: var(--or);
+}
+.modale-pied {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--trait-doux);
+}
+.modale-pied button {
+  min-height: 44px;
+}
+.points-bandeau {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--or) 60%, var(--trait));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--or) 10%, var(--ardoise));
+  color: var(--papier);
+  text-align: left;
+  min-height: 44px;
+}
+.points-bandeau strong {
+  color: var(--or);
+  font-size: 1.2rem;
+}
+.points-bandeau span {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--or);
+}
+.points-ouvrir {
+  width: 100%;
+  margin: 8px 0 12px;
+  min-height: 44px;
+}
+.lien-bloquees {
+  display: block;
+  margin: 16px auto 0;
+  padding: 8px 12px;
+  border: 0;
+  background: none;
+  color: var(--brume);
+  font-size: var(--t-s);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 44px;
+}
