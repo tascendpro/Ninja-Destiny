@@ -27,6 +27,7 @@ import { R } from './registre';
 import { JOURS_AN, age, ageA, libelleDuree, libellePeriode } from './calendrier';
 import { Ctx, ajouterJournal, clamp, cloner, defPnj, nomDeFamille, nouveauCtx, resoudrePnj } from './etat';
 import { alea, aleaEntier, tirerPondere } from './rng';
+import { reagirTransformation } from './reactions';
 import { evaluer } from './conditions';
 import { appliquerEffets } from './effets';
 import { applyCombatExperience, exigence, eveilsAutomatiques, maxTierForAge, nouvelleMaitrise } from './maitrise';
@@ -1186,6 +1187,7 @@ function jouerManche(s: GameState, action?: string): void {
     sc.dojutsu = id;
     const ms = s.maitrises[id];
     sc.journal.push(`${texteDojutsu(id)} (${R.maitrises[id].nom}, ${R.maitrises[id].paliers[ms.tier]?.nom ?? `palier ${ms.tier}`} : ${coutDojutsu(s, id)} chakra par manche.)`);
+    sc.journal.push(reagirTransformation(s, base, id, ctx));
     return;
   }
   // Se transformer n'est pas une attaque : la transformation s'active sans consommer la manche.
@@ -1311,7 +1313,7 @@ function activerTransformation(s: GameState, base: CheckDef, id: string, ctx: Ct
   sc.transfoTours = 0;
   sc.techniques.push(id);
   const b = bonusPosture(s, id);
-  const texte = `${lance.prelude.trim()} (${R.maitrises[id].nom} : attaque +${b.attaque}, défense +${b.defense}.) `;
+  const texte = `${lance.prelude.trim()} (${R.maitrises[id].nom} : attaque +${b.attaque}, défense +${b.defense}.) ${reagirTransformation(s, base, id, ctx)} `;
   if (journal) sc.journal.push(`Transformation. ${texte}`);
   return texte;
 }

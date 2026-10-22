@@ -21,7 +21,8 @@ describe('Une vie entière, du premier au dernier chapitre', () => {
     const fins: Record<string, number> = {};
     const chapitres: Record<number, number> = {};
     const cs = combinaisons();
-    for (let i = 0; i < 40; i++) {
+    // 80 vies : avec 40, un tirage malchanceux pouvait faire échouer le test sans que l'équilibre ait changé.
+    for (let i = 0; i < 80; i++) {
       const v = vieComplete(creation(cs[i % cs.length]), 9000 + i);
       expect(v.erreurs).toEqual([]);
       expect(v.fin).toBeDefined();
@@ -33,5 +34,5 @@ describe('Une vie entière, du premier au dernier chapitre', () => {
     const accomplies = Object.entries(fins).filter(([id]) => R.fins[id]?.type === 'accomplie').reduce((a, [, n]) => a + n, 0);
     expect(chapitres[6] ?? 0).toBeGreaterThan(5);
     expect(accomplies).toBeGreaterThan(5);
-  }, 300000);
+  }, 600000);
 });

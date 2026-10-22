@@ -23,6 +23,9 @@ import { HORS_LA_LOI_EVENEMENTS } from './evenements/horsLaLoi';
 import { VIOLENCE } from './evenements/violence';
 import { REMORDS } from './evenements/remords';
 import { VISAGES } from './evenements/visages';
+import { ARCS_CLANS_1 } from './evenements/arcsClans1';
+import { ARCS_CLANS_2 } from './evenements/arcsClans2';
+import { ARCS_CLANS_3 } from './evenements/arcsClans3';
 import { SECRETS } from './evenements/secrets';
 import { EVENEMENTS_BIJU } from './evenements/biju';
 import { BIJUS } from './bijus';
@@ -45,10 +48,10 @@ import { BINGO } from './bingo';
 import { CATALOGUE } from './catalogue';
 import { DECORS_EVENEMENTS, DECORS_LIEUX, prioriserDecors } from './decors';
 
-const EVENEMENTS = [...ORIGINES, ...EVENEMENTS_CLANS, ...ACADEMIE, ...GENIN, ...EVENEMENTS_MISSIONS, ...YUNAGI, ...ALEATOIRES, ...ENFANCE, ...ADOLESCENCE, ...JEUNESSE, ...MATURITE, ...HORS_LA_LOI_EVENEMENTS, ...VIOLENCE, ...REMORDS, ...VISAGES, ...SECRETS, ...EVENEMENTS_BIJU, ...ERRANCE, ...CHAPITRE2, ...CHAPITRE3, ...CHAPITRE4, ...ALEATOIRES_ADULTES, ...CHAPITRE5_VOIE, ...CHAPITRE5, ...DESTINS, ...MARGES, ...CONSEQUENCES, ...LEGENDES, ...ADULTE, ...RENCONTRES, ...BETE];
+const EVENEMENTS = [...ORIGINES, ...EVENEMENTS_CLANS, ...ACADEMIE, ...GENIN, ...EVENEMENTS_MISSIONS, ...YUNAGI, ...ALEATOIRES, ...ENFANCE, ...ADOLESCENCE, ...JEUNESSE, ...MATURITE, ...HORS_LA_LOI_EVENEMENTS, ...VIOLENCE, ...REMORDS, ...VISAGES, ...ARCS_CLANS_1, ...ARCS_CLANS_2, ...ARCS_CLANS_3, ...SECRETS, ...EVENEMENTS_BIJU, ...ERRANCE, ...CHAPITRE2, ...CHAPITRE3, ...CHAPITRE4, ...ALEATOIRES_ADULTES, ...CHAPITRE5_VOIE, ...CHAPITRE5, ...DESTINS, ...MARGES, ...CONSEQUENCES, ...LEGENDES, ...ADULTE, ...RENCONTRES, ...BETE];
 
 export const CONTENU: Contenu = {
-  version: '2.5.0',
+  version: '2.6.0',
   chapitresPublies: [1, 2, 3, 4, 5, 6],
   monde: MONDE,
   villages: VILLAGES,
