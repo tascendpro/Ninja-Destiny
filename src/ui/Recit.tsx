@@ -12,7 +12,6 @@ import { duoPossible, genererActivites, naturesActivite, periodeMax } from '../e
 import type { Activite } from '../engine/tempsLibre';
 import { age, libelleDuree, libellePeriode, moisDe, saisonDe } from '../engine/calendrier';
 import Portrait from './Portrait';
-import SceneArt from './SceneArt';
 import { cleScene, remonter } from './defilement';
 import { ATTRIBUT_LIBELLE, ETAT_PNJ, KANJI_SAISON, vueChangements } from './libelles';
 import { defPnj, nomComplet } from '../engine/etat';
@@ -22,10 +21,6 @@ import type { AttributId } from '../engine/types';
 export function ColonneScene({
   children,
   decor,
-  lieu,
-  theme = 'nuit',
-  anime = false,
-  etat,
 }: {
   lieu?: LieuDef;
   graine?: string;
@@ -36,16 +31,7 @@ export function ColonneScene({
   decor?: VueDecor;
   children?: React.ReactNode;
 }) {
-  const marques = children ? <div className="lieu-bandeau lieu-marques">{children}</div> : null;
-  const sansImage =
-    lieu && etat ? (
-      <>
-        <BandeauEncre lieu={lieu} theme={theme} anime={anime} etat={etat} />
-        {marques}
-      </>
-    ) : (
-      marques ?? <div className="espace-scene" aria-hidden="true" />
-    );
+  const sansImage = children ? <div className="lieu-bandeau lieu-marques">{children}</div> : <div className="espace-scene" aria-hidden="true" />;
   return decor ? (
     <DecorBandeau decor={decor} repli={sansImage}>
       {children}
@@ -85,35 +71,6 @@ function DecorBandeau({ decor, repli, children }: { decor: VueDecor; repli: Reac
       </figure>
       {charge ? children && <div className="lieu-bandeau lieu-marques">{children}</div> : repli}
     </>
-  );
-}
-
-/** Le kanji qui signe chaque paysage, et celui des lieux du village. */
-const KANJI_PAYSAGE: Record<string, string> = {
-  village_feu: '火', village_vent: '風', village_brume: '霧', village_foudre: '雷', village_terre: '岩',
-  foret: '森', desert: '砂', ruines: '跡', cotes: '海', montagne: '山', carriere: '石', neige: '雪',
-  marche: '市', temple: '寺', frontiere: '境', route: '道',
-};
-const KANJI_SOUS_LIEU: Record<string, string> = { academie: '学', terrain: '練', maison: '家', forge: '鍛', porte: '門' };
-
-/** Le paysage peint à l'encre en tête de chaque scène : la saison y dépose ses pétales, ses feuilles ou sa neige. */
-function BandeauEncre({ lieu, theme, anime, etat }: { lieu: LieuDef; theme: 'nuit' | 'washi'; anime: boolean; etat: GameState }) {
-  const [a, b] = lieu.scene.split(':');
-  const kanji = (b && KANJI_SOUS_LIEU[a]) || KANJI_PAYSAGE[b ?? a] || '忍';
-  return (
-    <figure className="bandeau-encre" data-saison={saisonDe(etat.jour)}>
-      <SceneArt scene={lieu.scene} graine={lieu.id} theme={theme} anime={anime} lieuId={lieu.id} description={lieu.description} />
-      <span className="bandeau-kanji" aria-hidden="true">
-        {kanji}
-      </span>
-      <span className="bandeau-saison" aria-hidden="true" />
-      <figcaption className="bandeau-legende">
-        <span className="bandeau-sceau" aria-hidden="true">
-          {kanji}
-        </span>
-        <span>{lieu.pays}</span>
-      </figcaption>
-    </figure>
   );
 }
 
