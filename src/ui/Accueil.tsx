@@ -107,7 +107,9 @@ export default function Accueil({
           {parties > 0 && `${parties} ${parties > 1 ? 'vies commencées' : 'vie commencée'} sur cet appareil. `}
           Ta partie est gardée sur cet appareil, même si tu fermes le navigateur.
         </p>
-        <p className="accueil-signature apparition d3">Créé par Tascend</p>
+        <p className="accueil-signature apparition d3">
+          Créé par Tascend <span className="accueil-version">v{R.contenu.version}</span>
+        </p>
       </div>
     </main>
   );

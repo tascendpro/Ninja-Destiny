@@ -638,6 +638,10 @@ export interface VueChoix {
   /** Duel ou escouade, et alliés dans la mêlée. */
   forme?: FormeCombat;
   allies?: boolean;
+  /** Combat, épreuve (test de compétence) ou choix libre : l'interface en fait le kanji du talisman. */
+  nature?: 'combat' | 'epreuve' | 'libre';
+  /** On peut y mourir. */
+  mortel?: boolean;
 }
 
 /** Une attaque spéciale telle qu'on la propose : chances, récit selon la forme du combat, risque pour les alliés. */
@@ -733,6 +737,8 @@ export function choixVisibles(s: GameState, ev: EventDef): VueChoix[] {
       attaques: attaques?.length ? attaques : undefined,
       forme: attaques?.length ? test?.forme : undefined,
       allies: attaques?.length ? test?.allies : undefined,
+      nature: test ? (test.type === 'combat' ? 'combat' : 'epreuve') : 'libre',
+      mortel: !!test?.letal,
     });
   }
   if (!res.some((c) => c.disponible)) res.push({ id: CHOIX_PASSER.id, texte: CHOIX_PASSER.texte, disponible: true });

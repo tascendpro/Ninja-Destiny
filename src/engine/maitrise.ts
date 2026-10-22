@@ -481,12 +481,14 @@ export function ageMinTechnique(s: GameState, def: MasteryDef): { age: number; n
   const normal = def.rang ? AGE_RANG_TECHNIQUE[def.rang] : 0;
   if (!def.rang || normal <= 6) return { age: normal, normal, raisons: [] };
   const raisons: string[] = [];
+  const enseignee = drapeauVrai(s, `enseigne_clan:${def.id}`);
+  if (enseignee) raisons.push('l’enseignement de ton clan');
   if (s.attributs.intellect >= 60) raisons.push('ton intelligence');
   if (s.attributs.controleChakra >= 60) raisons.push('ton contrôle du chakra');
   if (s.jauges.chakraMax >= RESERVE_PRECOCE[def.rang]) raisons.push('ta réserve de chakra');
   if (estProdige(s)) raisons.push('ton talent de prodige');
   if (drapeauVrai(s, 'heritage_esprit')) raisons.push('ton esprit vif');
-  const avance = Math.min(3, raisons.length);
+  const avance = Math.min(3, enseignee ? 3 : raisons.length);
   return { age: Math.max(6, normal - avance), normal, raisons: raisons.slice(0, avance) };
 }
 
@@ -531,6 +533,27 @@ export function blocageApprentissage(s: GameState, id: string): string | undefin
 function possedeElementTech(s: GameState, el: string): boolean {
   if (s.creation.element === el) return true;
   return (s.maitrises[`nature_${el}`]?.tier ?? 0) >= 1;
+}
+
+/**
+ * Ce que le clan (ou un aîné) enseigne à un enfant : la technique s'apprend même sans l'affinité,
+ * et la nature qui va avec s'éveille au palier 1. Elle ouvre la porte à l'étude de cette nature.
+ */
+export function enseignerTechnique(s: GameState, id: string, ctx: Ctx): boolean {
+  const def = R.maitrises[id];
+  if (!def) return false;
+  s.drapeaux[`enseigne_clan:${id}`] = true;
+  if (def.element && !possedeElementTech(s, def.element)) {
+    const nature = `nature_${def.element}`;
+    const nms = nouvelleMaitrise(R.maitrises[nature], 45 + s.attributs.controleChakra / 2, 'mentor');
+    nms.awakened = true;
+    nms.tier = 1;
+    s.maitrises[nature] = nms;
+    s.drapeaux['natures_apprises'] = (Number(s.drapeaux['natures_apprises']) || 0) + 1;
+    ctx.changements.push({ t: 'info', message: `Pour apprendre ${def.nom}, ton chakra a dû se plier à une nature nouvelle : ${R.elements[def.element]?.nom} s’éveille en toi.` });
+    ajouterJournal(s, `Le clan t’ouvre une nature qui n’était pas la tienne : ${R.elements[def.element]?.nom}.`, 2);
+  }
+  return apprendreTechnique(s, id, 'mentor', ctx);
 }
 
 /** Copier n'est pas maîtriser : palier 1, affinité requise, kekkei genkai non copiables. */

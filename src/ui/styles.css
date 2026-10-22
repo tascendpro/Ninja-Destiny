@@ -4259,3 +4259,402 @@ body::before {
   margin: 4px 0 0;
   padding-left: 18px;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   L'encre et le sceau : le paysage peint de chaque scène, les talismans
+   des choix, le sceau du résultat, le face-à-face du combat.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Le paysage peint ── */
+.bandeau-encre {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  aspect-ratio: 21 / 8;
+  max-height: 40vh;
+  overflow: hidden;
+  isolation: isolate;
+}
+.bandeau-encre svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.bandeau-encre::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, transparent 45%, var(--encre) 98%),
+    linear-gradient(90deg, var(--encre) 0, transparent 8%, transparent 92%, var(--encre) 100%);
+  pointer-events: none;
+}
+.bandeau-kanji {
+  position: absolute;
+  right: 6%;
+  top: 8%;
+  z-index: 1;
+  font-family: var(--pinceau);
+  font-size: clamp(5rem, 22vw, 11rem);
+  line-height: 1;
+  color: var(--papier);
+  opacity: 0.12;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.bandeau-legende {
+  position: absolute;
+  left: 16px;
+  bottom: 14%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--t-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--papier-2);
+}
+.bandeau-sceau {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: var(--vermillon);
+  color: #fff3ec;
+  font-family: var(--pinceau);
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  transform: rotate(-6deg);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+/* La saison dépose ce qu'elle a : pétales, lucioles, feuilles, neige. */
+.bandeau-saison {
+  position: absolute;
+  inset: -20% 0 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.75;
+  background-repeat: repeat;
+  background-size: 180px 140px;
+  animation: saison-tombe 26s linear infinite;
+}
+[data-saison='printemps'] .bandeau-saison {
+  background-image: radial-gradient(3px 2px at 20px 30px, #f3b8c8 60%, transparent 70%), radial-gradient(2px 3px at 120px 80px, #f7c9d5 60%, transparent 70%), radial-gradient(3px 2px at 70px 120px, #eaa4b7 60%, transparent 70%);
+}
+[data-saison='ete'] .bandeau-saison {
+  background-image: radial-gradient(2px 2px at 30px 60px, #f4e48a, transparent 70%), radial-gradient(1.5px 1.5px at 140px 30px, #f8ec9e, transparent 70%), radial-gradient(2px 2px at 90px 110px, #efe07a, transparent 70%);
+  animation-duration: 40s;
+}
+[data-saison='automne'] .bandeau-saison {
+  background-image: radial-gradient(4px 2.5px at 25px 40px, #c8502f 60%, transparent 70%), radial-gradient(3px 2px at 130px 95px, #d98a34 60%, transparent 70%), radial-gradient(3.5px 2.5px at 80px 130px, #a83c2a 60%, transparent 70%);
+}
+[data-saison='hiver'] .bandeau-saison {
+  background-image: radial-gradient(2px 2px at 20px 20px, #f4f6fb 60%, transparent 70%), radial-gradient(1.5px 1.5px at 110px 70px, #fff 60%, transparent 70%), radial-gradient(2.5px 2.5px at 60px 115px, #e9eef6 60%, transparent 70%);
+  animation-duration: 34s;
+}
+@keyframes saison-tombe {
+  from {
+    background-position: 0 0, 0 0, 0 0;
+  }
+  to {
+    background-position: 60px 140px, -40px 280px, 30px 420px;
+  }
+}
+:root[data-animations='reduites'] .bandeau-saison {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bandeau-saison {
+    animation: none;
+  }
+}
+@media (max-width: 700px) {
+  .bandeau-encre {
+    aspect-ratio: 16 / 10;
+    max-height: 30vh;
+  }
+}
+
+/* ── Le titre et la lettrine ── */
+.recit-texte .titre-scene {
+  position: relative;
+  padding-bottom: 12px;
+}
+.recit-texte .titre-scene::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: min(60%, 320px);
+  height: 7px;
+  background: var(--vermillon);
+  opacity: 0.85;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 10' preserveAspectRatio='none'><path d='M2 6 C50 2 120 3 180 4.5 S270 3 298 1.5 L297 4 C250 7 190 8 130 7.5 S40 9 3 8.5 Z'/></svg>") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 10' preserveAspectRatio='none'><path d='M2 6 C50 2 120 3 180 4.5 S270 3 298 1.5 L297 4 C250 7 190 8 130 7.5 S40 9 3 8.5 Z'/></svg>") center / 100% 100% no-repeat;
+}
+.texte-recit.lettrine > p:first-child::first-letter {
+  float: left;
+  font-family: var(--mincho);
+  font-weight: 800;
+  font-size: 3.3em;
+  line-height: 0.82;
+  margin: 0.06em 0.12em 0 0;
+  color: var(--vermillon-clair);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--vermillon) 35%, transparent);
+}
+
+/* ── Les talismans (fuda) ── */
+.choix.fuda {
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 12px 14px 12px 12px;
+  gap: 4px 14px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--papier) 4%, transparent), transparent 40%),
+    var(--ardoise);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.choix.fuda::before {
+  display: none;
+}
+.fuda-kanji {
+  grid-row: 1 / span 2;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  min-height: 52px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--papier) 8%, var(--ardoise));
+  border: 1px solid color-mix(in srgb, var(--papier) 14%, transparent);
+  font-family: var(--pinceau);
+  font-size: 1.55rem;
+  color: var(--papier-2);
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+.choix.fuda .choix-texte {
+  grid-column: 2;
+}
+.choix.fuda .choix-meta {
+  grid-column: 2 / -1;
+  align-items: center;
+}
+.choix.fuda .touche {
+  grid-column: 3;
+  grid-row: 1;
+}
+.fuda-combat .fuda-kanji {
+  background: color-mix(in srgb, var(--vermillon) 22%, var(--ardoise));
+  border-color: color-mix(in srgb, var(--vermillon) 45%, transparent);
+  color: #ffd9d4;
+}
+:root[data-ambiance='washi'] .fuda-combat .fuda-kanji {
+  background: color-mix(in srgb, var(--vermillon) 12%, var(--ardoise));
+  color: var(--vermillon);
+}
+.fuda-epreuve .fuda-kanji {
+  background: color-mix(in srgb, var(--or) 16%, var(--ardoise));
+  border-color: color-mix(in srgb, var(--or) 40%, transparent);
+  color: var(--or);
+}
+.fuda-libre .fuda-kanji {
+  color: var(--jade);
+}
+.choix.fuda:hover:not(:disabled) .fuda-kanji,
+.choix.fuda:focus-visible .fuda-kanji {
+  transform: rotate(-4deg) scale(1.05);
+}
+.fuda-mortel {
+  border-color: color-mix(in srgb, var(--vermillon) 55%, var(--trait));
+  box-shadow: inset 3px 0 0 var(--vermillon);
+}
+.fuda-mort {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--vermillon-clair);
+  border-radius: 4px;
+  color: var(--vermillon-clair);
+  font-family: var(--pinceau);
+  font-size: 0.85rem;
+  transform: rotate(8deg);
+}
+.fuda-mortel .choix-texte {
+  padding-right: 26px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .fuda-mortel .touche {
+    margin-right: 28px;
+  }
+}
+.choix.fuda:disabled .fuda-kanji {
+  color: var(--brume);
+  background: transparent;
+  border-style: dashed;
+}
+/* Les chances en cinq points d'encre */
+.points-encre {
+  display: inline-flex;
+  gap: 3px;
+  margin-right: 7px;
+  vertical-align: middle;
+}
+.points-encre i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  opacity: 0.55;
+}
+.points-encre i.plein {
+  background: currentColor;
+  opacity: 1;
+}
+
+/* ── Le sceau du résultat ── */
+.issue-ligne {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 16px;
+}
+.issue-ligne .issue {
+  margin: 0;
+}
+.sceau-issue {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 58px;
+  height: 58px;
+  border: 4px double currentColor;
+  border-radius: 9px;
+  font-family: var(--pinceau);
+  font-size: 1.9rem;
+  transform: rotate(-9deg);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  animation: tampon 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.sceau-critique {
+  color: var(--or);
+}
+.sceau-succes {
+  color: var(--jade);
+}
+.sceau-partiel {
+  color: var(--papier-2);
+}
+.sceau-echec {
+  color: var(--vermillon-clair);
+}
+:root[data-animations='reduites'] .sceau-issue {
+  animation: none;
+}
+.consequences .csq {
+  border-radius: 6px;
+  border-left-width: 3px;
+}
+
+/* ── Le face-à-face du combat ── */
+.duel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 16px;
+  padding: 12px;
+  border: 1px solid var(--trait);
+  border-radius: 12px;
+  background:
+    radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    radial-gradient(120% 140% at 100% 50%, color-mix(in srgb, var(--vermillon) 14%, transparent), transparent 60%),
+    var(--ardoise);
+}
+.duel-camp {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.duel-eux {
+  justify-content: flex-end;
+  text-align: right;
+}
+.duel-nom {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.duel-nom b {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.duel-nom small {
+  font-size: var(--t-xs);
+  color: var(--brume);
+}
+.duel-jauge {
+  display: block;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--papier) 10%, transparent);
+  overflow: hidden;
+}
+.duel-jauge i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.duel-sante {
+  background: var(--jade);
+}
+.duel-chakra {
+  background: var(--glycine, #8f84d8);
+}
+.duel-ennemi-vie {
+  background: var(--vermillon-clair);
+  margin-left: auto;
+}
+.duel-vs {
+  font-family: var(--pinceau);
+  font-size: 1.5rem;
+  color: var(--or);
+  opacity: 0.85;
+}
+.duel-ennemi {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid var(--vermillon-clair);
+  color: var(--vermillon-clair);
+  font-family: var(--pinceau);
+  font-size: 1.35rem;
+  background: color-mix(in srgb, var(--vermillon) 12%, transparent);
+}
+
+/* L'accueil : la version qui tourne */
+.accueil-version {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border: 1px solid var(--trait);
+  border-radius: 999px;
+  font-size: 0.75em;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}

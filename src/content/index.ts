@@ -26,6 +26,8 @@ import { VISAGES } from './evenements/visages';
 import { ARCS_CLANS_1 } from './evenements/arcsClans1';
 import { ARCS_CLANS_2 } from './evenements/arcsClans2';
 import { ARCS_CLANS_3 } from './evenements/arcsClans3';
+import { APPRENTISSAGE } from './evenements/apprentissage';
+import { MISSIONS_GENIN, EVENEMENTS_MISSIONS_GENIN } from './evenements/missionsGenin';
 import { SECRETS } from './evenements/secrets';
 import { EVENEMENTS_BIJU } from './evenements/biju';
 import { BIJUS } from './bijus';
@@ -48,10 +50,10 @@ import { BINGO } from './bingo';
 import { CATALOGUE } from './catalogue';
 import { DECORS_EVENEMENTS, DECORS_LIEUX, prioriserDecors } from './decors';
 
-const EVENEMENTS = [...ORIGINES, ...EVENEMENTS_CLANS, ...ACADEMIE, ...GENIN, ...EVENEMENTS_MISSIONS, ...YUNAGI, ...ALEATOIRES, ...ENFANCE, ...ADOLESCENCE, ...JEUNESSE, ...MATURITE, ...HORS_LA_LOI_EVENEMENTS, ...VIOLENCE, ...REMORDS, ...VISAGES, ...ARCS_CLANS_1, ...ARCS_CLANS_2, ...ARCS_CLANS_3, ...SECRETS, ...EVENEMENTS_BIJU, ...ERRANCE, ...CHAPITRE2, ...CHAPITRE3, ...CHAPITRE4, ...ALEATOIRES_ADULTES, ...CHAPITRE5_VOIE, ...CHAPITRE5, ...DESTINS, ...MARGES, ...CONSEQUENCES, ...LEGENDES, ...ADULTE, ...RENCONTRES, ...BETE];
+const EVENEMENTS = [...ORIGINES, ...EVENEMENTS_CLANS, ...ACADEMIE, ...GENIN, ...EVENEMENTS_MISSIONS, ...YUNAGI, ...ALEATOIRES, ...ENFANCE, ...ADOLESCENCE, ...JEUNESSE, ...MATURITE, ...HORS_LA_LOI_EVENEMENTS, ...VIOLENCE, ...REMORDS, ...VISAGES, ...ARCS_CLANS_1, ...ARCS_CLANS_2, ...ARCS_CLANS_3, ...APPRENTISSAGE, ...EVENEMENTS_MISSIONS_GENIN, ...SECRETS, ...EVENEMENTS_BIJU, ...ERRANCE, ...CHAPITRE2, ...CHAPITRE3, ...CHAPITRE4, ...ALEATOIRES_ADULTES, ...CHAPITRE5_VOIE, ...CHAPITRE5, ...DESTINS, ...MARGES, ...CONSEQUENCES, ...LEGENDES, ...ADULTE, ...RENCONTRES, ...BETE];
 
 export const CONTENU: Contenu = {
-  version: '2.6.0',
+  version: '2.7.0',
   chapitresPublies: [1, 2, 3, 4, 5, 6],
   monde: MONDE,
   villages: VILLAGES,
@@ -65,7 +67,7 @@ export const CONTENU: Contenu = {
   pnj: PNJ,
   lieux: LIEUX,
   evenements: EVENEMENTS,
-  missions: [...MISSIONS, ...MISSIONS_C2, ...MISSIONS_C3, ...MISSIONS_C4, ...MISSIONS_ADULTES],
+  missions: [...MISSIONS, ...MISSIONS_GENIN, ...MISSIONS_C2, ...MISSIONS_C3, ...MISSIONS_C4, ...MISSIONS_ADULTES],
   fins: FINS,
   succes: SUCCES,
   bijus: BIJUS,

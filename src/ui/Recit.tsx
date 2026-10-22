@@ -12,15 +12,20 @@ import { duoPossible, genererActivites, naturesActivite, periodeMax } from '../e
 import type { Activite } from '../engine/tempsLibre';
 import { age, libelleDuree, libellePeriode, moisDe, saisonDe } from '../engine/calendrier';
 import Portrait from './Portrait';
+import SceneArt from './SceneArt';
 import { cleScene, remonter } from './defilement';
 import { ATTRIBUT_LIBELLE, ETAT_PNJ, KANJI_SAISON, vueChangements } from './libelles';
-import { defPnj } from '../engine/etat';
+import { defPnj, nomComplet } from '../engine/etat';
 import type { AttributId } from '../engine/types';
 
 /** Le lieu et la saison sont déjà dans la barre du haut : la scène commence directement par son titre. */
 export function ColonneScene({
   children,
   decor,
+  lieu,
+  theme = 'nuit',
+  anime = false,
+  etat,
 }: {
   lieu?: LieuDef;
   graine?: string;
@@ -31,7 +36,16 @@ export function ColonneScene({
   decor?: VueDecor;
   children?: React.ReactNode;
 }) {
-  const sansImage = children ? <div className="lieu-bandeau lieu-marques">{children}</div> : <div className="espace-scene" aria-hidden="true" />;
+  const marques = children ? <div className="lieu-bandeau lieu-marques">{children}</div> : null;
+  const sansImage =
+    lieu && etat ? (
+      <>
+        <BandeauEncre lieu={lieu} theme={theme} anime={anime} etat={etat} />
+        {marques}
+      </>
+    ) : (
+      marques ?? <div className="espace-scene" aria-hidden="true" />
+    );
   return decor ? (
     <DecorBandeau decor={decor} repli={sansImage}>
       {children}
@@ -74,9 +88,38 @@ function DecorBandeau({ decor, repli, children }: { decor: VueDecor; repli: Reac
   );
 }
 
-function Paragraphes({ texte, presentation }: { texte: string; presentation: Presentation }) {
+/** Le kanji qui signe chaque paysage, et celui des lieux du village. */
+const KANJI_PAYSAGE: Record<string, string> = {
+  village_feu: '火', village_vent: '風', village_brume: '霧', village_foudre: '雷', village_terre: '岩',
+  foret: '森', desert: '砂', ruines: '跡', cotes: '海', montagne: '山', carriere: '石', neige: '雪',
+  marche: '市', temple: '寺', frontiere: '境', route: '道',
+};
+const KANJI_SOUS_LIEU: Record<string, string> = { academie: '学', terrain: '練', maison: '家', forge: '鍛', porte: '門' };
+
+/** Le paysage peint à l'encre en tête de chaque scène : la saison y dépose ses pétales, ses feuilles ou sa neige. */
+function BandeauEncre({ lieu, theme, anime, etat }: { lieu: LieuDef; theme: 'nuit' | 'washi'; anime: boolean; etat: GameState }) {
+  const [a, b] = lieu.scene.split(':');
+  const kanji = (b && KANJI_SOUS_LIEU[a]) || KANJI_PAYSAGE[b ?? a] || '忍';
   return (
-    <div className="texte-recit">
+    <figure className="bandeau-encre" data-saison={saisonDe(etat.jour)}>
+      <SceneArt scene={lieu.scene} graine={lieu.id} theme={theme} anime={anime} lieuId={lieu.id} description={lieu.description} />
+      <span className="bandeau-kanji" aria-hidden="true">
+        {kanji}
+      </span>
+      <span className="bandeau-saison" aria-hidden="true" />
+      <figcaption className="bandeau-legende">
+        <span className="bandeau-sceau" aria-hidden="true">
+          {kanji}
+        </span>
+        <span>{lieu.pays}</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+function Paragraphes({ texte, presentation, lettrine = false }: { texte: string; presentation: Presentation; lettrine?: boolean }) {
+  return (
+    <div className={`texte-recit${lettrine ? ' lettrine' : ''}`}>
       {accorder(texte, presentation)
         .split(/\n\n+/)
         .map((p, i) => (
@@ -88,6 +131,29 @@ function Paragraphes({ texte, presentation }: { texte: string; presentation: Pre
 
 const RISQUE_CLASSE: Record<string, string> = { faible: 'risque-faible', modéré: 'risque-modere', élevé: 'risque-eleve', extrême: 'risque-extreme' };
 const ISSUE: Record<string, string> = { critique: 'Réussite éclatante', succes: 'Réussite', partiel: 'Réussite partielle', echec: 'Échec' };
+/** Le sceau tamponné sur le résultat. */
+const SCEAU_ISSUE: Record<string, string> = { critique: '極', succes: '成', partiel: '半', echec: '敗' };
+/** Le kanji du talisman : le combat, ou ce que l'épreuve met en jeu ; un choix libre est une décision. */
+const KANJI_ATTRIBUT: Record<AttributId, string> = {
+  force: '力', agilite: '速', perception: '観', discretion: '隠', intellect: '策', charisme: '話', controleChakra: '気', controleEmotionnel: '心',
+};
+function kanjiChoix(nature: string | undefined, principal: AttributId | undefined): string {
+  if (nature === 'combat') return '戦';
+  if (nature === 'epreuve') return principal ? KANJI_ATTRIBUT[principal] : '試';
+  return '決';
+}
+
+/** Les chances, en cinq points d'encre. */
+function PointsEncre({ chance }: { chance: number }) {
+  const pleins = Math.max(0, Math.min(5, Math.round(chance / 20)));
+  return (
+    <span className="points-encre" aria-hidden="true">
+      {Array.from({ length: 5 }, (_, i) => (
+        <i key={i} className={i < pleins ? 'plein' : ''} />
+      ))}
+    </span>
+  );
+}
 
 /** Raccourcis clavier : 1 à 9 pour choisir, Entrée pour continuer. */
 function useRaccourcis(actif: boolean, onTouche: (k: string) => void) {
@@ -172,16 +238,24 @@ export default function Recit({
               ))}
             </div>
           )}
-          <Paragraphes texte={vue.texte} presentation={p} />
+          <Paragraphes texte={vue.texte} presentation={p} lettrine />
           <ol className="choix-liste" aria-label="Choix">
             {vue.choix.map((ch, i) => (
               <li key={ch.id}>
                 <button
-                  className={`choix ${scelle === ch.id ? 'scelle' : ''}`}
+                  className={`choix fuda fuda-${ch.nature ?? 'libre'}${ch.mortel ? ' fuda-mortel' : ''}${scelle === ch.id ? ' scelle' : ''}`}
                   data-sceau="決"
                   disabled={!ch.disponible || (scelle !== null && scelle !== ch.id)}
                   onClick={() => choisir(ch.id)}
                 >
+                  <span className="fuda-kanji" aria-hidden="true">
+                    {ch.disponible ? kanjiChoix(ch.nature, ch.principal) : '封'}
+                  </span>
+                  {ch.mortel && ch.disponible && (
+                    <span className="fuda-mort" title="On peut y mourir">
+                      死
+                    </span>
+                  )}
                   <span className="choix-texte">{accorder(ch.texte, p)}</span>
                   {i < 9 && (
                     <kbd className="touche" aria-hidden="true">
@@ -193,6 +267,7 @@ export default function Recit({
                       {ch.verrou && <span>{accorder(ch.verrou, p)}</span>}
                       {ch.risque && (
                         <span className={RISQUE_CLASSE[ch.risque]}>
+                          {ch.chance !== undefined && <PointsEncre chance={ch.chance} />}
                           {precis && ch.chance !== undefined ? `${ch.chance} % de réussite` : `Risque ${ch.risque}`}
                           {ch.principal && ` · ${ATTRIBUT_LIBELLE[ch.principal]}`}
                         </span>
@@ -251,7 +326,14 @@ export default function Recit({
         <article className="recit-texte">
           <h1 className="titre-scene">{accorder(sc.titre, p)}</h1>
           <p className="resultat-choix">{accorder(sc.choix, p)}</p>
-          {sc.issue && <span className={`issue issue-${sc.issue}`}>{ISSUE[sc.issue]}</span>}
+          {sc.issue && (
+            <div className="issue-ligne">
+              <span className={`sceau-issue sceau-${sc.issue}`} aria-hidden="true">
+                {SCEAU_ISSUE[sc.issue]}
+              </span>
+              <span className={`issue issue-${sc.issue}`}>{ISSUE[sc.issue]}</span>
+            </div>
+          )}
           <div aria-live="polite">
             <Paragraphes texte={sc.texte} presentation={p} />
           </div>
@@ -279,7 +361,7 @@ export default function Recit({
   }
 
   if (etat.scene.type === 'combat') {
-    return <Combat etat={etat} onManche={onManche} />;
+    return <Combat etat={etat} theme={theme} anime={anime} onManche={onManche} />;
   }
 
   if (etat.scene.type === 'bilan') {
@@ -715,16 +797,53 @@ function DetailAttaque({ at, precis, p }: { at: VueAttaque; precis: boolean; p: 
   );
 }
 
-function Combat({ etat, onManche }: { etat: GameState; onManche: (id: string) => void }) {
+function Combat({ etat, theme, anime, onManche }: { etat: GameState; theme: 'nuit' | 'washi'; anime: boolean; onManche: (id: string) => void }) {
   const v = vueCombat(etat);
   const p = etat.creation.presentation;
   const precis = etat.creation.difficulte !== 'legende';
   if (!v) return null;
   return (
     <div className="recit">
-      <ColonneScene decor={etat.scene.type === 'combat' ? decorScene(etat, etat.scene.evenementId) : undefined} />
+      <ColonneScene
+        decor={etat.scene.type === 'combat' ? decorScene(etat, etat.scene.evenementId) : undefined}
+        lieu={etat.scene.type === 'combat' && R.evenements[etat.scene.evenementId] ? lieuCourant(etat, R.evenements[etat.scene.evenementId].lieu) : undefined}
+        etat={etat}
+        theme={theme}
+        anime={anime}
+      />
       <article className="recit-texte combat">
         <h1 className="titre-scene">{accorder(v.titre, p)}</h1>
+        <div className="duel" aria-label="Face-à-face">
+          <div className="duel-camp duel-toi">
+            <Portrait nom={nomComplet(etat)} genre={p === 'feminin' ? 'f' : p === 'masculin' ? 'm' : undefined} village={etat.creation.village} clan={etat.creation.clan} taille={46} />
+            <span className="duel-nom">
+              <b>{etat.creation.prenom}</b>
+              <span className="duel-jauge">
+                <i className="duel-sante" style={{ width: `${Math.max(0, Math.min(100, etat.jauges.sante))}%` }} />
+              </span>
+              <span className="duel-jauge">
+                <i className="duel-chakra" style={{ width: `${Math.max(0, Math.min(100, (etat.jauges.chakra / Math.max(1, etat.jauges.chakraMax)) * 100))}%` }} />
+              </span>
+            </span>
+          </div>
+          <span className="duel-vs" aria-hidden="true">
+            対
+          </span>
+          <div className="duel-camp duel-eux">
+            <span className="duel-nom">
+              <b>{v.forme === 'escouade' ? 'Ennemis' : 'Adversaire'}</b>
+              <span className="duel-jauge">
+                <i className="duel-ennemi-vie" style={{ width: `${Math.round(((v.total - v.touches) / Math.max(1, v.total)) * 100)}%` }} />
+              </span>
+              <small>
+                {v.touches} coup{v.touches > 1 ? 's' : ''} porté{v.touches > 1 ? 's' : ''}
+              </small>
+            </span>
+            <span className="duel-ennemi" aria-hidden="true">
+              敵
+            </span>
+          </div>
+        </div>
         {v.dojutsu
           .filter((d) => d.actif)
           .map((d) => (

@@ -109,6 +109,7 @@ export function diagnostiquer(): Probleme[] {
       if ('entrainer' in e && !R.maitrises[e.entrainer]) err('maitrise_inconnue', `${ou} : maîtrise inconnue ${e.entrainer}.`);
       if ('tenterEveil' in e && !R.maitrises[e.tenterEveil]) err('maitrise_inconnue', `${ou} : maîtrise inconnue ${e.tenterEveil}.`);
       if ('apprendre' in e && !R.maitrises[e.apprendre]) err('maitrise_inconnue', `${ou} : technique inconnue ${e.apprendre}.`);
+      if ('enseigner' in e && !R.maitrises[e.enseigner]) err('maitrise_inconnue', `${ou} : technique enseignée inconnue ${e.enseigner}.`);
       if ('copier' in e && !R.maitrises[e.copier]) err('maitrise_inconnue', `${ou} : technique inconnue ${e.copier}.`);
       if ('combatSur' in e) for (const m of e.combatSur) if (!R.maitrises[m]) err('maitrise_inconnue', `${ou} : maîtrise inconnue ${m}.`);
       for (const k of ['obtenirArme', 'perdreArme', 'recupererArme', 'equiper', 'lienArme', 'transfererRegistre'] as const) {

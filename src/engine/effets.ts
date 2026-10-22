@@ -9,6 +9,7 @@ import { evaluer } from './conditions';
 import { alea, tirerPondere } from './rng';
 import {
   apprendreTechnique,
+  enseignerTechnique,
   applyCombatExperience,
   applyTraining,
   copierTechnique,
@@ -195,6 +196,10 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
     return;
   }
   if ('eveilDanger' in e) return eveilSousDanger(s, e.eveilDanger, ctx);
+  if ('enseigner' in e) {
+    enseignerTechnique(s, e.enseigner, ctx);
+    return;
+  }
   if ('apprendre' in e) {
     apprendreTechnique(s, e.apprendre, (e.source as never) ?? 'mentor', ctx);
     return;

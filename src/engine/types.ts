@@ -174,6 +174,8 @@ export type Effect =
   /** Un sans-nom se choisit un nom de famille, pour lui et ses descendants. */
   | { nomDeFamille: string }
   | { apprendre: string; source?: string }
+  /** Enseignement du clan ou d'un aîné : la technique s'apprend même sans l'affinité, et la nature qui va avec s'éveille. */
+  | { enseigner: string }
   | { copier: string }
   | { obtenirArme: string; statut?: 'possedee' | 'pretee' | 'derobee' }
   | { perdreArme: string; statut: 'perdue' | 'confisquee' | 'detruite' | 'vendue' | 'rendue'; vers?: string }

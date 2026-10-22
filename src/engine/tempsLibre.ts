@@ -7,7 +7,7 @@ import { CONSOMMABLE, CONSOMMABLES, STOCK_MAX, acheterConsommable, stock } from 
 const PRIX_CADEAU = 25;
 const PRIX_RAMEN = 12;
 const MISE_DES = 20;
-import type { CheckDef, ElementId, GameState } from './types';
+import type { AttributId, CheckDef, ElementId, GameState } from './types';
 import { R } from './registre';
 import { age, libelleDuree } from './calendrier';
 import { Ctx, ajouterJournal, clamp, defPnj, decouvrir, drapeauVrai, estProdige, rangIndex, relationDe } from './etat';
@@ -626,6 +626,10 @@ export function faireActivite(s: GameState, id: string, ctx: Ctx): ResultatActiv
     }
   }
   const extras: string[] = [];
+  if (ENTRAINEMENT.has(type) && type !== 'route' && !s.fin) {
+    const seance = bilanSeance(s, id, ctx);
+    if (seance) extras.push(seance);
+  }
   // Une seule ligne par maîtrise arrivée au bout de ce que l'entraînement peut donner.
   for (const p of new Set(arrets)) {
     const m = p.split(':')[1];
@@ -635,6 +639,84 @@ export function faireActivite(s: GameState, id: string, ctx: Ctx): ResultatActiv
   if (reposForces) extras.push(reposForces > 1 ? `Ton corps t’a imposé ${reposForces} pauses pour récupérer.` : 'Ton corps t’a imposé une pause pour récupérer.');
   if (interrompu) extras.push('Mais la vie ne t’a pas laissé finir tranquillement.');
   return { libelle: act.libelle, texte: [texte, ...extras].filter(Boolean).join('\n\n'), suite };
+}
+
+const LIBELLES_ATTRIBUTS: Record<AttributId, string> = {
+  force: 'Force',
+  agilite: 'Agilité',
+  perception: 'Perception',
+  discretion: 'Discrétion',
+  intellect: 'Intelligence tactique',
+  charisme: 'Charisme',
+  controleChakra: 'Contrôle du chakra',
+  controleEmotionnel: 'Contrôle émotionnel',
+};
+
+/** La stat qu'une maîtrise fait travailler (deux possibles : le hasard de la séance choisit). */
+const STATS_POUVOIR: Record<string, AttributId[]> = {
+  taijutsu: ['force', 'agilite'],
+  ninjutsu: ['controleChakra'],
+  genjutsu: ['controleEmotionnel', 'intellect'],
+  shosen: ['intellect', 'controleChakra'],
+  sharingan: ['perception'],
+  byakugan: ['perception'],
+  juken: ['agilite', 'controleChakra'],
+  kagemane: ['intellect'],
+  shintenshin: ['controleEmotionnel'],
+  baika: ['force'],
+  kikaichu: ['controleChakra', 'perception'],
+  ninken_lien: ['agilite', 'perception'],
+  vitalite_senju: ['force'],
+  mokuton: ['controleChakra'],
+  fuinjutsu_uzumaki: ['intellect'],
+  chaines_chakra: ['controleChakra'],
+  hydrification: ['controleChakra', 'agilite'],
+  shikotsumyaku: ['force'],
+  hyoton: ['controleChakra'],
+  souffle_dunes: ['perception'],
+  armure_foudre: ['agilite'],
+  peau_roche: ['force'],
+};
+const STATS_CATEGORIE: Partial<Record<string, AttributId[]>> = {
+  taijutsu: ['force', 'agilite'],
+  ninjutsu: ['controleChakra'],
+  genjutsu: ['controleEmotionnel', 'intellect'],
+  armes: ['perception', 'agilite'],
+  medical: ['intellect'],
+  fuinjutsu: ['intellect'],
+  dojutsu: ['perception'],
+};
+
+function statsTravaillees(id: string): AttributId[] {
+  const def = R.maitrises[id];
+  if (STATS_POUVOIR[id]) return STATS_POUVOIR[id];
+  if (id.startsWith('nature_')) return ['controleChakra'];
+  if (id.startsWith('famille_')) return ['perception', 'agilite'];
+  return STATS_CATEGORIE[def?.technique?.categorie ?? ''] ?? ['controleChakra'];
+}
+
+/**
+ * Après une période d'entraînement, une fois : la séance a porté ses fruits (+1 dans la stat travaillée),
+ * ou, épuisé·e, tu as forcé et ça se paie (−1). Un maître rend la réussite plus probable.
+ */
+function bilanSeance(s: GameState, activiteId: string, ctx: Ctx): string | undefined {
+  const [t, c] = activiteId.split(':');
+  const cible = t === 'duo' ? activiteId.slice(4).split('+')[0].split(':')[1] : t === 'nature' ? `nature_${c}` : c;
+  if (!cible || !R.maitrises[cible]) return undefined;
+  const stats = statsTravaillees(cible);
+  const stat = stats[Math.floor(alea(s) * stats.length)];
+  const nom = LIBELLES_ATTRIBUTS[stat];
+  const mentor = drapeauVrai(s, `mentor:${cible}`);
+  const fatigue = s.jauges.fatigue;
+  if (fatigue >= 60 && alea(s) < 0.3 + (fatigue - 60) / 100) {
+    appliquerEffet(s, { stat: `attributs.${stat}`, delta: -1 }, ctx);
+    return `Tu as forcé alors que ton corps disait stop. Ça se paie : ${nom} −1.`;
+  }
+  if (alea(s) < 0.45 + (mentor ? 0.15 : 0) - Math.max(0, fatigue - 40) / 200) {
+    appliquerEffet(s, { stat: `attributs.${stat}`, delta: 1 }, ctx);
+    return `La séance a porté ses fruits : ${nom} +1.`;
+  }
+  return undefined;
 }
 
 /** Réparer ou acheter : instantané, la période libre n'est pas consommée. */
