@@ -1579,6 +1579,7 @@ export function appliquerActionMut(s: GameState, a: Action): void {
   else if (a.a === 'points') pointsMut(s, a.repartition);
   else if (a.a === 'chapitre') chapitreMut(s);
   else if (a.a === 'manche') mancheMut(s, a.id);
+  else if (a.a === 'magasin') magasinMut(s, a.id);
   else activiteMut(s, a.id);
 }
 
@@ -1628,6 +1629,28 @@ export function choisir(s0: GameState, choixId: string): GameState {
 export function continuer(s0: GameState): GameState {
   const s = cloner(s0);
   continuerMut(s);
+  return s;
+}
+
+/** Le magasin et l'arsenal sont ouverts à tout moment, sauf en plein combat et une fois la vie finie. */
+export function magasinOuvert(s: GameState): boolean {
+  return !['combat', 'affrontement', 'fin'].includes(s.scene.type) && !s.fin;
+}
+
+const ACTIONS_MAGASIN = /^(achat|forge|equiper):/;
+
+/** Un achat, une réparation ou un changement d'arme : instantané, sans quitter la scène en cours. */
+function magasinMut(s: GameState, id: string): void {
+  if (!magasinOuvert(s)) throw new Error('Le magasin est fermé pendant un combat.');
+  if (!ACTIONS_MAGASIN.test(id)) throw new Error(`Pas un article du magasin : ${id}`);
+  s.actions.push({ a: 'magasin', id });
+  const r = faireActivite(s, id, nouveauCtx());
+  s.annonce = r.texte;
+}
+
+export function magasin(s0: GameState, id: string): GameState {
+  const s = cloner(s0);
+  magasinMut(s, id);
   return s;
 }
 

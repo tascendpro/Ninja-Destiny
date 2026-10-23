@@ -4,7 +4,7 @@ import { stockageParDefaut } from './stockage';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Creation as CreationT, GameState } from '../engine/types';
 import { R } from '../engine/registre';
-import { activite, chapitreSuivant, choisir, combattre, continuer, lieuCourant, manche, nouvellePartie, repartir } from '../engine/moteur';
+import { activite, chapitreSuivant, choisir, combattre, continuer, lieuCourant, magasin, magasinOuvert, manche, nouvellePartie, repartir } from '../engine/moteur';
 import { age, libelleSaison } from '../engine/calendrier';
 import { charger, consommerHeritage, enregistrer, fusionnerMeta, lireMeta, listerSauvegardes, restaurer } from '../engine/sauvegarde';
 import type { Meta, Stockage } from '../engine/sauvegarde';
@@ -256,7 +256,6 @@ export default function Game() {
 
   const lieu = etat.scene.type === 'evenement' ? lieuCourant(etat, R.evenements[etat.scene.id].lieu) : lieuCourant(etat, '$village');
   const enFin = etat.scene.type === 'fin';
-  const enTempsLibre = etat.scene.type === 'temps_libre';
   const j = etat.jauges;
   const fatigue = gravite(j.fatigue);
 
@@ -338,15 +337,15 @@ export default function Game() {
         {onglet === 'ninja' && (
           <Tableau
             etat={etat}
-            enTempsLibre={enTempsLibre}
+            peutEquiper={magasinOuvert(etat)}
             onEquiper={(id) => {
-              appliquer((s) => activite(s, `equiper:${id}`));
+              appliquer((s) => magasin(s, `equiper:${id}`));
               setToast(`${R.armes[id]?.nom} en main.`);
             }}
             onOuvrirPoints={() => setModalePoints(true)}
           />
         )}
-        {onglet === 'magasin' && <Magasin etat={etat} onAcheter={(id) => appliquer((s) => activite(s, id))} />}
+        {onglet === 'magasin' && <Magasin etat={etat} onAcheter={(id) => appliquer((s) => magasin(s, id))} />}
         {onglet === 'journal' && <Journal etat={etat} />}
         {onglet === 'bingo' && <BingoBook etat={etat} />}
         {onglet === 'savoir' && <Encyclopedie etat={etat} meta={meta} />}

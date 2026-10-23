@@ -48,12 +48,12 @@ function Jauge({ nom, valeur, max = 100, classe, detail, masquer = false }: { no
 
 export default function Tableau({
   etat,
-  enTempsLibre,
+  peutEquiper,
   onEquiper,
   onOuvrirPoints,
 }: {
   etat: GameState;
-  enTempsLibre: boolean;
+  peutEquiper: boolean;
   onEquiper: (id: string) => void;
   onOuvrirPoints: () => void;
 }) {
@@ -79,7 +79,7 @@ export default function Tableau({
       {onglet === 'Profil' && <Profil etat={etat} onOuvrirPoints={onOuvrirPoints} onArsenal={() => setOnglet('Arsenal')} />}
       {onglet === 'Techniques' && <Techniques etat={etat} />}
       {onglet === 'Maîtrise' && <Maitrise etat={etat} />}
-      {onglet === 'Arsenal' && <Arsenal etat={etat} enTempsLibre={enTempsLibre} onEquiper={onEquiper} />}
+      {onglet === 'Arsenal' && <Arsenal etat={etat} peutEquiper={peutEquiper} onEquiper={onEquiper} />}
       {onglet === 'Métier' && <Metier etat={etat} />}
       {onglet === 'Relations' && <Relations etat={etat} />}
       {onglet === 'Missions' && <Missions etat={etat} />}
@@ -469,7 +469,7 @@ function Maitrise({ etat }: { etat: GameState }) {
   );
 }
 
-function Arsenal({ etat, enTempsLibre, onEquiper }: { etat: GameState; enTempsLibre: boolean; onEquiper: (id: string) => void }) {
+function Arsenal({ etat, peutEquiper, onEquiper }: { etat: GameState; peutEquiper: boolean; onEquiper: (id: string) => void }) {
   const legendesConnues = R.contenu.armes.filter(
     (a) => (a.rarete === 'legendaire' || a.rarete === 'maudite') && etat.decouvertes.includes(`arme:${a.id}`) && !etat.arsenal.some((i) => i.defId === a.id),
   );
@@ -524,10 +524,10 @@ function Arsenal({ etat, enTempsLibre, onEquiper }: { etat: GameState; enTempsLi
                   })}
                   {etat.armeEquipee !== inst.defId && (
                     <div className="actions-bas" style={{ marginTop: 12 }}>
-                      <button className="btn-secondaire" disabled={!enTempsLibre} onClick={() => onEquiper(inst.defId)}>
+                      <button className="btn-secondaire" disabled={!peutEquiper} onClick={() => onEquiper(inst.defId)}>
                         En faire mon arme principale
                       </button>
-                      {!enTempsLibre && <span className="sous-titre">Possible seulement pendant le temps libre.</span>}
+                      {!peutEquiper && <span className="sous-titre">Impossible en plein combat.</span>}
                     </div>
                   )}
                 </>

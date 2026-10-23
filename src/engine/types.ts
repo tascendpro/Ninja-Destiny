@@ -1079,6 +1079,8 @@ export type Action =
   | ({ a: 'combat' } & import('./combat/types').ActionCombat)
   | { a: 'continuer' }
   | { a: 'activite'; id: string }
+  /** Magasin et arsenal : acheter, réparer, changer d'arme, à tout moment hors combat. */
+  | { a: 'magasin'; id: string }
   | { a: 'points'; repartition: Partial<Record<AttributId, number>> }
   | { a: 'chapitre' }
   | { a: 'manche'; id: string };

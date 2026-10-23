@@ -1,13 +1,14 @@
 'use client';
 
 // Le magasin du village : réparation de l'arme en main, sacoche (pilules, parchemins, fumigènes) et armes.
-// Tout y est instantané et ne compte pas comme la décision de la période ; on n'y achète que pendant le temps libre.
+// Tout y est instantané et ne compte pas comme la décision de la période ; il est ouvert à tout moment, sauf en plein combat.
 
 import { useMemo } from 'react';
 import type { GameState } from '../engine/types';
 import type { Activite } from '../engine/tempsLibre';
 import { genererActivites } from '../engine/tempsLibre';
 import { accorder } from '../engine/texte';
+import { magasinOuvert } from '../engine/moteur';
 
 const RAYONS: { titre: string; kanji: string; aide?: string; filtre: (a: Activite) => boolean }[] = [
   { titre: 'Forge', kanji: '鍛', aide: 'Une lame entretenue frappe plus juste et ne casse pas au mauvais moment.', filtre: (a) => a.id === 'forge:reparer' },
@@ -17,7 +18,7 @@ const RAYONS: { titre: string; kanji: string; aide?: string; filtre: (a: Activit
 
 export default function Magasin({ etat, onAcheter }: { etat: GameState; onAcheter: (id: string) => void }) {
   const p = etat.creation.presentation;
-  const ouvert = etat.scene.type === 'temps_libre';
+  const ouvert = magasinOuvert(etat);
   const acts = useMemo(() => genererActivites(etat).filter((a) => a.categorie === 'forge'), [etat]);
   const rayons = RAYONS.map((r) => ({ ...r, liste: acts.filter(r.filtre) })).filter((r) => r.liste.length > 0);
 
@@ -27,7 +28,7 @@ export default function Magasin({ etat, onAcheter }: { etat: GameState; onAchete
       <p className="sous-titre">
         {Math.round(etat.jauges.ryo)} ryō en poche. Achats et réparations sont instantanés : ils ne comptent pas comme ta décision.
       </p>
-      {!ouvert && <p className="mag-ferme">Le magasin t’attend pendant ton temps libre : termine d’abord la scène en cours.</p>}
+      {!ouvert && <p className="mag-ferme">Le magasin est fermé pendant un combat : termine-le d’abord.</p>}
       {ouvert && etat.annonce && (
         <p className="annonce" role="status">
           {accorder(etat.annonce, p)}
