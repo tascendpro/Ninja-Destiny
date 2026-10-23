@@ -6,6 +6,7 @@ import type { CheckDef, GameState } from './types';
 import { R } from './registre';
 import { Ctx, defPnj } from './etat';
 import { alea } from './rng';
+import { tirageTexte } from './combat/impacts';
 import { appliquerEffet } from './effets';
 
 /** Les pouvoirs qui font peur à voir, même à ceux qui t'aiment. */
@@ -50,8 +51,8 @@ function reactionAllie(s: GameState, pouvoir: string, ctx: Ctx): string | undefi
  * Renvoie le texte à ajouter au journal du combat ; ouvre la garde de l'ennemi s'il recule.
  */
 export function reagirTransformation(s: GameState, base: CheckDef, pouvoir: string, ctx: Ctx): string {
-  if (s.scene.type !== 'combat') return '';
   const sc = s.scene;
+  if (sc.type !== 'combat' && sc.type !== 'affrontement') return '';
   const lignes: string[] = [];
   if (base.allies && s.statut === 'actif') {
     const a = reactionAllie(s, pouvoir, ctx);
@@ -59,8 +60,11 @@ export function reagirTransformation(s: GameState, base: CheckDef, pouvoir: stri
   }
   const escouade = (base.forme ?? 'duel') === 'escouade';
   const chance = 0.2 + (MONSTRUEUX.has(pouvoir) ? 0.2 : 0) + (ECRASANTS.has(pouvoir) ? 0.25 : 0);
-  if (alea(s) < chance) {
-    sc.ouverture = true;
+  // Dans l'Affrontement, le tirage vient de l'état : l'ordre des tirages de la manche reste celui du contrat.
+  const tirage = sc.type === 'combat' ? alea(s) : tirageTexte(s, `reaction:${pouvoir}:${sc.manche}`);
+  if (tirage < chance) {
+    if (sc.type === 'combat') sc.ouverture = true;
+    else sc.ouverture = Math.max(sc.ouverture, 15);
     lignes.push(escouade ? 'Deux d’entre eux échangent un regard et reculent. Leur ligne se défait : il y a une brèche.' : 'Ton adversaire recule d’un pas, la garde soudain hésitante. C’est une ouverture.');
   } else {
     lignes.push(escouade ? 'Leur chef aboie un ordre. Ils se resserrent : ils ont compris que le vrai combat commence.' : 'Ton adversaire serre les dents et relève sa garde : il a compris que le vrai combat commence.');

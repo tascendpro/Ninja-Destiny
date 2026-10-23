@@ -8,6 +8,14 @@ import { REACTIONS_REPETITION, REPETITIONS } from './repetitions';
  * Migration progressive (§4.1) : la scène pilote d'abord ; les autres combats gardent l'ancien système jusqu'à leur tour.
  */
 const AFFRONTEMENTS_RACINE: ContenuRacine['affrontements'] = {
+  // L'épreuve des lames : ni ninjutsu, ni pouvoirs. L'arme, le corps, la tête. Ce qui reste quand le chakra est vide.
+  'ex_lames_duel/combattre': {
+    adversaire: 'gen:ex_lames_duel/combattre',
+    contexte: 'examen',
+    raison: 'L’épreuve des lames : prouver qu’on reste un ninja quand le chakra est vide.',
+    temoins: ['examinateurs'],
+    interdit: ['ninjutsu', 'pouvoir'],
+  },
   'ap_rival_defi/combattre': {
     adversaire: 'rival_academie',
     contexte: 'provocation',

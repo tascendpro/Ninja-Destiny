@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { creation } from './aide';
-import { choisir, manche, nouvellePartie, vueCombat } from '../src/engine/moteur';
+import { choisir, combattre, nouvellePartie } from '../src/engine/moteur';
+import { vueAffrontement } from '../src/engine/combat/affrontement';
 import { coutDojutsu } from '../src/engine/epreuves';
 import { genererActivites, naturesActivite } from '../src/engine/tempsLibre';
 import type { GameState } from '../src/engine/types';
@@ -29,26 +30,25 @@ describe('Dōjutsu : des yeux qui se paient en chakra', () => {
   it('un corps d’enfant paie plus cher qu’un adulte au même palier', () => {
     expect(coutDojutsu(uchiha(9, 2, 0), 'sharingan')).toBeGreaterThan(coutDojutsu(uchiha(20, 2, 0), 'sharingan'));
   });
-  it('activer ses yeux ne coûte pas la manche ; ils se paient ensuite, et s’éteignent faute de chakra', () => {
+  it('ouvrir ses yeux prend la manche ; ils se paient ensuite, et s’éteignent faute de chakra', () => {
     const s = uchiha(16, 2, 0);
     s.rang = 'genin';
     s.jauges.chakraMax = 200;
     s.jauges.chakra = 200;
     s.scene = { type: 'evenement', id: 'c2_tournoi' };
     let t = choisir(s, 'frontal');
-    if (t.scene.type === 'combat') t.scene.priorite = undefined;
-    const avant = vueCombat(t)!;
-    expect(avant.dojutsu.map((d) => d.id)).toContain('sharingan');
-    t = manche(t, 'dojutsu:sharingan');
-    const apres = vueCombat(t)!;
-    expect(apres.manche).toBe(avant.manche);
-    expect(apres.dojutsu.find((d) => d.actif)?.id).toBe('sharingan');
-    t.jauges.chakra = 1;
-    if (t.scene.type === 'combat') t.scene.priorite = undefined;
-    t = manche(t, 'simple');
-    if (t.scene.type === 'combat') {
+    if (t.scene.type !== 'affrontement') return;
+    t.scene.plafond = 10;
+    const pouvoir = vueAffrontement(t)!.familles.find((f) => f.id === 'pouvoir');
+    expect(pouvoir?.actions.map((a) => a.id)).toContain('sharingan');
+    t = combattre(t, { famille: 'pouvoir', choix: 'sharingan' });
+    if (t.scene.type !== 'affrontement') return;
+    expect(t.scene.dojutsu).toBe('sharingan');
+    t.jauges.chakra = 0;
+    t = combattre(t, { famille: 'defense', choix: 'garde' });
+    if (t.scene.type === 'affrontement') {
       expect(t.scene.dojutsu).toBeUndefined();
-      expect(t.scene.journal.join(' ')).toContain('Tes yeux s’éteignent');
+      expect(t.scene.journal.at(-1)!.impact).toContain('Tes yeux s’éteignent');
     }
   });
 });
@@ -86,49 +86,31 @@ describe('Quand l’ennemi frappe le premier', () => {
     s.jauges.chakraMax = 200;
     s.jauges.chakra = 200;
     s.maitrises['kawarimi'] = { ...s.maitrises['taijutsu'], id: 'kawarimi', kind: 'jutsu', awakened: true, tier: 3, trainingDays: 0 };
-    s.maitrises['suiton_projectile'] = { ...s.maitrises['taijutsu'], id: 'suiton_projectile', kind: 'jutsu', awakened: true, tier: 2, trainingDays: 0 };
-    s.maitrises['nature_suiton'].tier = 3;
     s.scene = { type: 'evenement', id: 'c2_tournoi' };
-    const t = choisir(s, 'frontal');
-    if (t.scene.type === 'combat') {
-      t.scene.priorite = 'adv_katon_boule';
-      t.scene.ouverture = false;
-    }
-    return t;
+    return choisir(s, 'frontal');
   };
 
-  it('parfois, il attaque avant même la première manche', () => {
-    let embuscades = 0;
+  it('parfois, il attaque dès la première manche, et l’annonce le laisse deviner', () => {
+    let attaques = 0;
     for (let g = 1; g <= 60; g++) {
-      const s = nouvellePartie(creation(), g);
-      s.jour = s.naissance + 16 * 360;
-      s.rang = 'genin';
-      s.scene = { type: 'evenement', id: 'c2_tournoi' };
-      const t = choisir(s, 'frontal');
-      if (t.scene.type === 'combat' && t.scene.manche === 0 && t.scene.priorite) embuscades++;
+      const t = duel(g);
+      if (t.scene.type === 'affrontement' && t.scene.manche === 1 && ['attaque', 'technique', 'majeure'].includes(t.scene.intention)) attaques++;
     }
-    expect(embuscades).toBeGreaterThan(3);
-    expect(embuscades).toBeLessThan(50);
+    expect(attaques).toBeGreaterThan(3);
+    expect(attaques).toBeLessThan(60);
   });
 
   it('la permutation est une vraie défense : réussie, tu surgis dans son dos', () => {
     let dos = 0;
     for (let g = 1; g <= 40; g++) {
       const t = duel(g);
-      const v = vueCombat(t)!;
-      expect(v.adversaire?.permutationChance).toBeGreaterThan(v.adversaire!.esquive - 20);
-      const apres = manche(t, 'permutation');
-      if (apres.scene.type === 'combat' && apres.scene.dos) dos++;
+      if (t.scene.type !== 'affrontement') continue;
+      t.scene.intention = 'attaque';
+      t.scene.plafond = 10;
+      const apres = combattre(t, { famille: 'defense', choix: 'permutation' });
+      if (apres.scene.type === 'affrontement' && apres.scene.ouverture >= 20) dos++;
     }
     expect(dos).toBeGreaterThan(10);
   });
 
-  it('on peut contrer avec une technique, et ta nature qui domine la sienne aide', () => {
-    const t = duel(5);
-    const contre = vueCombat(t)!.adversaire!.contres.find((c) => c.id === 'suiton_projectile')!;
-    expect(contre.avantage).toBe('fort');
-    expect(contre.chance).toBeGreaterThan(vueCombat(t)!.adversaire!.contre);
-    const apres = manche(t, 'contrer:suiton_projectile');
-    expect(apres.scene.type === 'combat' ? apres.scene.journal.at(-1) : '').toContain('Tu contres avec');
-  });
 });

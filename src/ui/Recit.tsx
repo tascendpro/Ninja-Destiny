@@ -13,7 +13,7 @@ import type { Activite } from '../engine/tempsLibre';
 import { age, libelleDuree, libellePeriode, moisDe, saisonDe } from '../engine/calendrier';
 import Portrait from './Portrait';
 import Affrontement, { CarteBilan } from './combat/Affrontement';
-import GroupesNature from './combat/GroupesNature';
+import GroupesNature, { groupeTechnique } from './combat/GroupesNature';
 import { classeMulti, styleNatures } from './natures';
 import type { ActionCombat } from '../engine/combat/types';
 import { cleScene, remonter } from './defilement';
@@ -350,8 +350,16 @@ const CATEGORIES: { id: CategorieTL; nom: string; kanji: string; filtre: (a: Act
 ];
 const KANJI_CATEGORIE = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.kanji])) as Record<CategorieTL, string>;
 
-const SOUS_GROUPES_ENTRAINEMENT: { titre: string; filtre: (a: Activite) => boolean }[] = [
-  { titre: 'Clan, pouvoirs et natures', filtre: (a) => /^entrainer:(?!famille_|taijutsu|ninjutsu|genjutsu)/.test(a.id) },
+/** Le groupe d'une amélioration du temps libre : la nature de ce qu'elle entraîne ou enseigne, comme en combat. */
+function groupeActivite(a: Activite): string {
+  const [type, cible = ''] = a.id.split(':');
+  if (type === 'nature') return cible;
+  if (cible.startsWith('nature_')) return cible.slice(7);
+  return groupeTechnique(cible);
+}
+
+const SOUS_GROUPES_ENTRAINEMENT: { titre: string; filtre: (a: Activite) => boolean; parNature?: boolean }[] = [
+  { titre: 'Clan, pouvoirs et natures', parNature: true, filtre: (a) => /^entrainer:(?!famille_|taijutsu|ninjutsu|genjutsu)/.test(a.id) },
   { titre: 'Disciplines', filtre: (a) => /^entrainer:(taijutsu|ninjutsu|genjutsu)$/.test(a.id) },
   { titre: 'Familles d’armes', filtre: (a) => a.id.startsWith('entrainer:famille_') },
   { titre: 'Apprendre une nouvelle nature', filtre: (a) => a.id.startsWith('nature:') },
@@ -530,17 +538,29 @@ function TempsLibre({
               SOUS_GROUPES_ENTRAINEMENT.map((g) => {
                 const l = principales.filter(g.filtre);
                 if (!l.length) return null;
+                const ligne = (a: Activite) => <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />;
                 return (
                   <div className="sous-groupe" key={g.titre}>
                     <h3>{g.titre}</h3>
-                    <ul className="activites">
-                      {l.map((a) => (
-                        <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
-                      ))}
-                    </ul>
+                    {g.parNature ? (
+                      <GroupesNature items={l} techId={(a) => a.id} groupe={groupeActivite} titre={`temps libre · ${g.titre}`} rendu={ligne} liste />
+                    ) : (
+                      <ul className="activites">{l.map(ligne)}</ul>
+                    )}
                   </div>
                 );
               })
+            ) : cat === 'techniques' ? (
+              <div className="sous-groupe">
+                <GroupesNature
+                  items={principales}
+                  techId={(a) => a.id}
+                  groupe={groupeActivite}
+                  titre="temps libre · techniques"
+                  rendu={(a) => <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />}
+                  liste
+                />
+              </div>
             ) : (
               <ul className="activites sous-groupe">
                 {principales.map((a) => (
@@ -803,25 +823,24 @@ function Combat({ etat, theme, anime, onManche }: { etat: GameState; theme: 'nui
             <div className="attaques combat-attaques">
               <button className="attaque" onClick={() => onManche('esquiver')}>
                 <span className="attaque-nom">Esquiver</span>
-                <span className="attaque-meta">
-                  Sûr, mais tu ne touches pas. Réussie, elle ouvre sa garde
-                  {v.adversaire.permutation && <b className="risque-faible"> · ta permutation aide</b>}
-                </span>
+                {v.adversaire.permutation && (
+                  <span className="attaque-meta">
+                    <b className="risque-faible">ta permutation aide</b>
+                  </span>
+                )}
               </button>
               {v.adversaire.permutationChance !== undefined && (
                 <button className="attaque transformation" data-sceau="替" onClick={() => onManche('permutation')}>
                   <span className="attaque-nom">Permutation</span>
-                  <span className="attaque-meta">
-                    Une bûche prend le coup ; réussie, tu surgis dans son dos (gros avantage)
-                  </span>
                 </button>
               )}
               <button className="attaque" data-sceau="返" onClick={() => onManche('contrer')}>
                 <span className="attaque-nom">Contre-attaquer</span>
-                <span className="attaque-meta">
-                  Frapper dans son attaque : compte comme un coup porté, mais raté, il fait très mal
-                  {v.adversaire.natureFavorable && <b className="risque-faible"> · ton {v.adversaire.natureFavorable} domine sa nature</b>}
-                </span>
+                {v.adversaire.natureFavorable && (
+                  <span className="attaque-meta">
+                    <b className="risque-faible">ton {v.adversaire.natureFavorable} domine sa nature</b>
+                  </span>
+                )}
               </button>
               {v.adversaire.contres.length > 0 && <span className="attaques-titre">Ou contrer avec une technique :</span>}
               <GroupesNature
@@ -903,7 +922,6 @@ function Combat({ etat, theme, anime, onManche }: { etat: GameState; theme: 'nui
                   {tr.entretien && ` · puis ${tr.entretien} par manche`}
                   {tr.restantes !== undefined && ` · ${tr.restantes} manche${tr.restantes > 1 ? 's' : ''} au plus`}
                 </span>
-                <span className="attaque-recit">{tr.effet}</span>
                 {tr.speciales.length > 0 && <span className="attaque-portee">Ouvre : {tr.speciales.join(', ')}</span>}
                 {tr.kinjutsu && (
                   <span className="attaque-kinjutsu">

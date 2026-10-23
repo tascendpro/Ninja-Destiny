@@ -107,6 +107,8 @@ export type Condition =
   | { pnj: string; etat: NpcEtat | NpcEtat[] }
   | { maitrise: string; palierMin?: number; palierMax?: number; eveille?: boolean; possede?: boolean }
   | { arme: string; utilisable?: boolean }
+  /** Une arme utilisable en main, quelle qu'elle soit. */
+  | { armeEnMain: boolean }
   | { registre: string; detenteur: string }
   | { drapeau: string; egal?: string | number | boolean; min?: number; max?: number; absent?: boolean }
   | { village: VillageId | VillageId[] }
@@ -1081,6 +1083,8 @@ export type Action =
   | { a: 'activite'; id: string }
   /** Magasin et arsenal : acheter, réparer, changer d'arme, à tout moment hors combat. */
   | { a: 'magasin'; id: string }
+  /** Donner un nom à son enfant ou à son conjoint (à tout moment, sans consommer de temps). */
+  | { a: 'nommer'; cible: 'enfant' | 'conjoint'; nom: string }
   | { a: 'points'; repartition: Partial<Record<AttributId, number>> }
   | { a: 'chapitre' }
   | { a: 'manche'; id: string };

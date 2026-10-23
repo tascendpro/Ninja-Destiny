@@ -21,6 +21,9 @@ export const KANJI_GROUPE: Record<string, string> = {
   dojutsu: '眼',
   biju: '獣',
   combinaison: '合',
+  ninjutsu: '忍',
+  clan: '家',
+  fusion: '融',
   trinite: '三',
   autres: '術',
 };
@@ -33,6 +36,9 @@ const LIBELLE_FAMILLE: Record<string, string> = {
   dojutsu: 'Dōjutsu',
   biju: 'Bijū',
   combinaison: 'Combinaisons',
+  ninjutsu: 'Ninjutsu',
+  clan: 'Clan et pouvoirs',
+  fusion: 'Lignées',
   trinite: 'Trinités',
   autres: 'Sans nature',
 };
@@ -41,6 +47,10 @@ const LIBELLE_FAMILLE: Record<string, string> = {
 export function groupeTechnique(techId: string): string {
   const def = R.maitrises[techId];
   if (def?.element) return def.element;
+  // Les pouvoirs de clan et les lignées de fusion ont leur propre groupe (le Sharingan n'est d'aucune nature).
+  if (def?.composantes) return 'fusion';
+  if (def?.kind === 'clan') return 'clan';
+  if (def?.kind === 'biju') return 'biju';
   const cat = def?.technique?.categorie;
   if (cat === 'combinaison' && (def?.technique?.elements?.length ?? 0) >= 3) return 'trinite';
   return cat && LIBELLE_FAMILLE[cat] ? cat : 'autres';
@@ -50,23 +60,41 @@ export function libelleGroupe(g: string): string {
   return R.elements[g]?.nom ?? LIBELLE_FAMILLE[g] ?? g;
 }
 
-/** Le groupe ouvert en dernier, gardé pour la session (le composant est recréé à chaque manche). */
-let dernierOuvert: string | undefined;
+/** Le groupe ouvert en dernier, par usage (combat, temps libre…), gardé pour la session : le composant est recréé à chaque manche. */
+const derniersOuverts = new Map<string, string>();
 
-export default function GroupesNature<T>({ items, techId, rendu, titre }: { items: T[]; techId: (t: T) => string; rendu: (t: T) => ReactNode; titre?: string }) {
+export default function GroupesNature<T>({
+  items,
+  techId,
+  rendu,
+  titre,
+  groupe = (t) => groupeTechnique(techId(t)),
+  liste = false,
+}: {
+  items: T[];
+  techId: (t: T) => string;
+  rendu: (t: T) => ReactNode;
+  titre?: string;
+  /** Le groupe d'un élément ; par défaut, la nature de sa technique. */
+  groupe?: (t: T) => string;
+  /** Les éléments rendus sont des <li> : le contenu d'un groupe devient une liste. */
+  liste?: boolean;
+}) {
   const base = useId();
+  const memoire = titre ?? 'defaut';
   const groupes = new Map<string, T[]>();
   for (const it of items) {
-    const g = groupeTechnique(techId(it));
+    const g = groupe(it);
     groupes.set(g, [...(groupes.get(g) ?? []), it]);
   }
   const ids = [...groupes.keys()];
-  const [ouvert, setOuvert] = useState<string | undefined>(() => (dernierOuvert && ids.includes(dernierOuvert) ? dernierOuvert : ids.length === 1 ? ids[0] : undefined));
+  const dernier = derniersOuverts.get(memoire);
+  const [ouvert, setOuvert] = useState<string | undefined>(() => (dernier && ids.includes(dernier) ? dernier : ids.length === 1 ? ids[0] : undefined));
   if (!items.length) return null;
   return (
     <div className="groupes-nature" role="group" aria-label={titre ?? 'Techniques par nature'}>
       {ids.map((g) => {
-        const liste = groupes.get(g)!;
+        const elements = groupes.get(g)!;
         const panneau = `${base}-${g}`;
         const est = ouvert === g;
         return (
@@ -79,24 +107,29 @@ export default function GroupesNature<T>({ items, techId, rendu, titre }: { item
               onClick={() => {
                 const suivant = est ? undefined : g;
                 setOuvert(suivant);
-                if (suivant) dernierOuvert = suivant;
+                if (suivant) derniersOuverts.set(memoire, suivant);
               }}
             >
               <span className="groupe-kanji" aria-hidden="true">
                 {KANJI_GROUPE[g] ?? '術'}
               </span>
               <span className="groupe-nom">
-                {libelleGroupe(g)} · {liste.length}
+                {libelleGroupe(g)} · {elements.length}
               </span>
               <span className="groupe-chevron" aria-hidden="true">
                 {est ? '−' : '+'}
               </span>
             </button>
-            {est && (
-              <div id={panneau} className="groupe-contenu">
-                {liste.map((it) => rendu(it))}
-              </div>
-            )}
+            {est &&
+              (liste ? (
+                <ul id={panneau} className="groupe-contenu activites">
+                  {elements.map((it) => rendu(it))}
+                </ul>
+              ) : (
+                <div id={panneau} className="groupe-contenu">
+                  {elements.map((it) => rendu(it))}
+                </div>
+              ))}
           </div>
         );
       })}

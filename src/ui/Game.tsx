@@ -4,7 +4,7 @@ import { stockageParDefaut } from './stockage';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Creation as CreationT, GameState } from '../engine/types';
 import { R } from '../engine/registre';
-import { activite, chapitreSuivant, choisir, combattre, continuer, lieuCourant, magasin, magasinOuvert, manche, nouvellePartie, repartir } from '../engine/moteur';
+import { activite, chapitreSuivant, choisir, combattre, continuer, lieuCourant, magasin, magasinOuvert, manche, nommer, nouvellePartie, repartir } from '../engine/moteur';
 import { age, libelleSaison } from '../engine/calendrier';
 import { charger, consommerHeritage, enregistrer, fusionnerMeta, lireMeta, listerSauvegardes, restaurer } from '../engine/sauvegarde';
 import type { Meta, Stockage } from '../engine/sauvegarde';
@@ -13,6 +13,7 @@ import Creation from './Creation';
 import Recit from './Recit';
 import Tableau from './Tableau';
 import Magasin from './Magasin';
+import NommerEnfant, { doitNommerEnfant } from './NommerEnfant';
 import { ModalePoints } from './Repartition';
 import Journal from './Journal';
 import Encyclopedie from './Encyclopedie';
@@ -322,6 +323,8 @@ export default function Game() {
               }}
             />
           ) : (
+            <>
+            {doitNommerEnfant(etat) && <NommerEnfant etat={etat} onNommer={(nom) => appliquer((s) => nommer(s, 'enfant', nom))} />}
             <Recit
               etat={etat}
               theme={reglages.theme}
@@ -333,6 +336,7 @@ export default function Game() {
               onManche={(id) => appliquer((s) => manche(s, id))}
               onCombat={(a) => appliquer((s) => combattre(s, a))}
             />
+            </>
           ))}
         {onglet === 'ninja' && (
           <Tableau

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { creation } from './aide';
-import { nouvellePartie, choisir, manche, vueCombat, activite } from '../src/engine/moteur';
+import { vueAffrontement } from '../src/engine/combat/affrontement';
+import { activite, choisir, combattre, nouvellePartie } from '../src/engine/moteur';
 import { greffer, resolveAwakening, liaisonSenjuUchiha, blocageApprentissage } from '../src/engine/maitrise';
 import { appliquerEffet } from '../src/engine/effets';
 import { nouveauCtx, nomComplet } from '../src/engine/etat';
@@ -68,17 +69,26 @@ describe('Combats : enchaînements et sacoche', () => {
     s.scene = { type: 'evenement', id: 'c2_tournoi' };
     return s;
   };
-  it('le feu après le vent (ou l’inverse) est un enchaînement, avec un bonus annoncé', () => {
-    // Une partie où le vent frappe et où c'est encore à toi de jouer à la manche suivante (l'initiative est tirée aux dés).
-    let s = choisir(combat(), 'frontal@fuuton_rafale');
-    for (let g = 14; g < 200 && (s.scene.type !== 'combat' || vueCombat(s)!.adversaire); g++) s = choisir(combat(g), 'frontal@fuuton_rafale');
-    const v = vueCombat(s)!;
-    const feu = v.attaques.find((a) => a.id === 'katon_braises')!;
-    expect(feu.enchainement).toBeDefined();
-    s = manche(s, 'katon_braises');
-    expect(s.scene.type === 'combat' && s.scene.journal.at(-1)).toContain('Enchaînement');
+  it('le feu après le vent (ou l’inverse) est un enchaînement, marqué sur la carte et annoncé dans le récit', () => {
+    let vu = false;
+    for (let g = 13; g < 120 && !vu; g++) {
+      let s = choisir(combat(g), 'frontal');
+      if (s.scene.type !== 'affrontement') continue;
+      s.scene.plafond = 10;
+      s = combattre(s, { famille: 'ninjutsu', choix: 'fuuton_rafale' });
+      if (s.scene.type !== 'affrontement' || s.scene.journal.at(-1)?.issue === 'ratee') continue;
+      const feu = vueAffrontement(s)!.familles.find((f) => f.id === 'ninjutsu')?.actions.find((a) => a.id === 'katon_braises');
+      if (!feu?.disponible) continue;
+      expect(feu.marques).toContain('enchaînement');
+      s = combattre(s, { famille: 'ninjutsu', choix: 'katon_braises' });
+      const e = s.scene.type === 'affrontement' ? s.scene.journal.at(-1) : undefined;
+      if (!e || e.issue === 'ratee') continue;
+      expect(e.impact).toContain('Enchaînement');
+      vu = true;
+    }
+    expect(vu).toBe(true);
   });
-  it('un objet acheté à l’échoppe s’utilise pendant une manche', () => {
+  it('un objet acheté au magasin s’utilise pendant une manche, depuis la sacoche', () => {
     let s = combat();
     s.jauges.ryo = 200;
     s.scene = { type: 'temps_libre' };
@@ -87,10 +97,9 @@ describe('Combats : enchaînements et sacoche', () => {
     expect(s.annonce).toMatch(/sacoche/);
     s.scene = { type: 'evenement', id: 'c2_tournoi' };
     s = choisir(s, 'frontal');
-    // L'adversaire peut frapper le premier : on se défend d'abord.
-    while (s.scene.type === 'combat' && vueCombat(s)!.adversaire) s = manche(s, 'esquiver');
-    expect(vueCombat(s)!.objets.map((o) => o.id)).toContain('parchemin_explosif');
-    s = manche(s, 'objet:parchemin_explosif');
+    const sacoche = vueAffrontement(s)!.familles.find((f) => f.id === 'objet');
+    expect(sacoche?.actions.map((a) => a.id)).toContain('parchemin_explosif');
+    s = combattre(s, { famille: 'objet', choix: 'parchemin_explosif' });
     expect(s.consommables['parchemin_explosif']).toBe(0);
   });
 });

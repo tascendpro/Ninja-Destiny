@@ -11,7 +11,15 @@
 import type { ElementId, GameState } from '../types';
 import { R } from '../registre';
 import { age } from '../calendrier';
-import { avantageTechnique, estTransformation } from '../epreuves';
+import { avantageTechnique, bonusDojutsu, bonusPosture, coutDojutsu, dojutsuDisponibles, entreeTransformation, estTransformation, porteeTechnique } from '../epreuves';
+import { idFamille } from '../armes';
+import { CONSOMMABLE, CONSOMMABLES, stock } from '../consommables';
+import { consequenceUltime } from '../kinjutsu';
+import { reagirTransformation } from '../reactions';
+import { avecAffrontement } from '../epreuves';
+import { nouveauCtx } from '../etat';
+import { STATUTS_ARME_UTILISABLES } from '../types';
+import type { WeaponDef } from '../types';
 import { clamp } from '../etat';
 import type { ActionCombat, AdversaireDef, EtatAffrontement, Famille, IssueOffensive, Vitesse } from './types';
 import { ErreurCombat, FAMILLES } from './types';
@@ -37,7 +45,35 @@ export const TAIJUTSU: Record<string, ActionTai> = {
   balayage: { nom: 'Balayage', vitesse: 'normale', base: 6, attribut: 'agilite', k: 0.2, exec: 0.05, effet: 'desequilibre', detail: 'Peu de dégâts, mais {il} perd l’équilibre.' },
 };
 
-export const ACTIONS_FIXES: Record<Exclude<Famille, 'taijutsu' | 'ninjutsu'>, Record<string, { nom: string; detail: string }>> = {
+/** Les gestes d'arme : ils ne coûtent pas de chakra, et c'est l'arme en main qui frappe. */
+interface ActionArme {
+  nom: string;
+  vitesse: Vitesse;
+  /** Part de la puissance de l'arme. */
+  part: number;
+  attribut: 'force' | 'agilite';
+  k: number;
+  exec: number;
+  effet?: 'desequilibre';
+  /** Familles d'armes qui permettent ce geste (toutes si absent). */
+  familles?: string[];
+}
+export const ARME: Record<string, ActionArme> = {
+  coupe: { nom: 'Coupe', vitesse: 'normale', part: 1, attribut: 'force', k: 0.22, exec: 0.08 },
+  estoc: { nom: 'Estoc', vitesse: 'rapide', part: 0.75, attribut: 'agilite', k: 0.25, exec: 0.14 },
+  taille_lourde: { nom: 'Taille lourde', vitesse: 'lente', part: 1.45, attribut: 'force', k: 0.3, exec: -0.06, effet: 'desequilibre', familles: ['kenjutsu', 'lourde', 'baton', 'chaine'] },
+  degaine: { nom: 'Dégainé', vitesse: 'rapide', part: 1.25, attribut: 'agilite', k: 0.28, exec: -0.02, familles: ['kenjutsu'] },
+  lancer: { nom: 'Volée de lames', vitesse: 'rapide', part: 0.8, attribut: 'agilite', k: 0.22, exec: 0.1, familles: ['kunai', 'senbon', 'outils'] },
+};
+
+/** L'arme en main, si elle est utilisable. */
+export function armeEnMain(s: GameState): WeaponDef | undefined {
+  const id = s.armeEquipee;
+  const inst = id ? s.arsenal.find((x) => x.defId === id) : undefined;
+  return id && inst && STATUTS_ARME_UTILISABLES.includes(inst.statut) ? R.armes[id] : undefined;
+}
+
+export const ACTIONS_FIXES: Record<Exclude<Famille, 'taijutsu' | 'ninjutsu' | 'arme' | 'pouvoir' | 'objet'>, Record<string, { nom: string; detail: string }>> = {
   defense: {
     garde: { nom: 'Tenir la garde', detail: 'Encaisser moins (−30 %). Deux gardes de suite lui laissent le temps de préparer.' },
     esquive: { nom: 'Esquiver', detail: 'Réussie, sa garde s’ouvre. Ratée, le coup passe en entier.' },
@@ -59,6 +95,9 @@ export const ACTIONS_FIXES: Record<Exclude<Famille, 'taijutsu' | 'ninjutsu'>, Re
 export const NOM_FAMILLE: Record<Famille, { nom: string; kanji: string }> = {
   taijutsu: { nom: 'Taijutsu', kanji: '体' },
   ninjutsu: { nom: 'Ninjutsu', kanji: '忍' },
+  arme: { nom: 'Arme', kanji: '刀' },
+  pouvoir: { nom: 'Pouvoir', kanji: '力' },
+  objet: { nom: 'Sacoche', kanji: '袋' },
   defense: { nom: 'Défense', kanji: '守' },
   observation: { nom: 'Observation', kanji: '観' },
   parole: { nom: 'Parole', kanji: '話' },
@@ -74,15 +113,21 @@ function rangJoueur(s: GameState): number {
 }
 
 /** Les techniques offensives utilisables dans une famille (les transformations et la bête restent hors de ce premier jeu de familles). */
-export function techniquesFamille(s: GameState, famille: 'taijutsu' | 'ninjutsu'): string[] {
+export function techniquesFamille(s: GameState, famille: 'taijutsu' | 'ninjutsu' | 'arme'): string[] {
+  const sc = s.scene.type === 'affrontement' ? s.scene : undefined;
   return Object.keys(s.maitrises)
     .filter((id) => {
       const def = R.maitrises[id];
       const t = def?.technique;
       const ms = s.maitrises[id];
-      if (!t?.offensive || !ms || ms.tier < 1 || ms.bloquee || estTransformation(id) || t.exigeTransformation) return false;
-      if (t.categorie === 'biju' || t.categorie === 'armes' || t.categorie === 'transformation') return false;
+      if (!t?.offensive || !ms || ms.tier < 1 || ms.bloquee || estTransformation(id)) return false;
+      // Une technique qui n'existe que transformé·e ne sort que sous cette transformation.
+      if (t.exigeTransformation && !(sc?.transformation && t.exigeTransformation.includes(sc.transformation))) return false;
+      if (t.categorie === 'transformation') return false;
       if (!duoUtilisable(s, id)) return false;
+      if (t.limite?.usages !== undefined && (Number(s.drapeaux[`usages_${id}`]) || 0) >= t.limite.usages) return false;
+      if (famille === 'arme') return t.categorie === 'armes' && !!armeEnMain(s);
+      if (t.categorie === 'armes') return false;
       return famille === 'taijutsu' ? t.categorie === 'taijutsu' : t.categorie !== 'taijutsu';
     })
     .sort();
@@ -121,10 +166,16 @@ export function chanceExecution(s: GameState, a: ActionCombat): number {
     // Un geste de base sort plus souvent qu'une technique (note d'équilibrage : 0,70, mesuré par simulation).
     return clamp(0.7 + 0.05 * tier + (s.attributs.agilite - 50) / 200 + x.exec - 0.002 * fatigue - malusBlessures(s), 0.1, 0.98);
   }
-  if (a.famille === 'taijutsu' || a.famille === 'ninjutsu') {
+  if (a.famille === 'arme' && ARME[a.choix]) {
+    const w = armeEnMain(s);
+    const x = ARME[a.choix];
+    const tier = w ? (s.maitrises[idFamille(w.famille)]?.tier ?? 0) : 0;
+    return clamp(0.68 + 0.05 * tier + (s.attributs.agilite - 50) / 200 + x.exec - 0.002 * fatigue - malusBlessures(s), 0.1, 0.98);
+  }
+  if (a.famille === 'taijutsu' || a.famille === 'ninjutsu' || a.famille === 'arme') {
     const def = R.maitrises[a.choix];
     const tier = s.maitrises[a.choix]?.tier ?? 1;
-    const controle = a.famille === 'taijutsu' ? (s.attributs.agilite + s.attributs.controleChakra) / 2 : s.attributs.controleChakra;
+    const controle = a.famille === 'ninjutsu' ? s.attributs.controleChakra : (s.attributs.agilite + s.attributs.controleChakra) / 2;
     const ecart = (RANG_TECH[def.rang ?? 'C'] ?? 2) - rangJoueur(s);
     const malusRang = ecart <= 0 ? 0 : ecart === 1 ? 0.1 : ecart === 2 ? 0.25 : 0.45;
     // Une technique fraîchement apprise lâche plus au mauvais moment : à bout de souffle ou quand on peut mourir.
@@ -164,9 +215,52 @@ export function familles(s: GameState, sc: EtatAffrontement): VueFamille[] {
   for (const f of FAMILLES) {
     if (enfant && !FAMILLES_ENFANT.includes(f)) continue;
     if (f === 'fuite' && !regle.fuite) continue;
+    if (sc.interdit?.includes(f)) continue;
     const actions: VueAction[] = [];
     const bloque = (raison: string) => ({ disponible: false, raison });
-    if (f === 'taijutsu' || f === 'ninjutsu') {
+    if (f === 'arme') {
+      const w = armeEnMain(s);
+      if (!w) continue;
+      for (const [id, x] of Object.entries(ARME)) {
+        if (x.familles && !x.familles.includes(w.famille)) continue;
+        const v: VueAction = { id, nom: x.nom, detail: w.nom, chance: arrondi5(chanceExecution(s, { famille: f, choix: id })), marques: [], disponible: true };
+        marquer(s, sc, id, v);
+        if (sc.joueur.sonne > 0) Object.assign(v, bloque('Sonné·e : tu ne peux que te défendre ou parler.'));
+        actions.push(v);
+      }
+      for (const id of techniquesFamille(s, 'arme')) {
+        const def = R.maitrises[id];
+        const cout = coutChakra(s, sc, id);
+        const v: VueAction = { id, nom: def.nom, detail: `Rang ${def.rang ?? '?'}`, chance: arrondi5(chanceExecution(s, { famille: f, choix: id })), chakra: cout, marques: [], disponible: true };
+        marquer(s, sc, id, v);
+        if (sc.joueur.sonne > 0) Object.assign(v, bloque('Sonné·e : tu ne peux que te défendre ou parler.'));
+        else if (s.jauges.chakra < cout) Object.assign(v, bloque(`Chakra insuffisant (${cout} requis).`));
+        actions.push(v);
+      }
+    } else if (f === 'pouvoir') {
+      // Se transformer, ouvrir ses yeux : ça prend la manche, et ça dure.
+      for (const id of Object.keys(s.maitrises).filter((x) => estTransformation(x)).sort()) {
+        const ms = s.maitrises[id];
+        const def = R.maitrises[id];
+        if (!ms || ms.tier < 1 || ms.bloquee || sc.transformation === id) continue;
+        if (def.technique?.exigeTransformation && !(sc.transformation && def.technique.exigeTransformation.includes(sc.transformation))) continue;
+        const v: VueAction = { id, nom: def.nom, detail: def.technique?.posture?.effet ?? '', chakra: def.technique?.chakra ?? 0, marques: [], disponible: true };
+        if (sc.transformation) Object.assign(v, bloque('Déjà transformé·e.'));
+        else if (s.jauges.chakra < (def.technique?.chakra ?? 0)) Object.assign(v, bloque('Chakra insuffisant.'));
+        else if (s.jauges.sante <= (def.technique?.sante ?? 0)) Object.assign(v, bloque('Ton corps ne le supporterait pas.'));
+        actions.push(v);
+      }
+      for (const id of dojutsuDisponibles(s)) {
+        if (sc.dojutsu === id) continue;
+        actions.push({ id, nom: R.maitrises[id].nom, detail: `${coutDojutsu(s, id)} chakra par manche`, marques: [], disponible: !sc.dojutsu, raison: sc.dojutsu ? 'Tes yeux sont déjà ouverts.' : undefined });
+      }
+    } else if (f === 'objet') {
+      for (const c of CONSOMMABLES) {
+        const n = stock(s, c.id);
+        if (n < 1) continue;
+        actions.push({ id: c.id, nom: `${c.nom} ×${n}`, detail: c.effet, marques: [], disponible: true });
+      }
+    } else if (f === 'taijutsu' || f === 'ninjutsu') {
       if (f === 'taijutsu')
         for (const [id, x] of Object.entries(TAIJUTSU)) {
           const v: VueAction = { id, nom: x.nom, detail: x.detail, chance: arrondi5(chanceExecution(s, { famille: f, choix: id })), marques: [], disponible: true };
@@ -217,9 +311,23 @@ function arrondi5(p: number): number {
   return Math.round((p * 100) / 5) * 5;
 }
 
-/** Les marques utiles à la décision : inédite, éventée, peut tout finir (§22.2). */
+/** Deux natures qui se répondent, l'une après l'autre (feu puis vent, eau puis foudre…) : celles d'une combinaison connue. */
+export function enchainement(precedente: string | undefined, tech: string): [ElementId, ElementId] | undefined {
+  if (!precedente) return undefined;
+  const els = (id: string) => R.maitrises[id]?.technique?.elements ?? (R.maitrises[id]?.element ? [R.maitrises[id].element!] : []);
+  for (const x of els(precedente))
+    for (const y of els(tech)) {
+      if (x === y) continue;
+      if (R.contenu.maitrises.some((m) => m.technique?.categorie === 'combinaison' && m.technique.elements?.length === 2 && m.technique.elements.includes(x) && m.technique.elements.includes(y))) return [x, y];
+    }
+  return undefined;
+}
+export const BONUS_ENCHAINEMENT = 12;
+
+/** Les marques utiles à la décision : inédite, éventée, peut tout finir, enchaînement (§22.2). */
 function marquer(s: GameState, sc: EtatAffrontement, id: string, v: VueAction): void {
   const vu = vuesAction(s, sc, id);
+  if (R.maitrises[id] && enchainement(sc.techniquesUtilisees.at(-1), id)) v.marques.push('enchaînement');
   if (R.maitrises[id] && vu.combat === 0 && vu.passe === 0) v.marques.push('inédite');
   if (vu.passe > 0 || vu.combat >= 2) v.marques.push('éventée');
   if (sc.lecture.faiblesse && sc.elan >= 3) v.marques.push('peut tout finir');
@@ -233,7 +341,7 @@ export function validerAction(s: GameState, sc: EtatAffrontement, a: ActionComba
   if (!f) throw new ErreurCombat('FAMILLE_INTERDITE', `La famille ${a.famille} n’est pas disponible ici.`);
   const act = f.actions.find((x) => x.id === a.choix);
   if (!act) {
-    const connue = TAIJUTSU[a.choix] || R.maitrises[a.choix] || Object.values(ACTIONS_FIXES).some((g) => g[a.choix]);
+    const connue = TAIJUTSU[a.choix] || ARME[a.choix] || CONSOMMABLE[a.choix] || R.maitrises[a.choix] || Object.values(ACTIONS_FIXES).some((g) => g[a.choix]);
     throw new ErreurCombat(connue ? 'PREREQUIS_MANQUANT' : 'ACTION_INCONNUE', `Action indisponible : ${a.choix}`);
   }
   if (!act.disponible) {
@@ -242,7 +350,7 @@ export function validerAction(s: GameState, sc: EtatAffrontement, a: ActionComba
   }
   if (a.elan) {
     const cout = a.elan === 'decisif' ? 3 : 1;
-    if (sc.elan < cout || (a.famille !== 'taijutsu' && a.famille !== 'ninjutsu')) throw new ErreurCombat('ELAN_INVALIDE', 'Élan insuffisant, ou action qui ne peut pas en profiter.');
+    if (sc.elan < cout || (a.famille !== 'taijutsu' && a.famille !== 'ninjutsu' && a.famille !== 'arme')) throw new ErreurCombat('ELAN_INVALIDE', 'Élan insuffisant, ou action qui ne peut pas en profiter.');
   }
 }
 
@@ -281,19 +389,38 @@ export interface Tirages {
 
 /** Puissance d'une action offensive du joueur (§7.4 C), avant multiplicateurs. */
 export function puissanceJoueur(s: GameState, a: ActionCombat): number {
+  return puissanceBrute(s, a) + bonusEtats(s).attaque;
+}
+
+/** Ce que la transformation et les yeux activés ajoutent à l'attaque et à la défense. */
+function bonusEtats(s: GameState): { attaque: number; defense: number } {
+  const sc = s.scene.type === 'affrontement' ? s.scene : undefined;
+  const t = sc?.transformation ? bonusPosture(s, sc.transformation) : { attaque: 0, defense: 0 };
+  const y = sc?.dojutsu ? bonusDojutsu(s, sc.dojutsu) : { attaque: 0, defense: 0 };
+  return { attaque: 0.8 * (t.attaque + y.attaque), defense: 0.5 * (t.defense + y.defense) };
+}
+
+function puissanceBrute(s: GameState, a: ActionCombat): number {
   if (a.famille === 'taijutsu' && TAIJUTSU[a.choix]) {
     const x = TAIJUTSU[a.choix];
     return x.base + x.k * s.attributs[x.attribut] + 2 * (s.maitrises['taijutsu']?.tier ?? 0);
   }
+  // Un geste d'arme : la puissance de la lame, la main qui la tient, et la maîtrise de sa famille.
+  if (a.famille === 'arme' && ARME[a.choix]) {
+    const x = ARME[a.choix];
+    const w = armeEnMain(s);
+    const tier = w ? (s.maitrises[idFamille(w.famille)]?.tier ?? 0) : 0;
+    return (w ? w.stats.puissance * 0.75 * x.part : 6) + x.k * s.attributs[x.attribut] + 2.5 * tier;
+  }
   const def = R.maitrises[a.choix];
   const tier = s.maitrises[a.choix]?.tier ?? 1;
-  const attr = a.famille === 'taijutsu' ? s.attributs.force : s.attributs.controleChakra;
+  const attr = a.famille === 'ninjutsu' ? s.attributs.controleChakra : s.attributs.force;
   // Note d'équilibrage : le catalogue est sur une échelle 5-60 ; ×1,6 pour qu'une technique de rang C dépasse un coup de poing.
   return def.technique!.puissance * 1.6 * (0.7 + 0.15 * tier) + 0.3 * attr;
 }
 
 export function defenseJoueur(s: GameState, sc: EtatAffrontement): number {
-  return 6 + 0.15 * (s.attributs.force + s.attributs.agilite) + bonusRang(sc.niveauJoueur) * 0.3;
+  return 6 + 0.15 * (s.attributs.force + s.attributs.agilite) + bonusRang(sc.niveauJoueur) * 0.3 + bonusEtats(s).defense;
 }
 
 /** Puissance de l'action adverse. */
@@ -309,6 +436,7 @@ function puissanceAdverse(s: GameState, sc: EtatAffrontement, d: AdversaireDef):
 
 function vitesseAction(a: ActionCombat): Vitesse {
   if (a.famille === 'taijutsu' && TAIJUTSU[a.choix]) return TAIJUTSU[a.choix].vitesse;
+  if (a.famille === 'arme' && ARME[a.choix]) return ARME[a.choix].vitesse;
   return 'normale';
 }
 
@@ -345,11 +473,16 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
   const multGarde = () => (gardeJoueur === 'garde' ? 0.7 : gardeJoueur === 'desequilibre' ? 1.25 : 1);
 
   // ── Actions offensives ──
-  if (a.famille === 'taijutsu' || a.famille === 'ninjutsu') {
+  if (a.famille === 'taijutsu' || a.famille === 'ninjutsu' || a.famille === 'arme') {
     const estTech = !!R.maitrises[cle];
     if (estTech) {
       const cout = coutChakra(s, sc, cle);
       s.jauges.chakra = Math.max(0, s.jauges.chakra - cout);
+      // Une technique ultime se paie au moment où on la lance (usages, réserve perdue, mort, sacrifice).
+      const t = R.maitrises[cle].technique!;
+      if (t.sante) s.jauges.sante = clamp(s.jauges.sante - t.sante, 1, 100);
+      s.drapeaux[`usages_${cle}`] = (Number(s.drapeaux[`usages_${cle}`]) || 0) + 1;
+      if (t.limite) res.impact += consequenceUltime(s, cle, nouveauCtx());
     }
     let elanDepense = 0;
     if (a.elan) {
@@ -396,8 +529,10 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
       bilanEchec(sc, cle, res.cause);
       return finir(s, sc, res);
     }
-    // C. Impact.
-    let puissance = puissanceJoueur(s, a) + (elanDepense === 1 ? 10 : 0) + sc.ouverture + (res.inedite ? 12 : 0);
+    // C. Impact. Une nature qui nourrit la précédente (le vent attise le feu) frappe plus fort : l'enchaînement.
+    const ench = estTech ? enchainement(sc.techniquesUtilisees.at(-2), cle) : undefined;
+    if (ench) res.impact += `Enchaînement ! Ton ${R.elements[ench[0]]?.nom} nourrit ton ${R.elements[ench[1]]?.nom}. `;
+    let puissance = puissanceJoueur(s, a) + (elanDepense === 1 ? 10 : 0) + sc.ouverture + (res.inedite ? 12 : 0) + (ench ? BONUS_ENCHAINEMENT : 0);
     sc.ouverture = 0;
     let mult = 1;
     const def = R.maitrises[cle];
@@ -409,6 +544,11 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     if (def?.element && s.registresCombat[sc.registreId]?.contreMesures.includes(`nature:${def.element}`)) mult *= 0.8;
     if (parfaite) mult *= 1.2;
     if (res.execution === 'instable') mult *= 0.7;
+    // Contre une escouade : une technique de zone les prend tous ; un coup ciblé n'en touche qu'un.
+    if (d.escouade) {
+      const portee = R.maitrises[cle] ? porteeTechnique(cle) : 'cible';
+      mult *= portee === 'large' ? 1.35 : portee === 'zone' ? 1.2 : 0.8;
+    }
     const gardeAdv = sc.intention === 'defense' ? 'garde' : sc.adv.garde;
     if (gardeAdv === 'garde') mult *= 0.7;
     if (gardeAdv === 'desequilibre') mult *= 1.25;
@@ -469,7 +609,7 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     if (res.inflige > 0) {
       sc.elan = Math.min(3, sc.elan + 1 + (sc.joueur.garde === 'ouverte' && gardeAdv === 'desequilibre' ? 1 : 0));
       sc.touchesSubiesAdv += 1;
-      if (a.famille === 'taijutsu' && TAIJUTSU[cle]?.effet === 'desequilibre') sc.adv.garde = 'desequilibre';
+      if ((a.famille === 'taijutsu' && TAIJUTSU[cle]?.effet === 'desequilibre') || (a.famille === 'arme' && ARME[cle]?.effet === 'desequilibre')) sc.adv.garde = 'desequilibre';
       else sc.adv.garde = 'ouverte';
       sc.bilan.reussites[cle] = (sc.bilan.reussites[cle] ?? 0) + 1;
       if (sc.intention === 'preparer' && res.inflige >= sc.adv.enduranceMax * 0.2) {
@@ -519,6 +659,65 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     }
   }
   sc.gardesConsecutives = 0;
+
+  // ── Pouvoir : se transformer ou ouvrir ses yeux. Ça prend la manche ; s'il attaque, tu encaisses. ──
+  if (a.famille === 'pouvoir') {
+    res.subi = coupAdverse(multGarde());
+    if (estTransformation(cle)) {
+      const def = R.maitrises[cle];
+      const t = def.technique!;
+      s.jauges.chakra = Math.max(0, s.jauges.chakra - t.chakra);
+      if (t.sante) s.jauges.sante = clamp(s.jauges.sante - t.sante, 1, 100);
+      s.drapeaux[`usages_${cle}`] = (Number(s.drapeaux[`usages_${cle}`]) || 0) + 1;
+      const prix = t.limite ? consequenceUltime(s, cle, nouveauCtx()) : '';
+      sc.transformation = cle;
+      sc.transfoTours = 0;
+      sc.techniquesUtilisees.push(cle);
+      res.impact = `${entreeTransformation(s, cle, sc.manche)} ${prix}`.trim() + ' ';
+      res.cause = `Transformé·e : ${def.nom}. Tes coups et ta garde s’en ressentent.`;
+    } else {
+      sc.dojutsu = cle;
+      sc.techniquesUtilisees.push(cle);
+      res.impact = `${R.maitrises[cle].nom} s’éveille dans tes yeux. `;
+      res.cause = 'Tes yeux sont ouverts : tu lis mieux ses gestes, et ils te coûtent du chakra à chaque manche.';
+    }
+    // Ceux qui sont là réagissent : l'allié dans la mêlée, et l'adversaire qui recule ou se resserre.
+    const ch = R.evenements[sc.evenementId]?.choix.find((c) => c.id === sc.choixId);
+    if (ch?.test) res.impact += `${reagirTransformation(s, avecAffrontement(sc.evenementId, sc.choixId, ch.test), cle, nouveauCtx())} `;
+    res.reussi = true;
+    sc.joueur.garde = 'ouverte';
+    return finir(s, sc, res);
+  }
+
+  // ── Sacoche : pilules, parchemins, fumée ──
+  if (a.famille === 'objet') {
+    const c = CONSOMMABLE[cle];
+    s.consommables[cle] = Math.max(0, stock(s, cle) - 1);
+    res.impact = `${c.recit} `;
+    res.reussi = true;
+    if (c.chakra) s.jauges.chakra = clamp(s.jauges.chakra + c.chakra, 0, s.jauges.chakraMax);
+    if (c.sante) {
+      s.jauges.sante = clamp(s.jauges.sante + c.sante, 0, 100);
+      sc.joueur.endurance = Math.min(sc.joueur.enduranceMax, sc.joueur.endurance + Math.round(sc.joueur.enduranceMax * 0.3));
+    }
+    if (c.protege && advOffensif) {
+      // La fumée : son coup frappe le vide, et sa garde s'ouvre.
+      res.cause = 'Fumée : {il} frappe le vide ; tu es déjà ailleurs.';
+      sc.ouverture = 10;
+    } else {
+      res.subi = coupAdverse(multGarde());
+      if (cle === 'parchemin_explosif') {
+        res.inflige = Math.round(18 + 0.2 * s.attributs.perception);
+        sc.adv.garde = 'desequilibre';
+        res.cause = 'Explosion : sa garde vole en éclats.';
+      } else if (cle === 'pilule_soldat') {
+        sc.elan = Math.min(3, sc.elan + 1);
+        res.cause = 'Pilule du soldat : le chakra remonte, et ton élan avec.';
+      } else res.cause = c.sante ? 'Pilule de sang : ton souffle revient.' : 'Fumée : {il} n’attaquait pas ; tu as gagné un instant.';
+    }
+    sc.joueur.garde = 'ouverte';
+    return finir(s, sc, res);
+  }
 
   // ── Observation ──
   if (a.famille === 'observation') {
@@ -611,6 +810,7 @@ function bilanEchec(sc: EtatAffrontement, cle: string, cause: string): void {
 
 /** Applique les dégâts et la fuite adverse éventuelle ; décrémente les états temporaires. */
 function finir(s: GameState, sc: EtatAffrontement, res: ResultatManche): ResultatManche {
+  entretenirEtats(s, sc, res);
   sc.adv.endurance = Math.max(0, sc.adv.endurance - res.inflige);
   sc.joueur.endurance = Math.max(0, sc.joueur.endurance - res.subi);
   if (res.subi > 0 && sc.joueur.garde === 'ouverte') sc.elan = Math.max(0, sc.elan - 1);
@@ -624,4 +824,29 @@ function finir(s: GameState, sc: EtatAffrontement, res: ResultatManche): Resulta
   if (sc.intention === 'technique' && sc.techniqueAdv && !sc.lecture.techniquesVues.includes(sc.techniqueAdv)) sc.lecture.techniquesVues.push(sc.techniqueAdv);
   if (sc.intention === 'technique' && sc.techniqueAdv) sc.lecture.nature = true;
   return res;
+}
+
+/** Une transformation et des yeux ouverts se paient à chaque manche ; faute de pouvoir payer, ou au bout de leur durée, ils retombent. */
+function entretenirEtats(s: GameState, sc: EtatAffrontement, res: ResultatManche): void {
+  if (sc.dojutsu) {
+    const cout = coutDojutsu(s, sc.dojutsu);
+    if (s.jauges.chakra < cout) {
+      res.impact += `Tes yeux s’éteignent : ${R.maitrises[sc.dojutsu].nom} réclame plus de chakra qu’il ne t’en reste. `;
+      sc.dojutsu = undefined;
+    } else s.jauges.chakra -= cout;
+  }
+  if (sc.transformation) {
+    const p = R.maitrises[sc.transformation]?.technique?.posture;
+    sc.transfoTours = (sc.transfoTours ?? 0) + 1;
+    const e = p?.entretien;
+    const peutPayer = !e || ((e.chakra ?? 0) <= s.jauges.chakra && (e.sante ?? 0) < s.jauges.sante);
+    if (!peutPayer || (p?.duree !== undefined && sc.transfoTours > p.duree)) {
+      res.impact += `${p?.fin ?? 'Ta transformation retombe.'} `;
+      sc.transformation = undefined;
+    } else if (e) {
+      s.jauges.chakra = Math.max(0, s.jauges.chakra - (e.chakra ?? 0));
+      s.jauges.sante = clamp(s.jauges.sante - (e.sante ?? 0), 1, 100);
+      s.jauges.fatigue = clamp(s.jauges.fatigue + (e.fatigue ?? 0), 0, 100);
+    }
+  }
 }

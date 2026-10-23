@@ -49,6 +49,7 @@ import {
   attaquesSpeciales,
   avantageTechnique,
   avecAffrontement,
+  CHANCE_CAPTURE,
   bonusTechnique,
   bonusDojutsu,
   bonusPosture,
@@ -82,6 +83,7 @@ import { interpoler, resoudreTexte } from './texte';
 import { faireActivite, naturesMaitrise } from './tempsLibre';
 import { verifierFin, verifierSucces } from './fins';
 import { partenaireDuo } from './duo';
+import { consequenceUltime } from './kinjutsu';
 
 export const VERSION_ETAT = 1;
 export const JOUR_DEPART = R.contenu.monde.anDepart * JOURS_AN;
@@ -829,51 +831,46 @@ export function chanceRateNovice(s: GameState, tech: string, t: CheckDef): numbe
 
 /** Une manche se raconte en une phrase ; l'ordre varie d'une manche à l'autre. */
 const LIGNES_MANCHE: Record<IssueManche, string[]> = {
-  touche: ['Le coup porte en plein corps.', 'Tu touches. Pour la première fois, tu vois de la peur dans ses yeux.', 'Ça passe sa garde.', 'Il ne l’a pas vu venir.', 'Ton coup lui arrache un cri.'],
+  touche: [
+    'Le coup porte en plein corps.',
+    'Tu touches. Une lueur de peur passe dans ses yeux, vite chassée.',
+    'Ça passe sa garde.',
+    'Il ne l’a pas vu venir.',
+    'Ton coup lui arrache un cri.',
+    'Il recule, et son regard a changé : il ne te croyait pas capable de ça.',
+    'Sa main tremble quand il se remet en garde. Il essaie de le cacher.',
+    'Il crache, s’essuie la bouche, et pour la première fois il hésite avant d’avancer.',
+    'Il te regarde comme on regarde un chien qui vient de mordre.',
+  ],
   esquive: ['Il esquive d’un bond, comme s’il avait lu ton geste avant toi.', 'Une substitution : ton coup frappe une bûche. Il est déjà ailleurs.', 'Il pare, de justesse, et reprend ses distances.', 'Le coup fend l’air. Il te regarde, et sourit.'],
   riposte: ['Il esquive et riposte dans le même geste. Une douleur vive au flanc.', 'Il contre et te projette au sol. Tu te relèves avec du sang dans la bouche.', 'Tu frappes dans le vide ; sa lame, elle, trouve ton épaule.', 'Il attendait exactement ça. Le coup en retour te coupe le souffle.'],
 };
 
-/**
- * Le prix d'une technique ultime, payé au moment où on la lance : réserve perdue pour toujours, mort possible
- * (la huitième porte), ou sacrifice qui emportera l'utilisateur à la fin du combat (Shiki Fūjin, C0).
- */
-function consequenceUltime(s: GameState, tech: string, ctx: Ctx): string {
-  const l = R.maitrises[tech]?.technique?.limite;
-  if (!l) return '';
-  let texte = '';
-  if (l.chakraMaxPerdu) {
-    s.jauges.chakraMax = Math.max(10, s.jauges.chakraMax - l.chakraMaxPerdu);
-    s.jauges.chakra = Math.min(s.jauges.chakra, s.jauges.chakraMax);
-    ctx.changements.push({ t: 'stat', chemin: 'jauges.chakraMax', delta: -l.chakraMaxPerdu });
-    texte += 'Quelque chose en toi s’éteint pour toujours. ';
-  }
-  if (l.mort && (s.maitrises[tech]?.tier ?? 0) >= (l.mort.palierMin ?? 0) && alea(s) < l.mort.chance) {
-    s.drapeaux['sacrifice'] = tech;
-    texte += 'Tu sens ton corps se consumer de l’intérieur. Tu sais déjà que tu n’en reviendras pas. ';
-  }
-  if (l.controle) {
-    const tier = s.maitrises['chakra_biju']?.tier ?? 1;
-    const perte = clamp(0.5 - s.attributs.controleEmotionnel / 200 - (tier - 1) * 0.08, 0.03, 0.6);
-    if (alea(s) < perte) {
-      const d = 10;
-      s.jauges.sante = clamp(s.jauges.sante - d, 1, 100);
-      ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -d });
-      s.social.suspicion = clamp(s.social.suspicion + 4, 0, 100);
-      s.drapeaux['pertes_controle'] = (Number(s.drapeaux['pertes_controle']) || 0) + 1;
-      texte += 'La bête prend le dessus un instant : tu frappes plus fort que tu ne le voulais, et elle te mord de l’intérieur en retour. ';
-    }
-  }
-  if (l.ethique) {
-    for (const [k, v] of Object.entries(l.ethique)) s.ethique[k as keyof typeof s.ethique] += v ?? 0;
-    texte += `${l.avertissement} `;
-  }
-  if (l.sacrifice) {
-    s.drapeaux['sacrifice'] = tech;
-    texte += 'Le prix est fixé. Tu le paieras quand tout sera fini. ';
-  }
-  return texte;
-}
+/** Contre une escouade : ils sont plusieurs, et la peur passe de l'un à l'autre. */
+const LIGNES_MANCHE_ESCOUADE: Record<IssueManche, string[]> = {
+  touche: [
+    'L’un d’eux tombe. Les autres se regardent : tu vois la peur passer dans leurs yeux, de l’un à l’autre, comme une étincelle.',
+    'Le premier rang recule d’un pas. Personne ne veut être le suivant.',
+    'Un cri, un corps au sol. Derrière, quelqu’un murmure « recule » et personne ne l’écoute vraiment.',
+    'Ils ne s’attendaient pas à ça. Leur formation se défait ; deux d’entre eux reculent sans en avoir reçu l’ordre.',
+    'Le plus jeune lâche son kunai. Il le ramasse, les mains tremblantes, sans te quitter des yeux.',
+    'Leur chef aboie un ordre. Ils obéissent, mais plus lentement. L’effroi les a rattrapés.',
+    'Ils te contournent avec prudence, maintenant. Ils ont compris qu’un seul de toi en vaut plusieurs d’eux.',
+    'L’un d’eux se met à courir. Les autres le rappellent, puis hésitent à le suivre.',
+  ],
+  esquive: [
+    'Ils se dispersent avant que ton coup arrive ; tu ne frappes que la place qu’ils occupaient.',
+    'L’un d’eux s’interpose et pare pour les autres. Ils ont l’habitude de se battre ensemble.',
+    'Ils reculent en éventail. Ton coup se perd au milieu d’eux, sans toucher personne.',
+    'Leur sensoriel crie un avertissement ; ils s’écartent tous en même temps.',
+  ],
+  riposte: [
+    'Pendant que tu vises l’un, un autre te frappe dans le dos.',
+    'Ils te tombent dessus à trois. Tu sors de la mêlée en sang.',
+    'Un kunai venu de nulle part te plante l’épaule : celui-là, tu ne l’avais pas vu.',
+    'Ils se relaient : quand tu pares le premier, le deuxième frappe déjà.',
+  ],
+};
 
 function finaliserChoix(s: GameState, ev: EventDef, choixId: string, libelle: string, texte: string, suite: string | undefined, issue: Issue | undefined, ctx: Ctx): void {
   // Un sacrifice consenti (Shiki Fūjin, huitième porte, C0) se paie une fois le combat terminé.
@@ -1296,7 +1293,7 @@ function jouerManche(s: GameState, action?: string): void {
     protege = !!c.protege;
   }
   const r = resoudreManche(s, test, ctx, protege);
-  const lignes = LIGNES_MANCHE[r.issue];
+  const lignes = (base.forme === 'escouade' ? LIGNES_MANCHE_ESCOUADE : LIGNES_MANCHE)[r.issue];
   let ligne = lignes[(sc.manche + (tech?.length ?? 0) + sc.touches) % lignes.length];
   // Un coup qui porte se raconte par la technique (de loin ou au contact), puis par l'endroit où le corps s'écrase.
   const contact = !objet && techniqueAuContact(tech);
@@ -1561,7 +1558,20 @@ function combatMut(s: GameState, a: ActionCombat): void {
   const fin = jouerAffrontement(s, a, ctx);
   s.actions.push({ a: 'combat', famille: a.famille, choix: a.choix, ...(a.elan ? { elan: a.elan } : {}) });
   if (!fin) return;
-  finaliserChoix(s, R.evenements[evId], choixId, fin.libelle, fin.texte, fin.suite, fin.issue, ctx);
+  const ev = R.evenements[evId];
+  const ch = ev.choix.find((c) => c.id === choixId)!;
+  let texte = fin.texte;
+  let suite = fin.suite;
+  // Ce qui suit un combat : vaincu·e par une escouade, on peut être capturé·e ; vainqueur, l'adversaire est à ta merci.
+  if (ch.test && s.jauges.sante > 0) {
+    const test = avecAffrontement(evId, choixId, ch.test);
+    const capture = fin.issue === 'echec' && !!test.letal && test.forme === 'escouade' && tirageTexte(s, `capture:${evId}`) < (CHANCE_CAPTURE[s.creation.difficulte] ?? 0.22);
+    const apres = apresCombat(s, test, fin.issue, capture, suite, ctx);
+    texte += apres.texte;
+    suite = apres.suite;
+  }
+  if (ch.duree) avancerTemps(s, ch.duree, ctx);
+  finaliserChoix(s, ev, choixId, fin.libelle, texte, suite, fin.issue, ctx);
   const apres = s.scene as GameState['scene'];
   if (apres.type === 'resultat' && fin.bilan) apres.bilanCombat = fin.bilan;
 }
@@ -1580,6 +1590,7 @@ export function appliquerActionMut(s: GameState, a: Action): void {
   else if (a.a === 'chapitre') chapitreMut(s);
   else if (a.a === 'manche') mancheMut(s, a.id);
   else if (a.a === 'magasin') magasinMut(s, a.id);
+  else if (a.a === 'nommer') nommerMut(s, a.cible, a.nom);
   else activiteMut(s, a.id);
 }
 
@@ -1611,6 +1622,26 @@ function chapitreMut(s: GameState): void {
 export function chapitreSuivant(s0: GameState): GameState {
   const s = cloner(s0);
   chapitreMut(s);
+  return s;
+}
+
+/** Un prénom acceptable : des lettres (accents compris), espaces, tirets et apostrophes, de 1 à 24 caractères. */
+export function nomValide(nom: string): string | undefined {
+  const n = nom.trim().replace(/\s+/g, ' ');
+  return /^[\p{L}][\p{L} '’-]{0,23}$/u.test(n) ? n : undefined;
+}
+
+function nommerMut(s: GameState, cible: 'enfant' | 'conjoint', nom: string): void {
+  const n = nomValide(nom);
+  if (!n) throw new Error('Ce prénom n’est pas valide.');
+  if (cible === 'enfant' && !s.drapeaux['famille_fondee']) throw new Error('Tu n’as pas encore d’enfant.');
+  s.drapeaux[`${cible}_nom`] = n;
+  s.actions.push({ a: 'nommer', cible, nom: n });
+}
+
+export function nommer(s0: GameState, cible: 'enfant' | 'conjoint', nom: string): GameState {
+  const s = cloner(s0);
+  nommerMut(s, cible, nom);
   return s;
 }
 

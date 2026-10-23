@@ -9,6 +9,8 @@ import type { Activite } from '../engine/tempsLibre';
 import { genererActivites } from '../engine/tempsLibre';
 import { accorder } from '../engine/texte';
 import { magasinOuvert } from '../engine/moteur';
+import { R } from '../engine/registre';
+import { rangArme, scoreArme } from '../engine/armes';
 
 const RAYONS: { titre: string; kanji: string; aide?: string; filtre: (a: Activite) => boolean }[] = [
   { titre: 'Forge', kanji: '鍛', aide: 'Une lame entretenue frappe plus juste et ne casse pas au mauvais moment.', filtre: (a) => a.id === 'forge:reparer' },
@@ -21,6 +23,21 @@ export default function Magasin({ etat, onAcheter }: { etat: GameState; onAchete
   const ouvert = magasinOuvert(etat);
   const acts = useMemo(() => genererActivites(etat).filter((a) => a.categorie === 'forge'), [etat]);
   const rayons = RAYONS.map((r) => ({ ...r, liste: acts.filter(r.filtre) })).filter((r) => r.liste.length > 0);
+  // Comparer une arme du magasin à celle qu'on a en main : rang, et meilleure ou moins bonne.
+  const enMain = etat.armeEquipee ? R.armes[etat.armeEquipee] : undefined;
+  const comparaison = (id: string) => {
+    const def = id.startsWith('forge:acheter:') ? R.armes[id.slice('forge:acheter:'.length)] : undefined;
+    if (!def) return null;
+    const ecart = enMain ? scoreArme(def) - scoreArme(enMain) : undefined;
+    return (
+      <span className="mag-arme">
+        <span className={`rang-arme r-${rangArme(def)}`}>Rang {rangArme(def)}</span>
+        {ecart !== undefined && Math.abs(ecart) >= 4 && (
+          <span className={ecart > 0 ? 'mag-mieux' : 'mag-moins'}>{ecart > 0 ? '▲ meilleure que ton arme' : '▼ moins bonne que ton arme'}</span>
+        )}
+      </span>
+    );
+  };
 
   return (
     <div className="page magasin">
@@ -49,6 +66,7 @@ export default function Magasin({ etat, onAcheter }: { etat: GameState; onAchete
               <li key={a.id}>
                 <button type="button" className="mag-article" disabled={!ouvert || !a.disponible} onClick={() => onAcheter(a.id)}>
                   <span className="mag-nom">{accorder(a.libelle, p)}</span>
+                  {comparaison(a.id)}
                   <span className="mag-detail">{accorder(a.description, p)}</span>
                   {!a.disponible && a.raison && <span className="mag-raison">{accorder(a.raison, p)}</span>}
                 </button>

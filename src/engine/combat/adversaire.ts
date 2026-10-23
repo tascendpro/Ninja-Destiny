@@ -6,10 +6,12 @@ import { R } from '../registre';
 import { age } from '../calendrier';
 import { defPnj, resoudrePnj } from '../etat';
 import type { AdversaireDef, EtatAffrontement, IntentionAdv, NiveauAdv, StatsAdv, Temperament } from './types';
-import { INTENTIONS } from './types';
+import { INTENTIONS, NIVEAUX } from './types';
+import { PREFIXE_GENERIQUE, adversaireGenerique } from './generique';
 import { GABARITS, indexNiveau, niveauJoueur } from './contextes';
 
 export function adversaireDef(id: string): AdversaireDef {
+  if (id.startsWith(PREFIXE_GENERIQUE)) return adversaireGenerique(id);
   const d = R.contenu.racine.adversaires.find((a) => a.id === id);
   if (!d) throw new Error(`Adversaire inconnu : ${id}`);
   return d;
@@ -17,12 +19,17 @@ export function adversaireDef(id: string): AdversaireDef {
 
 /** Le niveau réel : fixe, ou celui du joueur pour un rival qui grandit avec lui. */
 export function niveauAdversaire(s: GameState, d: AdversaireDef): NiveauAdv {
-  return d.niveau === 'selon_age' ? niveauJoueur(s) : d.niveau;
+  if (d.niveau !== 'selon_age') return d.niveau;
+  if (!d.ecartNiveau) return niveauJoueur(s);
+  const i = indexNiveau(niveauJoueur(s)) + d.ecartNiveau;
+  return NIVEAUX[Math.max(1, Math.min(NIVEAUX.indexOf('kage'), i))];
 }
 
 export function statsAdversaire(s: GameState, d: AdversaireDef): StatsAdv {
   const base = GABARITS[niveauAdversaire(s, d)];
   const st = { ...base, ...(d.stats ?? {}) };
+  // Plusieurs ennemis tiennent plus longtemps qu'un seul ; chacun frappe comme un seul.
+  if (d.escouade) st.endurance = Math.round(st.endurance * 1.3);
   // Un récurrent qui a perdu contre toi revient mieux préparé : il a travaillé (§13.2).
   const reg = s.registresCombat[registreDe(s, d)];
   if (reg) st.perception += Math.min(10, reg.defaites * 3);

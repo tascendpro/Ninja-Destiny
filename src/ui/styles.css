@@ -4547,60 +4547,80 @@ body::before {
 
 /* ════════════════════════════════════════════════════════════════
    L'Affrontement Racine (§22) : mobile d'abord, deux colonnes sur PC.
+   Face-à-face en tête, fil du combat, puis la commande (onglets, cartes, barre de lancement collante).
    ════════════════════════════════════════════════════════════════ */
-.aff-bandeau {
+
+/* Téléphone : une seule colonne ; le journal replié descend tout en bas. */
+.recit-texte.affrontement {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin: 4px 0 12px;
-  font-size: var(--t-s);
-  color: var(--papier-2);
+  flex-direction: column;
 }
-.aff-contexte {
-  display: inline-flex;
-  align-items: center;
+.aff-fil {
+  display: contents;
+}
+.aff-journal-replie {
+  order: 10;
+}
+
+/* ── 1. Face-à-face ── */
+.aff-duel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
   gap: 8px;
+  margin: 2px 0 14px;
+  scroll-margin-top: 12px;
 }
-.aff-kanji {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 5px;
-  background: var(--vermillon);
-  color: var(--texte-bouton);
-  font-family: var(--pinceau);
-}
-.aff-manche {
-  font-family: var(--mincho);
-  font-size: var(--t-m);
-  color: var(--papier);
-}
-.aff-jauges {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 12px;
+.aff-carte {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 10px;
   border: 1px solid var(--trait);
   border-radius: 12px;
   background: var(--ardoise);
 }
-.aff-camp {
+.aff-carte.adv {
+  border-color: color-mix(in srgb, var(--vermillon-clair) 40%, var(--trait));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--vermillon) 10%, var(--ardoise)), var(--ardoise) 70%);
+}
+.aff-carte.joueur {
+  border-color: color-mix(in srgb, var(--jade) 40%, var(--trait));
+  background: linear-gradient(200deg, color-mix(in srgb, var(--jade) 10%, var(--ardoise)), var(--ardoise) 70%);
+}
+.aff-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+.aff-avatar.adv {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--vermillon-clair);
+  color: var(--vermillon-clair);
+  font-family: var(--pinceau);
+  font-size: 1.15rem;
+}
+.aff-carte-corps {
   display: grid;
   gap: 5px;
   min-width: 0;
-  align-content: start;
+  flex: 1;
 }
-.aff-nom {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--t-s);
-}
-.aff-nom b {
+.aff-carte-nom {
   font-family: var(--mincho);
+  font-weight: 700;
   font-size: var(--t-m);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.aff-carte-nom small {
+  font-family: var(--gothic);
+  font-weight: 400;
+  font-size: var(--t-xs);
+  color: var(--brume);
 }
 .aff-jauge {
   display: block;
@@ -4610,7 +4630,7 @@ body::before {
   overflow: hidden;
 }
 .aff-jauge.fine {
-  height: 5px;
+  height: 4px;
 }
 .aff-jauge i {
   display: block;
@@ -4627,202 +4647,397 @@ body::before {
 .aff-chakra {
   background: var(--glycine);
 }
-.aff-etat {
+.aff-pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
   font-size: var(--t-xs);
-  color: var(--brume);
+}
+.aff-chiffre {
+  font-variant-numeric: tabular-nums;
+  color: var(--papier-2);
+  font-weight: 600;
+}
+.aff-pastille {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--trait);
+  color: var(--papier-2);
+  white-space: nowrap;
+}
+.aff-pastille.garde {
+  border-color: var(--ciel);
+  color: var(--papier);
+}
+.aff-pastille.desequilibre,
+.aff-pastille.sonne {
+  border-color: var(--vermillon-clair);
+  color: var(--vermillon-clair);
 }
 .aff-elan {
   display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: var(--t-xs);
-  color: var(--papier-2);
+  gap: 3px;
 }
 .aff-elan i {
-  width: 11px;
-  height: 11px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   border: 1.5px solid var(--or);
 }
 .aff-elan i.plein {
   background: var(--or);
 }
-.aff-journal {
-  margin-top: 14px;
+.aff-centre {
   display: grid;
-  gap: 12px;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
 }
+.aff-tai {
+  font-family: var(--pinceau);
+  font-size: 1.5rem;
+  color: var(--or);
+}
+.aff-contexte {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: var(--vermillon);
+  color: var(--texte-bouton);
+  font-family: var(--pinceau);
+  font-size: 0.85rem;
+}
+.aff-sous-duel {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+  font-size: var(--t-xs);
+  letter-spacing: 0.04em;
+  color: var(--brume);
+}
+@media (max-width: 520px) {
+  .aff-duel {
+    grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr);
+    gap: 6px;
+  }
+  .aff-carte {
+    flex-direction: column;
+    padding: 9px;
+  }
+  .aff-carte.adv {
+    align-items: flex-start;
+  }
+  .aff-avatar.adv {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+  .aff-avatar :where(svg, img, .portrait) {
+    width: 32px;
+    height: 32px;
+  }
+  .aff-tai {
+    font-size: 1.2rem;
+  }
+}
+
+/* ── 2. La manche jouée ── */
 .aff-manche-bloc {
+  margin-top: 4px;
   padding: 12px 14px;
-  border-left: 3px solid color-mix(in srgb, var(--or) 55%, transparent);
-  border-radius: 0 10px 10px 0;
-  background: color-mix(in srgb, var(--or) 5%, transparent);
+  border: 1px solid var(--trait-doux);
+  border-left: 3px solid var(--or);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--or) 4%, var(--encre-2));
   animation: aff-apparait 0.35s ease both;
 }
-.aff-manche-bloc h2 {
+.aff-manche-bloc.ton-bon {
+  border-left-color: var(--jade);
+}
+.aff-manche-bloc.ton-mauvais {
+  border-left-color: var(--vermillon-clair);
+}
+.aff-manche-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.aff-manche-tete h2 {
+  margin: 0;
   font-family: var(--mincho);
   font-size: var(--t-m);
-  margin: 0 0 6px;
 }
-.aff-manche-bloc p {
-  margin: 4px 0;
-  line-height: 1.55;
+.aff-issue {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border: 1px solid currentColor;
+}
+.aff-issue.bon {
+  color: var(--jade);
+  background: color-mix(in srgb, var(--jade) 12%, transparent);
+}
+.aff-issue.mauvais {
+  color: var(--vermillon-clair);
+  background: color-mix(in srgb, var(--vermillon) 12%, transparent);
+}
+.aff-issue.neutre {
+  color: var(--or);
+  background: color-mix(in srgb, var(--or) 10%, transparent);
 }
 .aff-annonce-passee {
+  margin: 0 0 6px;
   font-style: italic;
+  font-size: var(--t-s);
   color: var(--brume);
 }
-.aff-etiquette {
-  display: inline-block;
-  min-width: 74px;
-  margin-right: 6px;
-  font-size: var(--t-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--brume);
+.aff-recit-manche {
+  margin: 4px 0;
+  line-height: 1.6;
+}
+.aff-recit-manche.impact {
+  color: var(--papier);
 }
 .aff-cause {
-  margin-top: 8px !important;
+  margin: 8px 0 0;
   padding: 6px 10px;
   border-radius: 6px;
   font-weight: 600;
   font-size: var(--t-s);
   background: color-mix(in srgb, var(--papier) 6%, transparent);
+  border-left: 3px solid var(--or);
 }
 .aff-cause.issue-touche,
 .aff-cause.issue-surprise,
 .aff-cause.issue-decisive {
-  border-left: 3px solid var(--jade);
+  border-left-color: var(--jade);
 }
 .aff-cause.issue-ratee,
 .aff-cause.issue-predite,
 .aff-cause.issue-ecrasee,
 .aff-cause.issue-dominee {
-  border-left: 3px solid var(--vermillon-clair);
-}
-.aff-cause.issue-annulee,
-.aff-cause.issue-autre {
-  border-left: 3px solid var(--or);
+  border-left-color: var(--vermillon-clair);
 }
 .aff-replique {
+  position: relative;
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: 4px 12px 12px 12px;
+  background: color-mix(in srgb, var(--vermillon) 9%, var(--ardoise));
   font-family: var(--mincho);
   font-size: var(--t-m);
+  line-height: 1.5;
   color: var(--papier);
 }
 .aff-replique b {
-  font-size: var(--t-s);
+  display: block;
+  font-family: var(--gothic);
+  font-size: var(--t-xs);
+  letter-spacing: 0.04em;
   color: var(--vermillon-clair);
 }
+
+/* ── 3. Ce que tu lis ── */
 .aff-annonce {
-  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
   padding: 12px 14px;
   border: 1px solid var(--trait);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--ardoise-2, var(--ardoise));
 }
+.aff-oeil {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--or) 15%, transparent);
+  color: var(--or);
+  font-family: var(--pinceau);
+  font-size: 1.1rem;
+}
+.aff-annonce .aff-etiquette {
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brume);
+}
 .aff-annonce p {
-  margin: 4px 0;
+  margin: 2px 0 4px;
   font-family: var(--mincho);
   font-size: var(--t-l);
-  line-height: 1.5;
+  line-height: 1.45;
 }
 .aff-annonce small {
+  display: block;
   color: var(--brume);
+}
+.aff-annonce.fiab-vague p {
+  color: var(--papier-2);
+  font-style: italic;
 }
 .aff-annonce.mortelle {
   border-color: var(--vermillon-clair);
-  box-shadow: inset 4px 0 0 var(--vermillon);
+  background: color-mix(in srgb, var(--vermillon) 10%, var(--ardoise));
+}
+.aff-annonce.mortelle .aff-oeil {
+  background: var(--vermillon);
+  color: var(--texte-bouton);
 }
 .aff-annonce.mortelle .aff-etiquette {
   color: var(--vermillon-clair);
   font-weight: 700;
 }
 .aff-lecture {
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: var(--t-s);
 }
 .aff-lecture summary {
   cursor: pointer;
   color: var(--papier-2);
+  min-height: 32px;
+  display: flex;
+  align-items: center;
 }
 .aff-lecture ul {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   padding-left: 18px;
+}
+
+/* ── 4. La commande ── */
+.aff-commande {
+  margin-top: 14px;
 }
 .aff-familles {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 .aff-famille {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  min-height: 52px;
-  padding: 8px 12px;
+  justify-content: center;
+  gap: 2px;
+  min-height: 58px;
+  padding: 6px 4px;
   border: 1px solid var(--trait);
   border-radius: 10px;
   background: var(--ardoise);
-  text-align: left;
-  font-size: var(--t-m);
+  color: var(--papier-2);
+  font-size: var(--t-s);
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.aff-famille:hover {
+  border-color: color-mix(in srgb, var(--or) 60%, var(--trait));
 }
 .aff-famille .touche {
-  margin-left: auto;
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  font-size: 0.65rem;
+  opacity: 0.6;
 }
 .aff-famille.active {
   border-color: var(--or);
-  background: color-mix(in srgb, var(--or) 12%, var(--ardoise));
+  color: var(--papier);
+  background: color-mix(in srgb, var(--or) 14%, var(--ardoise));
+  box-shadow: inset 0 -3px 0 var(--or);
 }
 .aff-famille-kanji {
   font-family: var(--pinceau);
   font-size: 1.35rem;
+  line-height: 1.1;
   color: var(--vermillon-clair);
+}
+.aff-famille-nom {
+  font-weight: 600;
+}
+.aff-invite {
+  margin: 10px 2px 0;
+  font-size: var(--t-s);
+  color: var(--brume);
 }
 .aff-panneau {
   display: grid;
   gap: 8px;
   margin-top: 10px;
-  padding: 12px;
-  border: 1px solid var(--or);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--or) 6%, var(--ardoise));
-  animation: aff-apparait 0.25s ease both;
+  animation: aff-apparait 0.2s ease both;
+}
+.aff-cartes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 .aff-action {
+  position: relative;
   display: grid;
-  gap: 3px;
+  align-content: start;
+  gap: 4px;
+  min-height: 56px;
   padding: 10px 12px;
   border: 1px solid var(--trait);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--ardoise);
+  color: var(--papier);
   text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+.aff-action:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--or) 60%, var(--trait));
+}
+.aff-action:active:not(:disabled) {
+  transform: scale(0.98);
 }
 .aff-action.choisie {
-  border-color: var(--vermillon-clair);
-  box-shadow: inset 3px 0 0 var(--vermillon);
+  border-color: var(--or);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--or) 45%, transparent);
+  background: color-mix(in srgb, var(--or) 10%, var(--ardoise));
 }
 .aff-action.a-nature {
   border-left: 3px solid var(--nat);
 }
 .aff-action:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   border-style: dashed;
+  cursor: default;
 }
 .aff-action-nom {
+  font-weight: 700;
+  line-height: 1.25;
+}
+.aff-action-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px 6px;
+  font-size: var(--t-xs);
+}
+.aff-cout {
+  color: var(--glycine);
   font-weight: 600;
 }
-.aff-action-meta {
-  font-size: var(--t-xs);
-  color: var(--or);
-}
-.aff-action-detail {
+.aff-action-raison {
   font-size: var(--t-xs);
   color: var(--brume);
+}
+.aff-action-encore {
+  font-size: var(--t-xs);
+  color: var(--or);
+  font-weight: 600;
 }
 .aff-marque {
   font-size: 0.68rem;
@@ -4840,26 +5055,84 @@ body::before {
 .aff-marque.m-peut-tout-finir {
   color: var(--or);
 }
+.aff-panneau .groupe-contenu {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 380px) {
+  .aff-cartes,
+  .aff-panneau .groupe-contenu {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── 5. Barre de lancement : collée au-dessus de la navigation, toujours à portée du pouce ── */
+.aff-lancer {
+  position: sticky;
+  bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--trait);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--encre-2) 92%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 -10px 24px -18px rgba(0, 0, 0, 0.8);
+}
 .aff-elan-choix {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 .aff-elan-choix button {
+  min-height: 36px;
   padding: 6px 12px;
   border: 1px solid var(--or);
   border-radius: 999px;
   background: transparent;
   color: var(--or);
   font-size: var(--t-s);
+  cursor: pointer;
 }
-.aff-elan-choix button[aria-pressed="true"] {
+.aff-elan-choix button[aria-pressed='true'] {
   background: var(--or);
   color: var(--encre);
 }
 .aff-confirmer {
   width: 100%;
+  min-height: 50px;
 }
+.aff-confirmer-verbe {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.85em;
+  opacity: 0.85;
+}
+
+/* ── Journal ── */
+.aff-journal-replie {
+  margin-top: 16px;
+  font-size: var(--t-s);
+}
+.aff-journal-replie summary {
+  cursor: pointer;
+  color: var(--papier-2);
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+}
+.aff-journal {
+  margin-top: 8px;
+  display: grid;
+  gap: 10px;
+}
+.aff-journal .aff-manche-bloc {
+  animation: none;
+}
+
+/* ── Bilan ── */
 .aff-bilan {
   margin: 18px 0 0;
   padding: 14px 16px;
@@ -4887,6 +5160,7 @@ body::before {
   margin: 2px 0 0;
   font-size: var(--t-s);
 }
+
 @keyframes aff-apparait {
   from {
     opacity: 0;
@@ -4897,68 +5171,56 @@ body::before {
     transform: none;
   }
 }
-:root[data-animations="reduites"] .aff-manche-bloc,
-:root[data-animations="reduites"] .aff-panneau {
+:root[data-animations='reduites'] .aff-manche-bloc,
+:root[data-animations='reduites'] .aff-panneau {
   animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .aff-manche-bloc,
-  .aff-panneau {
+  .aff-panneau,
+  .aff-action {
     animation: none;
+    transition: none;
   }
 }
-/* PC : récit et journal à gauche, jauges et actions à droite. */
+
+/* PC : le fil du combat à gauche, la lecture et la commande à droite, qui restent à l'écran. */
 @media (min-width: 1000px) {
   .recit-texte.affrontement {
-    max-width: 1080px;
+    max-width: 1120px;
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     column-gap: 28px;
     align-items: start;
   }
   .recit-texte.affrontement > .titre-scene,
-  .recit-texte.affrontement > .aff-bandeau {
+  .recit-texte.affrontement > .aff-duel {
     grid-column: 1 / -1;
   }
-  .recit-texte.affrontement > .aff-manche-bloc,
-  .recit-texte.affrontement > .aff-entree,
-  .recit-texte.affrontement > .aff-journal-replie {
+  .aff-fil {
+    display: block;
     grid-column: 1;
   }
-  .recit-texte.affrontement > .aff-manche-bloc,
-  .recit-texte.affrontement > .aff-entree {
-    grid-row: 3 / span 4;
+  .aff-cote {
+    grid-column: 2;
+    position: sticky;
+    top: 16px;
+  }
+  .aff-cote > .aff-annonce {
     margin-top: 0;
   }
-  .recit-texte.affrontement > .aff-journal-replie {
-    grid-row: 7;
+  .aff-familles {
+    grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
   }
-  .recit-texte.affrontement > .aff-jauges,
-  .recit-texte.affrontement > .aff-annonce,
-  .recit-texte.affrontement > .aff-lecture,
-  .recit-texte.affrontement > .aff-familles,
-  .recit-texte.affrontement > .aff-panneau {
-    grid-column: 2;
+  .aff-famille-nom {
+    font-size: var(--t-xs);
   }
-}
-
-.aff-jauges + .aff-manche-bloc,
-.aff-jauges + div + .aff-manche-bloc {
-  margin-top: 14px;
-}
-.aff-manche-bloc {
-  margin-top: 14px;
-}
-.aff-entree {
-  margin-top: 14px;
-}
-.aff-journal-replie {
-  margin-top: 18px;
-  font-size: var(--t-s);
-}
-.aff-journal-replie summary {
-  cursor: pointer;
-  color: var(--papier-2);
+  .aff-lancer {
+    bottom: 12px;
+  }
+  .aff-duel {
+    grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
+  }
 }
 
 /* ── Techniques par nature : en-tête « Raiton · 2 » qui ouvre son panneau (combat et fiche) ── */
@@ -5194,4 +5456,225 @@ body::before {
 .groupe-nature[style*='--n-combinaison'],
 .groupe-nature[style*='--n-trinite'] {
   border-left-color: var(--glycine);
+}
+
+/* ── Repli : un résumé d'une ligne, le détail derrière un bouton (téléphone) ; tout affiché sur grand écran ── */
+.repli-tete {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.repli-resume {
+  flex: 1;
+  min-width: 0;
+}
+.repli-resume h2,
+.repli-resume h3 {
+  margin: 0;
+}
+.repli-bouton {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--trait);
+  background: transparent;
+  color: var(--papier);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.repli.ouvert .repli-bouton {
+  border-color: var(--or);
+  color: var(--or);
+}
+.repli-bouton:focus-visible {
+  outline: 2px solid var(--or);
+  outline-offset: 2px;
+}
+.repli-detail {
+  margin-top: 10px;
+}
+@media (max-width: 899px) {
+  .repli-detail.ferme {
+    display: none;
+  }
+}
+@media (min-width: 900px) {
+  .repli-bouton {
+    display: none;
+  }
+}
+.resume-ligne {
+  margin: 4px 0 0;
+  font-size: var(--t-s);
+  color: var(--texte-2, var(--brume));
+}
+.relation-resume {
+  gap: 10px;
+  align-items: center;
+}
+.lien-mot {
+  display: block;
+  font-size: var(--t-s);
+  color: var(--papier-2);
+}
+.lien-mot.negatif,
+.lien-mot.rompu {
+  color: var(--danger);
+}
+.souvenirs {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: var(--t-s);
+  color: var(--texte-2, var(--brume));
+  font-style: italic;
+}
+.maitrise .repli-detail p,
+.m-details p {
+  margin: 6px 0 0;
+  font-size: var(--t-s);
+}
+.liste-simple .repli-detail {
+  margin-top: 4px;
+}
+/* Les titres de panneau gardent leur style une fois repliés. */
+.panneau .repli-resume h2 {
+  font-size: var(--t-l);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin: 0;
+}
+.panneau .repli-resume h2 small {
+  font-family: var(--gothic);
+  font-weight: 400;
+  font-size: var(--t-s);
+  color: var(--brume);
+}
+.aff-journal-replie summary::before,
+.aff-lecture summary::before {
+  content: '▸';
+  display: inline-block;
+  width: 1.1em;
+  color: var(--or);
+  transition: transform 0.15s;
+}
+.aff-journal-replie[open] summary::before,
+.aff-lecture[open] summary::before {
+  transform: rotate(90deg);
+}
+.aff-journal-replie summary::-webkit-details-marker,
+.aff-lecture summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ── Nommer son enfant ── */
+.nommer-enfant {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 760px;
+  margin: 16px auto 0;
+  padding: 14px 16px;
+  border: 1px solid var(--or);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--or) 8%, var(--ardoise));
+}
+.nommer-kanji {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--or);
+  color: var(--encre);
+  font-family: var(--pinceau);
+  font-size: 1.3rem;
+}
+.nommer-corps {
+  display: grid;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.nommer-corps label {
+  font-family: var(--mincho);
+  font-size: var(--t-l);
+}
+.nommer-ligne {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.nommer-ligne input {
+  flex: 1;
+  min-width: 140px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--trait);
+  border-radius: 8px;
+  background: var(--encre-2);
+  color: var(--papier);
+  font: inherit;
+}
+.nommer-ligne input:focus-visible {
+  outline: 2px solid var(--or);
+  outline-offset: 1px;
+}
+.nommer-erreur {
+  color: var(--danger);
+}
+
+/* ── Rang des armes ── */
+.rang-arme {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-family: var(--gothic);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  vertical-align: 2px;
+  color: var(--brume);
+}
+.rang-arme.r-C,
+.rang-arme.r-B {
+  color: var(--jade);
+}
+.rang-arme.r-A {
+  color: var(--glycine);
+}
+.rang-arme.r-S,
+.rang-arme.r-SS {
+  color: var(--or);
+}
+.mag-arme {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-xs);
+}
+.mag-arme .rang-arme {
+  margin-left: 0;
+}
+.mag-mieux {
+  color: var(--jade);
+  font-weight: 600;
+}
+.mag-moins {
+  color: var(--brume);
+}
+.aff-marque.m-enchaînement {
+  color: var(--glycine);
 }

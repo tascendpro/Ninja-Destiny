@@ -105,7 +105,7 @@ export function bonusRang(niveau: NiveauAdv): number {
 export function maxFamilles(s: GameState): number {
   const a = age(s);
   if (a < 10) return 4;
-  return 6;
+  return 9;
 }
 
 /** Ce qu'un enfant de 6 à 9 ans peut faire : se battre, se protéger, parler, partir. */

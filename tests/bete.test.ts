@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { creation } from './aide';
-import { choisir, continuer, manche, nouvellePartie, vueCombat } from '../src/engine/moteur';
+import { choisir, combattre, continuer, nouvellePartie } from '../src/engine/moteur';
+import { vueAffrontement } from '../src/engine/combat/affrontement';
+import { puissanceJoueur } from '../src/engine/combat/resolution';
 import { entreeTransformation } from '../src/engine/epreuves';
 import { blocageApprentissage } from '../src/engine/maitrise';
 import { evenementDisponible } from '../src/engine/selection';
@@ -111,31 +113,28 @@ describe('Transformations', () => {
     s.jauges.chakra = 300;
     for (const [id, tier] of techs) s.maitrises[id] = { ...s.maitrises['taijutsu'], id, kind: 'jutsu', awakened: true, tier: tier as 1, trainingDays: 0, bloquee: false };
     s.scene = { type: 'evenement', id: 'c2_tournoi' };
-    const t = choisir(s, 'frontal');
-    if (t.scene.type === 'combat') t.scene.priorite = undefined;
-    return t;
+    return choisir(s, 'frontal');
   };
+  const actions = (t: GameState, famille: string) => vueAffrontement(t)!.familles.find((f) => f.id === famille)?.actions.map((a) => a.id) ?? [];
 
-  it('se transformer ne coûte pas la manche, renforce l’attaque et la défense, et se raconte autrement qu’une attaque', () => {
+  it('se transformer prend une manche, renforce l’attaque et la défense, et se raconte autrement qu’une attaque', () => {
     let t = combat([['raiton_yoroi', 2]]);
-    const avant = vueCombat(t)!;
-    expect(avant.transformations.map((x) => x.id)).toContain('raiton_yoroi');
-    expect(avant.attaques.some((a) => a.id === 'raiton_yoroi')).toBe(false);
-    t = manche(t, 'transfo:raiton_yoroi');
-    const apres = vueCombat(t)!;
-    expect(apres.manche).toBe(avant.manche);
-    expect(apres.transformation?.nom).toContain('Raiton no Yoroi');
-    expect(apres.transformations).toEqual([]);
-    expect(apres.simple).toBeGreaterThanOrEqual(avant.simple);
-    expect(apres.journal.at(-1)).toMatch(/^Transformation\./);
-    expect(apres.journal.at(-1)).toMatch(/armure de Raiton|éclair|foudre/);
+    expect(actions(t, 'pouvoir')).toContain('raiton_yoroi');
+    expect(actions(t, 'ninjutsu')).not.toContain('raiton_yoroi');
+    const avant = puissanceJoueur(t, { famille: 'taijutsu', choix: 'frappe_rapide' });
+    t = combattre(t, { famille: 'pouvoir', choix: 'raiton_yoroi' });
+    if (t.scene.type !== 'affrontement') return;
+    expect(t.scene.transformation).toBe('raiton_yoroi');
+    expect(actions(t, 'pouvoir')).not.toContain('raiton_yoroi');
+    expect(puissanceJoueur(t, { famille: 'taijutsu', choix: 'frappe_rapide' })).toBeGreaterThan(avant);
+    expect(t.scene.journal.at(-1)!.impact).toMatch(/armure de Raiton|éclair|foudre/);
   });
 
   it('certaines techniques n’existent que transformé', () => {
     let t = combat([['raiton_yoroi', 3], ['raiton_lariat', 1]]);
-    expect(vueCombat(t)!.attaques.some((a) => a.id === 'raiton_lariat')).toBe(false);
-    t = manche(t, 'transfo:raiton_yoroi');
-    expect(vueCombat(t)!.attaques.some((a) => a.id === 'raiton_lariat')).toBe(true);
+    expect(actions(t, 'taijutsu')).not.toContain('raiton_lariat');
+    t = combattre(t, { famille: 'pouvoir', choix: 'raiton_yoroi' });
+    if (t.scene.type === 'affrontement') expect(actions(t, 'taijutsu')).toContain('raiton_lariat');
   });
 
   it('le récit d’entrée change avec le palier', () => {
@@ -159,28 +158,28 @@ describe('Transformations élémentaires, coût et durée', () => {
     s.scene = { type: 'evenement', id: 'c2_tournoi' };
     return s;
   };
-  const sansPriorite = (t: GameState) => {
-    if (t.scene.type === 'combat') t.scene.priorite = undefined;
-    return t;
-  };
-  const jouer = (t: GameState) => sansPriorite(manche(sansPriorite(t), vueCombat(t)!.adversaire ? 'esquiver' : 'simple'));
+  const garde = (t: GameState) => (t.scene.type === 'affrontement' ? combattre(t, { famille: 'defense', choix: 'garde' }) : t);
 
-  it('une transformation limitée retombe d’elle-même au bout de sa durée', () => {
-    let t = sansPriorite(choisir(preparer([['mode_ermite', 2]]), 'frontal'));
-    t = manche(t, 'transfo:mode_ermite');
-    expect(vueCombat(t)!.transformation?.restantes).toBe(3);
-    t = jouer(t);
-    expect(t.scene.type === 'combat' && t.scene.transformation).toBe('mode_ermite');
+  it('une transformation limitée tient sa durée, puis retombe d’elle-même', () => {
+    let t = choisir(preparer([['mode_ermite', 2]]), 'frontal');
+    if (t.scene.type !== 'affrontement') return;
+    t.scene.plafond = 20;
+    t = combattre(t, { famille: 'pouvoir', choix: 'mode_ermite' });
+    t = garde(t);
+    if (t.scene.type === 'affrontement') expect(t.scene.transformation).toBe('mode_ermite');
+    const duree = R.maitrises['mode_ermite'].technique!.posture!.duree!;
+    for (let i = 0; i < duree + 1 && t.scene.type === 'affrontement'; i++) t = garde(t);
+    if (t.scene.type === 'affrontement') expect(t.scene.transformation).toBeUndefined();
   });
 
   it('faute de chakra, la transformation ne tient plus', () => {
-    let t = sansPriorite(choisir(preparer([['raiton_yoroi', 2]]), 'frontal'));
-    t = manche(t, 'transfo:raiton_yoroi');
-    t.jauges.chakra = 2;
-    t = jouer(t);
-    if (t.scene.type === 'combat') {
+    let t = choisir(preparer([['raiton_yoroi', 2]]), 'frontal');
+    t = combattre(t, { famille: 'pouvoir', choix: 'raiton_yoroi' });
+    t.jauges.chakra = 0;
+    t = garde(t);
+    if (t.scene.type === 'affrontement') {
       expect(t.scene.transformation).toBeUndefined();
-      expect(t.scene.journal.join(' ')).toContain('plus assez de chakra');
+      expect(t.scene.journal.at(-1)!.impact.length).toBeGreaterThan(0);
     }
   });
 

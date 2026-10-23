@@ -285,7 +285,7 @@ export const ARCS_CLANS_3: EventDef[] = [
           attributs: { agilite: 3 },
           maitrises: { taijutsu: 2 },
           succes: { texte: 'Tu glisses, tu tournes, tu laisses {@rival} s’épuiser à briser la glace autour de toi. Au dernier moment, tu lui fais un croc-en-jambe. Victoire sans un gramme de chakra. Ton secret est sauf. Tu en éprouves un soulagement si fort que tu en as honte.', effets: [{ stat: 'attributs.agilite', delta: 3 }, { relation: '@rival', delta: { respect: 6 } }] },
-          echec: { texte: 'Tu perds. Tu aurais pu gagner d’un geste. Tu ne l’as pas fait. Sur le chemin du retour, ta mère te serre l’épaule : « Bien. Très bien. » Elle ne parle pas du combat.', effets: [{ stat: 'attributs.controleEmotionnel', delta: 3 }, { stat: 'social.confianceClan', delta: 3 }] },
+          echec: { texte: 'Tu perds. Tu aurais pu gagner d’un geste. Tu ne l’as pas fait. Sur le chemin du retour, {parent} te serre l’épaule : « Bien. Très bien. » {Parent_il} ne parle pas du combat.', effets: [{ stat: 'attributs.controleEmotionnel', delta: 3 }, { stat: 'social.confianceClan', delta: 3 }] },
         },
       },
       {

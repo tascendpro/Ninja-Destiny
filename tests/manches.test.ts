@@ -1,55 +1,49 @@
 import { describe, expect, it } from 'vitest';
-import { creation } from './aide';
-import { nouvellePartie, choisir, manche, vueCombat, choixVisibles } from '../src/engine/moteur';
+import { creation, jouerCombat } from './aide';
+import { nouvellePartie, choisir, combattre, choixVisibles } from '../src/engine/moteur';
+import { vueAffrontement } from '../src/engine/combat/affrontement';
 import { greffer, etatProgression } from '../src/engine/maitrise';
 import { interpoler } from '../src/engine/texte';
 import { nouveauCtx } from '../src/engine/etat';
 import { R } from '../src/engine/registre';
 
-describe('Combats en plusieurs manches', () => {
-  it('un duel se joue en trois manches, une technique par manche, puis se conclut', () => {
-    const s = nouvellePartie(creation({ village: 'konoha', clan: 'uchiha', element: 'katon' }), 4);
+describe('Tous les combats passent par l’Affrontement', () => {
+  const genin = (graine = 4) => {
+    const s = nouvellePartie(creation({ village: 'konoha', clan: 'uchiha', element: 'katon' }), graine);
     s.jour = s.naissance + 14 * 360;
     s.rang = 'genin';
     s.maitrises['taijutsu'].tier = 2;
     s.maitrises['tai_poing'] = { ...s.maitrises['taijutsu'], id: 'tai_poing', kind: 'jutsu', tier: 2 };
     s.scene = { type: 'evenement', id: 'c2_tournoi' };
+    return s;
+  };
+  it('un duel sans fiche propre s’ouvre en affrontement, se joue manche par manche, puis se conclut sur le texte de la scène', () => {
+    const s = genin();
     const ch = choixVisibles(s, R.evenements['c2_tournoi']).find((c) => c.id === 'frontal')!;
-    expect(ch.manches).toBe(3);
-    let t = choisir(s, 'frontal@tai_poing');
-    expect(t.scene.type).toBe('combat');
-    const v = vueCombat(t)!;
-    expect(v.manche).toBe(1);
-    expect(v.journal[0]).toContain('Poing ferré');
-    // Quand l'adversaire prend l'initiative, on ne peut qu'esquiver ou contrer.
-    const jouer = (x: typeof t, attaque: string) => manche(x, vueCombat(x)!.adversaire ? 'esquiver' : attaque);
-    t = jouer(t, 'simple');
-    t = jouer(t, vueCombat(t)!.attaques[0]?.id ?? 'simple');
-    // Encore debout après ta dernière attaque, il lance un dernier assaut : le combat finit sur ta défense.
-    if (t.scene.type === 'combat') {
-      expect(t.scene.dernierAssaut).toBe(true);
-      expect(vueCombat(t)!.adversaire).toBeTruthy();
-      t = manche(t, 'esquiver');
-    }
-    expect(t.scene.type).toBe('resultat');
-    expect(t.scene.type === 'resultat' && t.scene.texte).toContain('Manche 3');
-  });
-  it('quand l’adversaire prend l’initiative, sa technique s’esquive ou se contre, et rien d’autre', () => {
-    const s = nouvellePartie(creation({ village: 'konoha', clan: 'uchiha', element: 'katon' }), 4);
-    s.jour = s.naissance + 14 * 360;
-    s.rang = 'genin';
-    s.scene = { type: 'evenement', id: 'c2_tournoi' };
+    expect(ch.affrontement).toBeDefined();
     let t = choisir(s, 'frontal');
-    expect(t.scene.type).toBe('combat');
-    if (t.scene.type !== 'combat') return;
-    t.scene.priorite = 'adv_katon_boule';
-    const v = vueCombat(t)!;
-    expect(v.adversaire?.nom).toContain('Boule de feu');
-    expect(v.adversaire!.esquive).toBeGreaterThan(0);
-    expect(v.adversaire!.contre).toBeLessThan(v.adversaire!.esquive + 30);
-    expect(() => manche(t, 'simple')).toThrow();
-    const apres = manche(t, 'contrer');
-    expect(apres.scene.type === 'combat' ? apres.scene.journal.at(-1) : '').toContain('Boule de feu');
+    expect(t.scene.type).toBe('affrontement');
+    const v = vueAffrontement(t)!;
+    expect(v.familles.some((f) => f.actions.some((a) => a.id === 'tai_poing'))).toBe(true);
+    t = jouerCombat(t, (vv) => (vv.familles.find((f) => f.id === 'taijutsu')?.actions.some((a) => a.id === 'tai_poing' && a.disponible) ? { famille: 'taijutsu', choix: 'tai_poing' } : undefined));
+    expect(t.scene.type).toBe('resultat');
+  });
+  it('une esquive réussie à la dernière manche n’achève pas le combat : il reste une manche pour contre-attaquer', () => {
+    let vu = false;
+    for (let g = 1; g < 60 && !vu; g++) {
+      const s = genin(g);
+      let t = choisir(s, 'frontal');
+      if (t.scene.type !== 'affrontement') continue;
+      t.scene.plafond = t.scene.manche;
+      t = combattre(t, { famille: 'defense', choix: 'esquive' });
+      if (t.scene.type === 'affrontement' && t.scene.prolonge) {
+        vu = true;
+        expect(t.scene.plafond).toBe(t.scene.manche);
+        t = combattre(t, { famille: 'taijutsu', choix: 'frappe_rapide' });
+        expect(t.scene.type).not.toBe('affrontement');
+      }
+    }
+    expect(vu).toBe(true);
   });
 });
 

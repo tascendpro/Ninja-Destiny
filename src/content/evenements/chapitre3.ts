@@ -67,7 +67,10 @@ export const CHAPITRE3: EventDef[] = [
     si: ACTIF,
     personnages: ['@kage'],
     texte: [
-      { texte: 'Les cloches de la tour sonnent trois fois, puis trois fois encore. Le {kage} parle depuis le toit, devant le village entier : la guerre est déclarée. La Troisième Grande Guerre, dira-t-on plus tard. Pour l’instant, c’est seulement le jour où ta mère a pleuré en préparant ton sac.' },
+      { texte: 'Les cloches de la tour sonnent trois fois, puis trois fois encore. Le {kage} parle depuis le toit, devant le village entier : la guerre est déclarée. La Troisième Grande Guerre, dira-t-on plus tard.' },
+      { si: { tout: [{ drapeau: 'orphelin' }, { pnj: '@parent', etat: ['vivant', 'blesse'] }] }, texte: 'Pour l’instant, c’est seulement le jour où {parent}, à l’orphelinat, a glissé une boule de riz de plus dans ton sac, sans rien dire, comme pour tous ceux qui sont partis avant toi.' },
+      { si: { pnj: '@parent', etat: ['mort', 'disparu'] }, texte: 'Pour l’instant, c’est seulement le jour où tu as préparé ton sac seul·e, dans une maison trop calme.' },
+      { si: { tout: [{ drapeau: 'orphelin', absent: true }, { pnj: '@parent', etat: ['vivant', 'blesse'] }] }, texte: 'Pour l’instant, c’est seulement le jour où {parent} a pleuré en préparant ton sac.' },
       ...segmentsParVillage({
         konoha: 'Konoha fait face à Iwa au nord et à des escarmouches de Kumo à l’est. Le Conseil veut une guerre courte ; personne ne croit qu’elle le sera.',
         suna: 'Suna se bat aux côtés de Konoha, par alliance plus que par conviction. Le daimyō du Vent a coupé les vivres il y a deux ans ; il les rend aujourd’hui, contre du sang.',

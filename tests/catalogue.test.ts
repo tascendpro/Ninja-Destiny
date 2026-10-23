@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { creation } from './aide';
-import { choisir, choixVisibles, manche, nouvellePartie, vueCombat } from '../src/engine/moteur';
+import { creation, jouerCombat } from './aide';
+import { choisir, choixVisibles, nouvellePartie } from '../src/engine/moteur';
 import { attaqueDisponible } from '../src/engine/epreuves';
 import { blocageApprentissage } from '../src/engine/maitrise';
 import { decorScene } from '../src/engine/decors';
@@ -18,6 +18,10 @@ const adulte = (clan = 'sans_clan', graine = 5): GameState => {
   s.jauges.chakra = 300;
   return s;
 };
+/** Le défi du dojo, en ouvrant les portes dès la première manche. */
+const huitiemePorte = (s: GameState): GameState =>
+  jouerCombat(choisir(s, 'defier'), (v) => (v.familles.find((f) => f.id === 'pouvoir')?.actions.some((a) => a.id === 'tai_portes' && a.disponible) ? { famille: 'pouvoir', choix: 'tai_portes' } : undefined));
+
 const donner = (s: GameState, id: string, tier = 1) => {
   s.maitrises[id] = { ...s.maitrises['taijutsu'], id, kind: 'jutsu', awakened: true, tier: tier as 1, trainingDays: 0, bloquee: false };
 };
@@ -70,8 +74,10 @@ describe('Techniques jouables : clans et kinjutsu', () => {
     const s = adulte('uzumaki');
     donner(s, 'shiki_fujin');
     s.scene = { type: 'evenement', id: 'c2_tournoi' };
-    let t = choisir(s, 'frontal@shiki_fujin');
-    while (t.scene.type === 'combat') t = manche(t, vueCombat(t)!.adversaire ? 'contrer' : 'simple');
+    s.jauges.chakraMax = 400;
+    s.jauges.chakra = 400;
+    let t = choisir(s, 'frontal');
+    t = jouerCombat(t, (v) => (v.familles.find((f) => f.id === 'ninjutsu')?.actions.some((a) => a.id === 'shiki_fujin' && a.disponible) ? { famille: 'ninjutsu', choix: 'shiki_fujin' } : undefined));
     expect(t.fin?.id).toBe('mort');
     expect(String(t.drapeaux['cause_mort'])).toContain('Shiki Fūjin');
   });
@@ -85,7 +91,7 @@ describe('Techniques jouables : clans et kinjutsu', () => {
         s.scene = { type: 'evenement', id: 'e_dojo' };
         s.statut = 'errant';
         s.drapeaux['errance_voie'] = 'dojo';
-        const t = choisir(s, 'defier@tai_portes');
+        const t = huitiemePorte(s);
         if (t.fin?.id === 'mort' || t.drapeaux['sacrifice']) tier === 4 ? morts4++ : morts5++;
       }
     }
@@ -139,7 +145,7 @@ describe('Utilité des techniques de soutien', () => {
       s.scene = { type: 'evenement', id: 'e_dojo' };
       s.statut = 'errant';
       s.drapeaux['errance_voie'] = 'dojo';
-      if (choisir(s, 'defier@tai_portes').fin?.id === 'mort') morts++;
+      if (huitiemePorte(s).fin?.id === 'mort') morts++;
     }
     expect(morts).toBeGreaterThan(150);
     expect(morts).toBeLessThan(190);
@@ -166,8 +172,7 @@ describe('Utilité des techniques de soutien', () => {
       donner(s, 'kawarimi', 5);
       s.scene = { type: 'evenement', id: 'e_duel' };
       s.statut = 'errant';
-      let t = choisir(s, 'accepter');
-      while (t.scene.type === 'combat') t = manche(t, vueCombat(t)!.adversaire ? 'esquiver' : 'simple');
+      const t = jouerCombat(choisir(s, 'accepter'), (v) => (v.familles.find((f) => f.id === 'taijutsu')?.actions[0].disponible ? { famille: 'taijutsu', choix: 'frappe_rapide' } : undefined));
       if (t.fin?.id === 'mort') morts++;
       if (t.drapeaux['permutations_salvatrices']) sauves++;
     }

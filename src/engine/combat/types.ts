@@ -5,9 +5,9 @@
 
 import type { Condition, Effect, ElementId, Texte } from '../types';
 
-export type Famille = 'taijutsu' | 'ninjutsu' | 'defense' | 'observation' | 'parole' | 'fuite';
+export type Famille = 'taijutsu' | 'ninjutsu' | 'arme' | 'pouvoir' | 'defense' | 'objet' | 'observation' | 'parole' | 'fuite';
 /** Ordre d'affichage, et ordre de priorité quand l'âge limite le nombre de familles visibles. */
-export const FAMILLES: Famille[] = ['taijutsu', 'ninjutsu', 'defense', 'observation', 'parole', 'fuite'];
+export const FAMILLES: Famille[] = ['taijutsu', 'ninjutsu', 'arme', 'pouvoir', 'defense', 'objet', 'observation', 'parole', 'fuite'];
 
 export type Temperament = 'prudent' | 'feroce' | 'joueur' | 'froid' | 'desespere' | 'fier';
 export type NiveauAdv = 'enfant' | 'eleve' | 'genin' | 'chunin' | 'jonin' | 'elite' | 'kage' | 'biju';
@@ -130,6 +130,8 @@ export interface AdversaireDef {
   pnj?: string;
   /** Niveau fixe, ou déduit de l'âge du joueur (un rival grandit avec lui). */
   niveau: NiveauAdv | 'selon_age';
+  /** Avec « selon_age » : combien de crans au-dessus (ou en dessous) du niveau du joueur. */
+  ecartNiveau?: number;
   temperament: Temperament;
   /** Bascule de tempérament : touché deux fois, ou sous un seuil d'endurance (en %). */
   bascule?: { vers: Temperament; quand: 'touche_deux_fois' | 'sous_40' | 'sous_20' };
@@ -151,6 +153,10 @@ export interface AdversaireDef {
   resistances?: Partial<Record<ElementId | 'decisif', number>>;
   /** Un adversaire récurrent garde un registre de ce qu'il a vu de toi. */
   recurrent?: boolean;
+  /** Genre grammatical, quand il n'est pas un personnage du jeu (« L'escouade » : féminin). */
+  genre?: 'm' | 'f';
+  /** Plusieurs ennemis : une technique de zone les prend tous, une ciblée n'en touche qu'un. */
+  escouade?: boolean;
 }
 
 /** Une issue de conclusion propre à un affrontement : son texte et ses effets (sinon, ceux du CheckDef d'origine). */
@@ -168,6 +174,8 @@ export interface AffrontementDef {
   /** Témoins présents (répliques, réputation). */
   temoins?: string[];
   conclusions?: Partial<Record<FinCombat, ConclusionDef>>;
+  /** Familles interdites par la règle du combat (l'épreuve des lames : ni ninjutsu, ni pouvoirs). */
+  interdit?: Famille[];
 }
 
 /** La mémoire persistante d'un adversaire récurrent (§13). */
@@ -259,6 +267,15 @@ export interface EtatAffrontement {
   vuesCeCombat: Record<string, number>;
   /** À quelle distance vous êtes l'un de l'autre (le récit d'une technique en dépend). */
   distance?: 'loin' | 'proche';
+  /** Une défense réussie à la dernière manche a ouvert une manche de plus : la contre-attaque. */
+  prolonge?: boolean;
+  /** Transformation active, et depuis combien de manches. */
+  transformation?: string;
+  transfoTours?: number;
+  /** Dōjutsu activé : il se paie en chakra à chaque manche. */
+  dojutsu?: string;
+  /** Familles interdites par la règle de ce combat. */
+  interdit?: Famille[];
   actionsJoueur: string[];
   journal: EntreeManche[];
   repliquesUtilisees: Record<string, number>;

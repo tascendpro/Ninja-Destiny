@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { creation } from './aide';
+import { creation, jouerCombat } from './aide';
 import { choisir, continuer, manche, nouvellePartie, vueCombat } from '../src/engine/moteur';
 import { evenementDisponible } from '../src/engine/selection';
 import { R } from '../src/engine/registre';
@@ -20,11 +20,7 @@ const adulte = (graine = 5, force = 100): GameState => {
 };
 
 /** Joue un combat (une ou plusieurs manches) jusqu'au résultat, en esquivant quand l'adversaire a l'initiative. */
-const combattre = (s: GameState, choix: string): GameState => {
-  let t = choisir(s, choix);
-  while (t.scene.type === 'combat') t = manche(t, vueCombat(t)!.adversaire ? 'esquiver' : 'simple');
-  return t;
-};
+const combattre = (s: GameState, choix: string): GameState => jouerCombat(choisir(s, choix), () => ({ famille: 'taijutsu', choix: 'frappe_rapide' }));
 
 describe('Après un combat à mort', () => {
   it('vaincre un adversaire en mission ouvre la scène de son sort, et l’épargner peut le faire revenir', () => {

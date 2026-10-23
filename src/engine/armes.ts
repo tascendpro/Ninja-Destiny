@@ -7,6 +7,27 @@ import { Ctx, ajouterJournal } from './etat';
 import { evaluer } from './conditions';
 import { nouvelleMaitrise } from './maitrise';
 
+/** La valeur d'une arme pour la comparer aux autres : puissance d'abord, puis solidité, vitesse, conduction du chakra et capacités. */
+export function scoreArme(def: WeaponDef): number {
+  const st = def.stats;
+  return st.puissance + st.robustesse * 0.15 + st.vitesse * 0.1 + st.conduction * 0.12 + def.capacites.length * 4;
+}
+
+const SEUILS_RANG_ARME: [number, string][] = [
+  [72, 'SS'],
+  [62, 'S'],
+  [50, 'A'],
+  [42, 'B'],
+  [35, 'C'],
+  [27, 'D'],
+];
+
+/** Le rang d'une arme, de E (l'équipement d'Académie) à SS (les lames dont on raconte l'histoire). */
+export function rangArme(def: WeaponDef): string {
+  const sc = scoreArme(def);
+  return SEUILS_RANG_ARME.find(([min]) => sc >= min)?.[1] ?? 'E';
+}
+
 export function idFamille(famille: string): string {
   return `famille_${famille}`;
 }

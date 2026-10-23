@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Effect, GameState } from '../src/engine/types';
-import { choisir, manche, nouvellePartie, vueCombat } from '../src/engine/moteur';
+import { choisir, combattre, nouvellePartie } from '../src/engine/moteur';
 import { appliquerEffet } from '../src/engine/effets';
 import { defPnj, nouveauCtx } from '../src/engine/etat';
 import { evenementDisponible } from '../src/engine/selection';
@@ -93,11 +93,11 @@ describe('Les arcs de clan', () => {
       s.jauges.chakra = s.jauges.chakraMax = 200;
       s.scene = { type: 'evenement', id: 'cl_uchiha_gardien' };
       s = choisir(s, 'combattre');
-      while (s.scene.type === 'combat' && vueCombat(s)!.adversaire) s = manche(s, 'esquiver');
-      if (s.scene.type !== 'combat') continue;
-      s = manche(s, 'dojutsu:sharingan');
-      if (s.scene.type !== 'combat') continue;
-      const journal = s.scene.journal.join(' ');
+      if (s.scene.type !== 'affrontement') continue;
+      s.scene.plafond = 10;
+      s = combattre(s, { famille: 'pouvoir', choix: 'sharingan' });
+      if (s.scene.type !== 'affrontement') continue;
+      const journal = s.scene.journal.map((j) => j.impact).join(' ');
       const ami = defPnj(s, s.roles['coequipierA'])!.nom;
       expect(journal).toContain(ami);
       expect(journal).toMatch(/recule|relève sa garde|vrai combat/);

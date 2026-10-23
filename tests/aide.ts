@@ -3,6 +3,7 @@ import { ATTRIBUTS } from '../src/engine/types';
 import { coutRepartition } from '../src/engine/progression';
 import { activite, choisir, choixVisibles, combattre, continuer, manche, nouvellePartie, repartir, vueCombat } from '../src/engine/moteur';
 import { vueAffrontement } from '../src/engine/combat/affrontement';
+import type { ActionCombat } from '../src/engine/combat/types';
 import { duoPossible, genererActivites } from '../src/engine/tempsLibre';
 import { R } from '../src/engine/registre';
 import { suivant } from '../src/engine/rng';
@@ -95,7 +96,7 @@ export function poursuivre(depart: GameState, graine: number, maxPas = 1500): Ra
         // Un joueur ordinaire : souvent l'attaque, parfois la défense ou la parole, rarement la fuite.
         const v = vueAffrontement(s)!;
         const possibles = v.familles.flatMap((f) => f.actions.filter((a) => a.disponible).map((a) => ({ famille: f.id, choix: a.id })));
-        const offensives = possibles.filter((p) => p.famille === 'taijutsu' || p.famille === 'ninjutsu');
+        const offensives = possibles.filter((p) => p.famille === 'taijutsu' || p.famille === 'ninjutsu' || p.famille === 'arme');
         const pool = offensives.length && pick(3) > 0 ? offensives : possibles.filter((p) => p.famille !== 'fuite' || pick(4) === 0);
         s = combattre(s, (pool.length ? pool : possibles)[pick((pool.length ? pool : possibles).length)]);
       } else if (s.scene.type === 'resultat' || s.scene.type === 'bilan') {
@@ -120,4 +121,19 @@ export function poursuivre(depart: GameState, graine: number, maxPas = 1500): Ra
     }
   }
   return { etat: s, pas, fin: s.fin?.id, erreurs, passerUtilise, evenements };
+}
+
+/** Joue un affrontement jusqu'au bout : la politique choisit l'action de chaque manche (sinon, la première action offensive possible). */
+export function jouerCombat(depart: GameState, politique?: (v: NonNullable<ReturnType<typeof vueAffrontement>>) => ActionCombat | undefined, max = 40): GameState {
+  let s = depart;
+  for (let i = 0; i < max && s.scene.type === 'affrontement'; i++) {
+    const v = vueAffrontement(s)!;
+    const possibles = v.familles.flatMap((f) => f.actions.filter((a) => a.disponible).map((a) => ({ famille: f.id, choix: a.id })));
+    const voulue = politique?.(v);
+    // Une action voulue mais impossible cette manche (sonné·e, plus de chakra…) cède la place à la première possible.
+    const ok = voulue && possibles.some((p) => p.famille === voulue.famille && p.choix === voulue.choix);
+    const choisie = (ok ? voulue : undefined) ?? possibles.find((p) => p.famille === 'ninjutsu' || p.famille === 'taijutsu' || p.famille === 'arme') ?? possibles[0];
+    s = combattre(s, choisie);
+  }
+  return s;
 }

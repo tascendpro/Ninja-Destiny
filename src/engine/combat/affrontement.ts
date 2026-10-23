@@ -14,22 +14,29 @@ import { CHANCE_MORT } from '../epreuves';
 import type { ActionCombat, AdversaireDef, AffrontementDef, EtatAffrontement, FinCombat, IntentionAdv, RegistreAdversaire } from './types';
 import { CONTEXTES, LIBELLE_NIVEAU, bonusRang, fourchettePlafond, indexNiveau, niveauJoueur } from './contextes';
 import { adversaireDef, niveauAdversaire, nomAdversaire, registreDe, statsAdversaire, techniquesAdversaire, temperamentCourant, tirerIntention } from './adversaire';
-import { TAIJUTSU, ACTIONS_FIXES, familles, resoudre, validerAction } from './resolution';
+import { TAIJUTSU, ACTIONS_FIXES, ARME, armeEnMain, familles, resoudre, validerAction } from './resolution';
+import { CONSOMMABLE } from '../consommables';
+import { chancePermutation } from '../epreuves';
+import { idFamille } from '../armes';
 import type { ResultatManche, VueFamille } from './resolution';
 import { choisirReplique, choisirVariante, noterReplique } from './selection';
 import { texteRepetition } from './repetition';
-import { texteImpact, texteImpactJoueur, texteSombre, texteTechniqueTouche } from './impacts';
+import { texteImpact, texteImpactJoueur, texteSombre, texteTechniqueTouche, tirageTexte } from './impacts';
+import { PORTEE_ESCOUADE } from '../../content/combat/impacts';
+import { porteeTechnique } from '../epreuves';
 import type { FaitsManche } from './selection';
+import { affrontementGenerique } from './generique';
 import { NIVEAUX } from './types';
 
+/** Le combat d'un choix : sa fiche s'il en a une, sinon un combat tiré de son épreuve. Tous les combats passent par ici. */
 export function affrontementPour(evenementId: string, choixId: string): AffrontementDef | undefined {
-  return R.contenu.racine.affrontements[`${evenementId}/${choixId}`];
+  return R.contenu.racine.affrontements[`${evenementId}/${choixId}`] ?? affrontementGenerique(evenementId, choixId);
 }
 
 /** Le genre de l'adversaire, pour accorder les textes ({il}, {Il}, {lui}, {e}). */
 function genreAdv(s: GameState, d: AdversaireDef): 'm' | 'f' {
   if (d.pnj) return defPnj(s, resoudrePnj(s, d.pnj))?.genre ?? 'm';
-  return 'm';
+  return d.genre ?? 'm';
 }
 
 export function accorderAdv(texte: string, genre: 'm' | 'f'): string {
@@ -74,6 +81,7 @@ export function ouvrirAffrontement(s: GameState, ev: EventDef, ch: ChoiceDef): v
     evenementId: ev.id,
     choixId: ch.id,
     contexte: af.contexte,
+    interdit: af.interdit,
     adversaireId: d.id,
     registreId,
     nomAdversaire: nomAdversaire(s, d),
@@ -124,7 +132,9 @@ function ouvrirManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef): voi
   const p = yeux || habitudeConnue ? 1 : clamp(0.5 + (s.attributs.perception - st.discretion) / 100 + (sc.lecture.niveau ? 0.1 : 0), 0.2, 0.95);
   const letal = CONTEXTES[sc.contexte].letal;
   const pct = sc.joueur.endurance / sc.joueur.enduranceMax;
-  const mortelle = letal && (sc.intention === 'majeure' || sc.intention === 'preparer' || pct < 0.4);
+  // Il cherche à en finir : sa grande technique, une préparation, toi à bout, ou toi qui perds à l'avant-dernière manche.
+  const perdAuxPoints = sc.manche >= sc.plafond - 1 && pct < sc.adv.endurance / sc.adv.enduranceMax;
+  const mortelle = letal && (sc.intention === 'majeure' || sc.intention === 'preparer' || pct < 0.4 || perdAuxPoints);
   let fiab: EtatAffrontement['annonce']['fiabilite'] = rFiab < p ? 'fiable' : d.feinte && rFiab > 0.85 ? 'trompeur' : 'vague';
   if (mortelle && fiab === 'trompeur') fiab = 'vague';
   const montree: IntentionAdv = fiab === 'trompeur' ? (sc.intention === 'attaque' ? 'defense' : 'attaque') : sc.intention;
@@ -172,6 +182,13 @@ export function jouerAffrontement(s: GameState, a: ActionCombat, ctx: Ctx): Conc
   const entree = composerManche(s, sc, d, a, res, annonce, r.texte, r.replique);
   sc.journal.push(entree);
   sc.actionsJoueur.push(a.choix);
+  // Une esquive ou une permutation réussie à la dernière manche ouvre sa garde : on ne finit pas sur une défense,
+  // il reste une manche pour contre-attaquer (une seule fois par combat).
+  const defenseReussie = a.famille === 'defense' && a.choix !== 'garde' && res.reussi;
+  if (sc.manche >= sc.plafond && defenseReussie && !sc.prolonge && sc.joueur.endurance > 0 && sc.adv.endurance > 0 && !res.fin) {
+    sc.prolonge = true;
+    sc.plafond += 1;
+  }
   const fin: FinCombat | undefined =
     sc.joueur.endurance <= 0 ? 'defaite' : sc.adv.endurance <= 0 ? 'victoire' : res.fin ? res.fin : sc.manche >= sc.plafond ? departage(sc) : undefined;
   if (fin) return conclure(s, sc, d, fin, ctx);
@@ -192,6 +209,8 @@ function departage(sc: EtatAffrontement): FinCombat {
 
 function nomAction(a: ActionCombat): string {
   if (TAIJUTSU[a.choix]) return TAIJUTSU[a.choix].nom;
+  if (a.famille === 'arme' && ARME[a.choix]) return ARME[a.choix].nom;
+  if (a.famille === 'objet' && CONSOMMABLE[a.choix]) return CONSOMMABLE[a.choix].nom;
   if (R.maitrises[a.choix]) return R.maitrises[a.choix].nom;
   for (const g of Object.values(ACTIONS_FIXES)) if (g[a.choix]) return g[a.choix].nom;
   return a.choix;
@@ -205,18 +224,19 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
   const vari = (cle: string) => accorderAdv(choisirVariante(recits[cle] ?? recits[cle.split(':').slice(0, -1).join(':')] ?? [], rTexte).replace(/\{tech\}/g, tech?.nom ?? nomAction(a)).replace(/\{nom\}/g, sc.nomAdversaire), genre);
   const nature = tech?.element;
   // Combien de fois cette action avait déjà servi dans ce combat (le compteur inclut déjà celle-ci).
-  const deja = (a.famille === 'taijutsu' || a.famille === 'ninjutsu') ? Math.max(0, (sc.vuesCeCombat[a.choix] ?? 1) - 1) : 0;
+  const offensive = a.famille === 'taijutsu' || a.famille === 'ninjutsu' || a.famille === 'arme';
+  const deja = offensive ? Math.max(0, (sc.vuesCeCombat[a.choix] ?? 1) - 1) : 0;
   let execution = '';
-  if (a.famille === 'taijutsu' || a.famille === 'ninjutsu') {
+  if (offensive) {
     const base = a.famille === 'ninjutsu' ? `Tu composes les signes : ${tech?.nom ?? nomAction(a)}.` : `${nomAction(a)}.`;
-    execution = `${base} ${vari(`exec:${res.execution}${res.execution === 'ratee' ? `:${a.famille}` : ''}`)}`.trim();
+    execution = `${base} ${vari(`exec:${res.execution}${res.execution === 'ratee' ? `:${a.famille === 'arme' ? 'taijutsu' : a.famille}` : ''}`)}`.trim();
     // Relancée dans ce combat : le récit change (§11.3) ; seule une exécution ratée garde son propre récit.
     const rep = texteRepetition(a.choix, tech?.nom ?? nomAction(a), deja, sc.manche + deja);
     if (rep && res.execution !== 'ratee') execution = accorderAdv(rep.recit, genre);
   } else execution = `${nomAction(a)}.`;
   let impact = res.impact;
   // Taijutsu : on est au contact. Sinon, la distance de la manche d'avant.
-  const distance = a.famille === 'taijutsu' ? 'proche' : (sc.distance ?? 'loin');
+  const distance = a.famille === 'taijutsu' || a.famille === 'arme' ? 'proche' : (sc.distance ?? 'loin');
   const porte = res.issue === 'touche' || res.issue === 'surprise' || res.issue === 'decisive';
   if (res.issue) {
     const cle = nature && recits[`${nature}:${res.issue}`] ? `${nature}:${res.issue}` : `${a.famille}:${res.issue}`;
@@ -228,10 +248,16 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
     const lourd = res.issue === 'decisive' || res.issue === 'surprise' || deja >= 2 || res.inflige >= sc.adv.enduranceMax * 0.25;
     // Dans un combat où l'on peut tuer, la troisième fois, la technique finit ce qu'elle a commencé.
     if (tech && deja >= 2 && CONTEXTES[sc.contexte].letal) impact += ` ${accorderAdv(texteSombre(s, a.choix, `${sc.manche}`), genre)}`;
-    impact += ` ${accorderAdv(texteImpact(s, lourd ? 'lourd' : 'leger', `${sc.manche}`), genre)}`;
+    impact += ` ${accorderAdv(texteImpact(s, d.escouade ? 'groupe' : lourd ? 'lourd' : 'leger', `${sc.manche}`), genre)}`;
+    // Plusieurs ennemis : la zone les prend tous, le coup ciblé laisse les autres te contourner.
+    if (d.escouade) {
+      const zone = !!tech && porteeTechnique(a.choix) !== 'cible';
+      const banque = zone ? PORTEE_ESCOUADE.zone : PORTEE_ESCOUADE.expose;
+      impact += ` ${banque[Math.floor(tirageTexte(s, `escouade:${sc.manche}`) * banque.length)]}`;
+    }
     sc.distance = lourd ? 'loin' : distance;
   } else if (a.famille === 'defense' || a.famille === 'fuite') sc.distance = 'loin';
-  else if (sc.intention === 'attaque' || a.famille === 'taijutsu') sc.distance = 'proche';
+  else if (sc.intention === 'attaque' || a.famille === 'taijutsu' || a.famille === 'arme') sc.distance = 'proche';
   if (res.inflige > 0) impact += ` (−${res.inflige} endurance pour {nom})`.replace('{nom}', sc.nomAdversaire);
   if (res.subi > 0) impact += ` ${vari('adv:touche')} ${texteImpactJoueur(s, res.subi >= sc.joueur.enduranceMax * 0.2 ? 'lourd' : 'leger', `${sc.manche}`)} (−${res.subi} endurance)`;
   // Une réplique au plus par manche, selon ce qui vient de se passer.
@@ -307,8 +333,15 @@ function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: Fin
   const outcome = outcomePour(issue, ch);
   const conclusion = af.conclusions?.[fin];
   // La mort n'est jamais la conclusion par défaut : seulement en contexte mortel, après un avertissement donné plus tôt.
-  const peutMourir = regle.letal && fin === 'defaite' && sc.avertissementManche !== undefined && sc.avertissementManche < sc.manche;
-  const mort = peutMourir && rMort < (CHANCE_MORT[s.creation.difficulte] ?? 0.45);
+  // Perdre aux points contre quelqu'un qui veut ta mort peut tuer aussi, un peu moins souvent qu'une défaite à terre.
+  const peutMourir = regle.letal && (fin === 'defaite' || fin === 'departage_perdu') && sc.avertissementManche !== undefined && sc.avertissementManche < sc.manche;
+  let mort = peutMourir && rMort < (CHANCE_MORT[s.creation.difficulte] ?? 0.45) * (fin === 'defaite' ? 1 : 0.75);
+  // Une permutation bien maîtrisée détourne parfois le coup mortel : une bûche le prend à ta place.
+  if (mort && chancePermutation(s) > 0 && tirageTexte(s, `permutation:${sc.evenementId}`) < chancePermutation(s)) {
+    mort = false;
+    s.drapeaux['permutations_salvatrices'] = (Number(s.drapeaux['permutations_salvatrices']) || 0) + 1;
+    ctx.changements.push({ t: 'info', message: 'Permutation ! Le coup qui devait te tuer frappe une bûche. Tu t’en sors, en sang.' });
+  }
 
   // Registre de l'adversaire : ce qu'il a vu de toi, ce qui s'est passé.
   const reg = (s.registresCombat[sc.registreId] ??= nouveauRegistre(sc.registreId));
@@ -365,7 +398,15 @@ function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: Fin
     }
     if (!regle.blessuresLegeres && fin === 'defaite') appliquerEffets(s, [{ blessure: { id: `affrontement_${sc.evenementId}`, nom: 'Blessures d’un combat perdu', gravite: 2, jours: 25 } }], ctx);
   }
-  const xp = [...new Set([...sc.techniquesUtilisees, ...(sc.actionsJoueur.some((x) => TAIJUTSU[x]) ? ['taijutsu'] : []), ...(sc.actionsJoueur.includes('permutation') ? ['kawarimi'] : [])])];
+  const w = armeEnMain(s);
+  const xp = [
+    ...new Set([
+      ...sc.techniquesUtilisees,
+      ...(sc.actionsJoueur.some((x) => TAIJUTSU[x]) ? ['taijutsu'] : []),
+      ...(sc.actionsJoueur.includes('permutation') ? ['kawarimi'] : []),
+      ...(w && sc.actionsJoueur.some((x) => ARME[x]) ? [idFamille(w.famille)] : []),
+    ]),
+  ].filter((id) => s.maitrises[id]);
   applyCombatExperience(s, xp, ctx);
   if (gagneJoueur) noterMerite(s, 'combat');
 

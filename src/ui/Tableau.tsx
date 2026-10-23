@@ -8,13 +8,14 @@ import { age, libelleDuree } from '../engine/calendrier';
 import { accorder } from '../engine/texte';
 import { defPnj, estOrphelin, estProdige, nomComplet } from '../engine/etat';
 import { blocagePalier, exigence, maxTierForAge, porteurJoueur } from '../engine/maitrise';
-import { getWeaponModifiers, idFamille } from '../engine/armes';
+import { getWeaponModifiers, idFamille, rangArme } from '../engine/armes';
 import { checkCareerEligibility, nomPalierMetier } from '../engine/metiers';
 import { noteFinale } from '../engine/fins';
 import { naturesMax } from '../engine/tempsLibre';
 import Portrait from './Portrait';
-import { ATTRIBUT_LIBELLE, ETAT_PNJ, RANG_LIBELLE, SOCIAL_LIBELLE, STATUT_ARME, STATUT_LIBELLE } from './libelles';
+import { ATTRIBUT_LIBELLE, AXE_LIBELLE, ETAT_PNJ, RANG_LIBELLE, SOCIAL_LIBELLE, STATUT_ARME, STATUT_LIBELLE } from './libelles';
 import Repartition from './Repartition';
+import Repli from './Repli';
 import { KANJI_GROUPE, groupeTechnique, libelleGroupe } from './combat/GroupesNature';
 import { classeMulti, styleNatures } from './natures';
 import { naturesMaitrise } from '../engine/tempsLibre';
@@ -90,6 +91,20 @@ export default function Tableau({
 
 const ELEMENTS_BASE = ['katon', 'suiton', 'fuuton', 'raiton', 'doton'] as const;
 
+/** Le tempérament en trois mots : le pôle vers lequel penche chaque axe, ou l'équilibre. */
+function temperamentResume(etat: GameState): string {
+  const mots = (
+    [
+      ['compassion', 'Dur·e', 'Compatissant·e'],
+      ['honneur', 'Rusé·e', 'Honorable'],
+      ['ambition', 'Humble', 'Ambitieux·se'],
+    ] as const
+  )
+    .map(([k, g, d]) => (etat.ethique[k] > 10 ? d : etat.ethique[k] < -10 ? g : undefined))
+    .filter(Boolean) as string[];
+  return accorder(mots.length ? mots.join(' · ') : 'Équilibré·e', etat.creation.presentation);
+}
+
 function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrirPoints: () => void; onArsenal: () => void }) {
   const c = etat.creation;
   const p = c.presentation;
@@ -146,7 +161,7 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
           <div>
             <dt>Arme principale</dt>
             <dd>
-              {arme?.nom ?? 'Aucune'}
+              {arme ? `${arme.nom} · rang ${rangArme(arme)}` : 'Aucune'}
               {etat.arsenal.length > (arme ? 1 : 0) && (
                 <>
                   {' · '}
@@ -178,22 +193,39 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
       </section>
 
       <section className="panneau l5">
-        <h2>État</h2>
+        <Repli
+          libelle="Détails de l’état"
+          resume={
+            <>
+              <h2>État</h2>
+              <p className="resume-ligne">
+                Santé {Math.round(j.sante)} · Chakra {Math.round(j.chakra)}/{Math.round(j.chakraMax)} · Fatigue {Math.round(j.fatigue)}
+                {etat.blessures.length > 0 && <b className="risque-eleve"> · {etat.blessures.length} blessure{etat.blessures.length > 1 ? 's' : ''}</b>}
+              </p>
+            </>
+          }
+        >
         <div className="vitaux-grands">
           <Jauge nom="Santé" valeur={j.sante} classe={j.sante < 30 ? 'c-danger' : 'c-sante'} detail="/ 100" />
           <Jauge nom="Chakra" valeur={j.chakra} max={Math.max(1, j.chakraMax)} classe="c-chakra" detail={`/ ${Math.round(j.chakraMax)}`} />
           <Jauge nom="Fatigue" valeur={j.fatigue} classe={fatigue === 'danger' ? 'c-danger' : fatigue === 'alerte' ? 'c-alerte' : 'c-neutre'} detail="/ 100" />
         </div>
         {etat.blessures.length > 0 && <p className="alerte">Blessures : {etat.blessures.map((b) => b.nom.toLowerCase()).join(', ')}.</p>}
+        </Repli>
       </section>
 
       <section className="panneau l5">
-        <h2>
-          Fiche du Databook
-          <small>
-            Total <span className="total-databook">{noteTexte(db.total)}</span> / 40
-          </small>
-        </h2>
+        <Repli
+          libelle="Détails du Databook"
+          resume={
+            <h2>
+              Fiche du Databook
+              <small>
+                Total <span className="total-databook">{noteTexte(db.total)}</span> / 40
+              </small>
+            </h2>
+          }
+        >
         <p className="sous-titre">Notes de 0,5 à 5, comme dans les registres du village.</p>
         <ul className="databook">
           {db.lignes.map((l) => (
@@ -208,6 +240,7 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
             </li>
           ))}
         </ul>
+        </Repli>
       </section>
 
       {masquer ? (
@@ -231,7 +264,20 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
       )}
 
       <section className="panneau l7">
-        <h2>Place dans le monde</h2>
+        <Repli
+          libelle="Détails de ta place dans le monde"
+          resume={
+            <>
+              <h2>Place dans le monde</h2>
+              {!masquer && (
+                <p className="resume-ligne">
+                  Réputation {Math.round(etat.social.reputation)} · Loyauté {Math.round(etat.social.loyaute)}
+                  {etat.social.suspicion >= 30 && <b className="risque-eleve"> · Suspicion {Math.round(etat.social.suspicion)}</b>}
+                </p>
+              )}
+            </>
+          }
+        >
         <div className="grille-jauges">
           {(Object.keys(SOCIAL_LIBELLE) as SocialId[])
             .filter((k) => !(k === 'confianceClan' && c.clan === 'sans_clan') && !(k === 'reputationOmbre' && etat.social.reputationOmbre === 0))
@@ -245,10 +291,19 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
               />
             ))}
         </div>
+        </Repli>
       </section>
 
       <section className="panneau l5">
-        <h2>Tempérament</h2>
+        <Repli
+          libelle="Détails du tempérament"
+          resume={
+            <>
+              <h2>Tempérament</h2>
+              <p className="resume-ligne">{temperamentResume(etat)}</p>
+            </>
+          }
+        >
         <div className="poles">
           {(
             [
@@ -269,11 +324,23 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
             );
           })}
         </div>
+        </Repli>
       </section>
 
       {etat.promesses.length > 0 && (
         <section className="panneau l6">
-          <h2>Promesses</h2>
+          <Repli
+            libelle="Détails des promesses"
+            resume={
+              <>
+                <h2>Promesses</h2>
+                <p className="resume-ligne">
+                  {etat.promesses.filter((x) => x.etat === 'en_cours').length} en cours · {etat.promesses.filter((x) => x.etat === 'tenue').length} tenue(s) ·{' '}
+                  {etat.promesses.filter((x) => x.etat === 'rompue').length} rompue(s)
+                </p>
+              </>
+            }
+          >
           <ul className="liste-simple">
             {etat.promesses.map((pr) => (
               <li key={pr.id}>
@@ -282,12 +349,18 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
               </li>
             ))}
           </ul>
+          </Repli>
         </section>
       )}
       <section className={`panneau ${etat.promesses.length > 0 ? 'l6' : 'l12'}`}>
-        <h2>
-          Trophées <small>Note provisoire : {note.note}</small>
-        </h2>
+        <Repli
+          libelle="Détails des trophées"
+          resume={
+            <h2>
+              Trophées <small>{etat.succes.length} · note provisoire : {note.note}</small>
+            </h2>
+          }
+        >
         {etat.succes.length === 0 ? (
           <p className="vide">Aucun pour l’instant.</p>
         ) : (
@@ -299,6 +372,7 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
             ))}
           </ul>
         )}
+        </Repli>
       </section>
     </div>
   );
@@ -331,6 +405,10 @@ function LigneMaitrise({ etat, ms, cap, p }: { etat: GameState; ms: MasteryState
   const kanji = def.element ? R.elements[def.element]?.kanji : undefined;
   return (
     <li className="maitrise">
+      <Repli
+        libelle={`Détails de ${def.nom}`}
+        resume={
+          <>
       <div className="m-tete">
         <strong>
           {kanji && <span className="kanji">{kanji} </span>}
@@ -343,6 +421,9 @@ function LigneMaitrise({ etat, ms, cap, p }: { etat: GameState; ms: MasteryState
           <i key={n} className={n <= ms.tier ? 'atteint' : n > cap ? 'plafonne' : ''} />
         ))}
       </div>
+          </>
+        }
+      >
       <p className="m-etat">
         <b>{premier}</b>
         {reste.length > 0 && ` · ${reste.join(' · ')}`}
@@ -354,14 +435,14 @@ function LigneMaitrise({ etat, ms, cap, p }: { etat: GameState; ms: MasteryState
           {def.technique.elements && ` · ${def.technique.elements.map((e) => R.elements[e]?.kanji ?? e).join(' + ')}`}
         </p>
       )}
-      <details>
-        <summary>Détails</summary>
+      <div className="m-details">
         <p>{accorder(def.paliers[ms.tier]?.effet ?? '', p)}</p>
         <p>{def.description}</p>
         {ms.awakenedAtAge !== undefined && def.eveil && <p>Éveillé à {ms.awakenedAtAge} ans.</p>}
         {ms.source === 'copie' && <p>Technique copiée.</p>}
         <p>Coût : {def.cout}</p>
-      </details>
+      </div>
+      </Repli>
     </li>
   );
 }
@@ -484,19 +565,38 @@ function Arsenal({ etat, peutEquiper, onEquiper }: { etat: GameState; peutEquipe
           const palier = etat.maitrises[idFamille(def.famille)]?.tier ?? 0;
           return (
             <div className={`bloc ${def.rarete === 'legendaire' || def.rarete === 'maudite' ? 'legende' : ''}`} key={inst.defId} style={{ opacity: utilisable ? 1 : 0.6 }}>
-              <h3>{def.nom}</h3>
+              <Repli
+                libelle={`Détails de ${def.nom}`}
+                resume={
+                  <>
+              <h3>
+                {def.nom} <span className={`rang-arme r-${rangArme(def)}`}>Rang {rangArme(def)}</span>
+              </h3>
               <span className={`etiquette ${def.rarete === 'legendaire' ? 'or' : ''}`}>{RARETE[def.rarete]}</span>
               <span className={`etiquette ${utilisable ? '' : 'rouge'}`}>{STATUT_ARME[inst.statut]}</span>
               {etat.armeEquipee === inst.defId && <span className="etiquette or">Arme principale</span>}
               {inst.lie && <span className="etiquette violet">Liée</span>}
+              {utilisable && (
+                <div className="ligne">
+                  <span>État</span>
+                  <span className="valeur">{inst.etat}/100</span>
+                  <Piste valeur={inst.etat} classe={inst.etat < 30 ? 'c-danger' : 'c-neutre'} />
+                </div>
+              )}
+              {utilisable && etat.armeEquipee !== inst.defId && (
+                <div className="actions-bas" style={{ marginTop: 10 }}>
+                  <button className="btn-secondaire" disabled={!peutEquiper} onClick={() => onEquiper(inst.defId)}>
+                    En faire mon arme principale
+                  </button>
+                  {!peutEquiper && <span className="sous-titre">Impossible en plein combat.</span>}
+                </div>
+              )}
+                  </>
+                }
+              >
               <p className="sous-titre">{def.description}</p>
               {utilisable && (
                 <>
-                  <div className="ligne">
-                    <span>État</span>
-                    <span className="valeur">{inst.etat}/100</span>
-                    <Piste valeur={inst.etat} classe={inst.etat < 30 ? 'c-danger' : 'c-neutre'} />
-                  </div>
                   {(def.rarete === 'legendaire' || def.rarete === 'maudite') && (
                     <div className="ligne">
                       <span>Lien</span>
@@ -522,16 +622,9 @@ function Arsenal({ etat, peutEquiper, onEquiper }: { etat: GameState; peutEquipe
                       </p>
                     );
                   })}
-                  {etat.armeEquipee !== inst.defId && (
-                    <div className="actions-bas" style={{ marginTop: 12 }}>
-                      <button className="btn-secondaire" disabled={!peutEquiper} onClick={() => onEquiper(inst.defId)}>
-                        En faire mon arme principale
-                      </button>
-                      {!peutEquiper && <span className="sous-titre">Impossible en plein combat.</span>}
-                    </div>
-                  )}
                 </>
               )}
+              </Repli>
             </div>
           );
         })}
@@ -602,9 +695,31 @@ function Metier({ etat }: { etat: GameState }) {
   );
 }
 
+const AXES_RELATION = ['amitie', 'confiance', 'respect', 'attachement', 'rivalite', 'hostilite', 'peur', 'dette'] as const;
+
+/** Ce que vous êtes l'un pour l'autre, en deux mots : l'axe le plus fort décide. */
+function lienResume(r: GameState['relations'][string]): { mot: string; axe: (typeof AXES_RELATION)[number] | undefined; valeur: number } {
+  if (r.rompue) return { mot: 'Lien rompu', axe: undefined, valeur: 0 };
+  const [axe, valeur] = AXES_RELATION.map((a) => [a, r[a]] as const).sort((x, y) => y[1] - x[1])[0];
+  if (valeur < 15) return { mot: 'Connaissance', axe: undefined, valeur };
+  const fort = valeur >= 60;
+  const mots: Record<string, [string, string]> = {
+    amitie: ['Ami·e', 'Ami·e proche'],
+    confiance: ['Fiable', 'Confiance totale'],
+    respect: ['Te respecte', 'T’admire'],
+    attachement: ['Attaché·e', 'Lien profond'],
+    rivalite: ['Rival·e', 'Rival·e acharné·e'],
+    hostilite: ['Hostile', 'Ennemi·e'],
+    peur: ['Méfiant·e', 'Te craint'],
+    dette: ['Te doit', 'Te doit la vie'],
+  };
+  return { mot: mots[axe][fort ? 1 : 0], axe, valeur };
+}
+
 function Relations({ etat }: { etat: GameState }) {
   const ids = Object.keys(etat.relations).filter((id) => etat.pnj[id]?.rencontre || etat.relations[id].souvenirs.length > 0);
   if (!ids.length) return <p className="vide">Personne ne te connaît encore vraiment.</p>;
+  const masquer = etat.creation.difficulte === 'legende';
   return (
     <div className="grille-blocs">
       {ids.map((id) => {
@@ -613,29 +728,43 @@ function Relations({ etat }: { etat: GameState }) {
         const st = etat.pnj[id];
         if (!d) return null;
         const pd: Presentation = d.genre === 'f' ? 'feminin' : 'masculin';
+        const lien = lienResume(r);
+        const negatif = lien.axe === 'hostilite' || lien.axe === 'rivalite' || lien.axe === 'peur';
         return (
-          <div className="bloc" key={id}>
-            <div className="identite" style={{ gap: 10 }}>
-              <Portrait nom={d.nom} village={d.village} clan={d.clan} taille={44} mort={st?.etat === 'mort'} />
-              <div>
-                <h3 style={{ margin: 0 }}>{d.nom}</h3>
-                <span className="sous-titre">{accorder(d.personnalite, pd)}</span>
-              </div>
-            </div>
-            <div style={{ marginTop: 8 }}>
-              {st && st.etat !== 'vivant' && <span className="etiquette rouge">{accorder(ETAT_PNJ[st.etat], pd)}</span>}
+          <div className="bloc relation" key={id}>
+            <Repli
+              libelle={`Détails du lien avec ${d.nom}`}
+              resume={
+                <div className="identite relation-resume">
+                  <Portrait nom={d.nom} village={d.village} clan={d.clan} taille={36} mort={st?.etat === 'mort'} />
+                  <div>
+                    <h3>{d.nom}</h3>
+                    <span className={`lien-mot${negatif ? ' negatif' : ''}${r.rompue ? ' rompu' : ''}`}>
+                      {accorder(lien.mot, pd)}
+                      {lien.axe && !masquer ? ` · ${AXE_LIBELLE[lien.axe]} ${r[lien.axe]}` : ''}
+                    </span>
+                    {st && st.etat !== 'vivant' && <span className="etiquette rouge">{accorder(ETAT_PNJ[st.etat], pd)}</span>}
+                  </div>
+                </div>
+              }
+            >
+              <p className="sous-titre">{accorder(d.personnalite, pd)}</p>
               {r.rompue && <span className="etiquette rouge">Lien rompu</span>}
-            </div>
-            {(['confiance', 'amitie', 'respect', 'attachement', 'rivalite', 'hostilite'] as const)
-              .filter((ax) => r[ax] > 0)
-              .map((ax) => (
+              {AXES_RELATION.filter((ax) => r[ax] > 0).map((ax) => (
                 <div className="ligne" key={ax}>
-                  <span>{ax === 'amitie' ? 'Amitié' : ax === 'rivalite' ? 'Rivalité' : ax === 'hostilite' ? 'Hostilité' : ax.charAt(0).toUpperCase() + ax.slice(1)}</span>
-                  <span className="valeur">{etat.creation.difficulte === 'legende' ? '' : r[ax]}</span>
-                  <Piste valeur={r[ax]} classe={ax === 'hostilite' || ax === 'rivalite' ? 'c-danger' : 'c-neutre'} />
+                  <span>{AXE_LIBELLE[ax].charAt(0).toUpperCase() + AXE_LIBELLE[ax].slice(1)}</span>
+                  <span className="valeur">{masquer ? '' : r[ax]}</span>
+                  <Piste valeur={r[ax]} classe={ax === 'hostilite' || ax === 'rivalite' || ax === 'peur' ? 'c-danger' : 'c-neutre'} />
                 </div>
               ))}
-            {r.souvenirs.length > 0 && <p className="sous-titre">« {r.souvenirs[r.souvenirs.length - 1]} »</p>}
+              {r.souvenirs.length > 0 && (
+                <ul className="souvenirs">
+                  {r.souvenirs.slice(-3).reverse().map((sv, i) => (
+                    <li key={i}>« {sv} »</li>
+                  ))}
+                </ul>
+              )}
+            </Repli>
           </div>
         );
       })}
@@ -653,12 +782,19 @@ function Missions({ etat }: { etat: GameState }) {
         const st = etat.missions[id];
         return (
           <li key={id}>
-            <strong>
-              Rang {m?.rang} : {m?.titre}
-            </strong>{' '}
-            <span className={`etiquette ${st === 'reussie' ? 'or' : st === 'echouee' ? 'rouge' : ''}`}>
-              {st === 'reussie' ? 'réussie' : st === 'echouee' ? 'échouée' : st === 'en_cours' ? 'en cours' : st === 'confiee' ? 'prise par un autre' : 'abandonnée'}
-            </span>
+            <Repli
+              libelle={`Détails de la mission ${m?.titre ?? ''}`}
+              resume={
+                <>
+                  <strong>
+                    Rang {m?.rang} : {m?.titre}
+                  </strong>{' '}
+                  <span className={`etiquette ${st === 'reussie' ? 'or' : st === 'echouee' ? 'rouge' : ''}`}>
+                    {st === 'reussie' ? 'réussie' : st === 'echouee' ? 'échouée' : st === 'en_cours' ? 'en cours' : st === 'confiee' ? 'prise par un autre' : 'abandonnée'}
+                  </span>
+                </>
+              }
+            >
             <div className="sous-titre">
               {st === 'confiee'
                 ? typeof etat.drapeaux[`mission_prise:${id}`] === 'string'
@@ -666,6 +802,7 @@ function Missions({ etat }: { etat: GameState }) {
                   : 'Tu l’as laissée au tableau : une autre équipe l’a prise.'
                 : m?.description}
             </div>
+            </Repli>
           </li>
         );
       })}

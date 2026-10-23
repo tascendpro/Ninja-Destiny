@@ -55,6 +55,10 @@ export function evaluer(c: Condition | undefined, s: GameState): boolean {
     if (c.palierMax !== undefined && m.tier > c.palierMax) return false;
     return true;
   }
+  if ('armeEnMain' in c) {
+    const inst = s.armeEquipee ? s.arsenal.find((a) => a.defId === s.armeEquipee) : undefined;
+    return (!!inst && STATUTS_ARME_UTILISABLES.includes(inst.statut)) === c.armeEnMain;
+  }
   if ('arme' in c) {
     const inst = s.arsenal.find((a) => a.defId === c.arme);
     if (!inst) return false;

@@ -60,8 +60,9 @@ function famille(s: GameState): { conjointF: boolean; enfantF: boolean; conjoint
   return {
     conjointF,
     enfantF,
-    conjointNom: pick(conjointF ? noms?.f : noms?.m, s.naissance * 7 + 3),
-    enfantNom: pick(enfantF ? noms?.f : noms?.m, s.naissance * 13 + 11),
+    // Le nom choisi par le joueur l'emporte ; sinon, un nom du village, toujours le même pour cette vie.
+    conjointNom: typeof s.drapeaux['conjoint_nom'] === 'string' ? (s.drapeaux['conjoint_nom'] as string) : pick(conjointF ? noms?.f : noms?.m, s.naissance * 7 + 3),
+    enfantNom: typeof s.drapeaux['enfant_nom'] === 'string' ? (s.drapeaux['enfant_nom'] as string) : pick(enfantF ? noms?.f : noms?.m, s.naissance * 13 + 11),
   };
 }
 

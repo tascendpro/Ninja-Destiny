@@ -22,6 +22,15 @@ export const RECITS: ContenuRacine['recits'] = {
   'taijutsu:ecrasee': ['Son coup traverse le tien et te cueille au menton.', 'Tu frappes, mais sa force balaie ton bras et t’atteint en pleine poitrine.'],
   'taijutsu:decisive': ['Tu trouves l’ouverture qu’{il} t’avait laissée sans le savoir. Un seul coup, et {il} tombe à genoux.', 'Ton coup arrive exactement là où {il} ne se protégeait plus. {Il} s’effondre.'],
 
+  // ── Les sept issues d'une attaque : l'arme ──
+  'arme:touche': ['Ta lame trouve son bras. Le tissu s’ouvre, puis la peau.', 'L’acier claque contre sa garde, glisse, et mord son épaule.', 'Tu passes sous sa parade : ta lame lui ouvre la cuisse.'],
+  'arme:surprise': ['{Il} attendait un coup de poing. C’est l’acier qui arrive, et {il} ne l’a pas vu sortir.', 'Le geste est trop rapide pour {lui} : la lame est déjà revenue au fourreau quand {il} sent la coupure.'],
+  'arme:predite': ['{Il} lit ton épaule et recule d’un demi-pas : ta lame fend l’air à un doigt de sa gorge.', '{Il} attendait cette coupe. Ta lame ne rencontre que le vide.'],
+  'arme:annulee': ['Vos deux lames se croisent avec un cri de métal. Des étincelles, et personne ne passe.', 'Acier contre acier : le choc vous remonte jusqu’aux épaules.'],
+  'arme:dominee': ['Ta coupe est juste, mais {il} pare plus fort et ta lame dévie.', '{Il} bloque ta lame et la repousse ; ta garde s’ouvre.'],
+  'arme:ecrasee': ['Sa force traverse ta parade : ta propre lame te revient contre l’épaule.', 'Ta lame est balayée de ta main un instant ; son coup arrive avant que tu la rattrapes.'],
+  'arme:decisive': ['Une seule coupe, du fourreau à sa garde ouverte. {Il} tombe à genoux, puis en avant.', 'Ta lame trouve l’endroit exact où {il} ne se protégeait plus. Le combat s’arrête là.'],
+
   // ── Les sept issues d'une attaque : ninjutsu (sans nature particulière) ──
   'ninjutsu:touche': ['{tech} le frappe de plein fouet. {Il} titube.', 'La technique part droit sur {lui}. {Il} encaisse, en serrant les dents.'],
   'ninjutsu:surprise': ['{Il} attendait un projectile. {tech} part autrement. {Il} réagit trop tard.', '{Il} n’avait jamais vu cette technique. Ça se voit sur son visage.'],

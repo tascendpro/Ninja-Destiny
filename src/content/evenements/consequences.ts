@@ -26,8 +26,74 @@ const DUEL = { drapeau: 'verdict_forme', egal: 'duel' } as const;
 const SENSEI_PRESENT: Condition = { tout: [{ statut: 'actif' }, { rang: 'genin' }, { age: { max: 16 } }, { pnj: '@sensei', etat: ['vivant', 'blesse'] }] };
 /** Ton coéquipier est dans la mêlée quand le combat avait des alliés. */
 const AMI_PRESENT: Condition = { tout: [{ statut: 'actif' }, { drapeau: 'verdict_allies' }, { pnj: '@coequipierA', etat: ['vivant', 'blesse'] }] };
+/** Les villages qui ne pardonnent pas qu'on achève des vaincus. Kiri, la Brume sanglante, et Iwa ferment les yeux. */
+const VILLAGE_STRICT: Condition = { village: ['konoha', 'suna', 'kumo'] };
+/** Ceux qui ont vu : leur regard change, et ils s'en souviennent. */
+const TEMOINS_CHOQUES: Effect[] = [
+  { relation: '@coequipierA', delta: { peur: 6, amitie: -4, confiance: -3 } },
+  { relation: '@coequipierB', delta: { peur: 4, respect: -2 } },
+  { drapeau: 'temoins_choques', incr: 1 },
+  { journal: 'Tes équipiers t’ont vu achever un homme à terre. Ils ne te regardent plus pareil.', importance: 2 },
+];
 
 export const CONSEQUENCES: EventDef[] = [
+  // ── Le sang de trop : le conseil convoque celui ou celle qui achève les vaincus ──
+  {
+    ...base,
+    id: 'x_conseil_sang',
+    titre: 'Le conseil',
+    categorie: 'mission',
+    lieu: '$village',
+    planifieParMoteur: true,
+    si: { tout: [{ statut: 'actif' }, { drapeau: 'conseil_sang', absent: true }] },
+    texte: [
+      { texte: 'Deux ANBU t’attendent devant ta porte. Pas de masque baissé, pas de mot de trop : le conseil veut te voir. Maintenant.' },
+      { texte: 'Dans la salle, les anciens ont devant eux un dossier. Ton nom, et la liste de ceux que tu as achevés à terre. « Un ninja de ce village tue quand il doit. Pas quand il peut. On nous rapporte que tu ne fais plus la différence. »' },
+      { si: { drapeau: 'temoins_choques' }, texte: 'Tu reconnais l’écriture d’un des rapports. Celle de {@coequipierA}.' },
+    ],
+    choix: [
+      {
+        id: 'justifier',
+        texte: 'Te justifier : chaque fois, c’était eux ou nous',
+        test: {
+          type: 'competence',
+          difficulte: 55,
+          attributs: { charisme: 3, intellect: 1, controleEmotionnel: 2 },
+          succes: {
+            texte: 'Tu parles longtemps, calmement. De chaque nom, de chaque mission, de ce qui serait arrivé s’ils s’étaient relevés. Le silence qui suit dure une éternité. « Un avertissement. Le dernier. » On te laisse partir. Dans le couloir, tu sens les regards dans ton dos.',
+            effets: [{ drapeau: 'conseil_sang', valeur: 'averti' }, { stat: 'social.suspicion', delta: 10 }, { stat: 'social.reputation', delta: -4 }],
+          },
+          echec: {
+            texte: 'Tes mots tombent à plat. Tu le vois dans leurs yeux avant qu’ils parlent. « Tu quittes le village avant la lune nouvelle. Ton bandeau reste ici. » Personne ne te raccompagne à la porte. Personne n’en a besoin.',
+            effets: [{ drapeau: 'conseil_sang', valeur: 'exile' }, { statut: 'exile' }, { stat: 'social.loyaute', delta: -20 }, { journal: 'Exilé·e par le conseil pour les vaincus que tu as achevés.', importance: 3 }],
+          },
+        },
+      },
+      {
+        id: 'accepter',
+        texte: 'Ne rien dire, et accepter leur sentence',
+        effets: [
+          {
+            hasard: [
+              { poids: 55, effets: [{ drapeau: 'conseil_sang', valeur: 'averti' }, { stat: 'social.suspicion', delta: 6 }, { stat: 'social.loyaute', delta: 3 }] },
+              { poids: 45, effets: [{ drapeau: 'conseil_sang', valeur: 'exile' }, { statut: 'exile' }, { stat: 'social.loyaute', delta: -10 }, { journal: 'Exilé·e par le conseil pour les vaincus que tu as achevés.', importance: 3 }] },
+            ],
+          },
+        ],
+        resultat: [
+          { si: { drapeau: 'conseil_sang', egal: 'averti' }, texte: 'Ton silence les surprend. Ils s’attendaient à des excuses ou à de la colère. « Un avertissement, alors. » Tu inclines la tête et tu sors.' },
+          { si: { drapeau: 'conseil_sang', egal: 'exile' }, texte: 'Ton silence leur suffit. « Tu quittes le village avant la lune nouvelle. » Tu poses ton bandeau sur la table toi-même. Le bruit du métal sur le bois te poursuivra longtemps.' },
+        ],
+      },
+      {
+        id: 'fuir',
+        texte: 'Sauter par la fenêtre avant la sentence',
+        effets: [{ drapeau: 'conseil_sang', valeur: 'fui' }, { statut: 'deserteur' }, { stat: 'social.loyaute', delta: -40 }, { journal: 'Tu as fui le conseil. Ton nom est sur la liste des déserteurs.', importance: 3 }],
+        resultat: 'Le verre éclate, les toits défilent. Derrière toi, les cloches sonnent. Ce soir, ton visage est dans le Bingo Book de ton propre village.',
+      },
+    ],
+  },
+
   // ── L'adversaire à ta merci ──
   {
     ...base,
@@ -59,6 +125,9 @@ export const CONSEQUENCES: EventDef[] = [
               { stat: 'attributs.controleEmotionnel', delta: -1 },
               { drapeau: 'ennemis_acheves', incr: 1 },
               { journal: 'Tu as achevé un ennemi vaincu.', importance: 2 },
+              { si: AMI_PRESENT, alors: TEMOINS_CHOQUES },
+              // Trop de vaincus achevés, dans un village qui ne le tolère pas : le conseil s'en mêle.
+              { si: { tout: [{ statut: 'actif' }, VILLAGE_STRICT, { drapeau: 'ennemis_acheves', min: 3 }, { drapeau: 'conseil_sang', absent: true }] }, alors: [{ planifier: 'x_conseil_sang', dansJours: 20 }] },
             ],
             sinon: [
               { ethique: { compassion: 2 } },
@@ -71,6 +140,7 @@ export const CONSEQUENCES: EventDef[] = [
         ],
         resultat: [
           { si: { drapeau: 'verdict_issue', egal: 'tue' }, texte: 'Tu ne détournes pas les yeux. C’est la seule politesse qu’il te reste à lui faire. Le soir, en lavant tes mains, tu frottes plus longtemps que nécessaire.' },
+          { si: { tout: [{ drapeau: 'verdict_issue', egal: 'tue' }, AMI_PRESENT] }, texte: '{@coequipierA} a tout vu. {Il:@coequipierA} ne dit rien sur le chemin du retour. Le soir, autour du feu, {il:@coequipierA} s’assoit de l’autre côté. Quand tu lèves les yeux, {il:@coequipierA} détourne les siens, une demi-seconde trop vite.' },
           { si: { drapeau: 'verdict_issue', egal: 'sensei' }, texte: 'Ta lame s’arrête à un pouce de sa gorge : {@sensei} te tient le poignet. « On ne tue pas un homme à terre parce qu’on peut. On le tue parce qu’on doit. Là, tu ne dois pas. » L’ennemi en profite pour disparaître dans les fourrés.' },
           { si: { drapeau: 'verdict_issue', egal: 'ami' }, texte: '{@coequipierA} se jette entre vous. « Il est fini. Regarde-le. Il est fini. » Tu baisses ta lame. L’homme rampe jusqu’aux arbres. Tu ne sais pas si tu en veux à ton ami{e:@coequipierA}, ou si tu lui dois quelque chose.' },
         ],
