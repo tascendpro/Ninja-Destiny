@@ -27,6 +27,9 @@ import { R } from './registre';
 import { JOURS_AN, age, ageA, libelleDuree, libellePeriode } from './calendrier';
 import { Ctx, ajouterJournal, clamp, cloner, defPnj, nomDeFamille, nouveauCtx, resoudrePnj } from './etat';
 import { alea, aleaEntier, tirerPondere } from './rng';
+import { affrontementPour, jouerAffrontement, ouvrirAffrontement } from './combat/affrontement';
+import { CONTEXTES } from './combat/contextes';
+import type { ActionCombat } from './combat/types';
 import { reagirTransformation } from './reactions';
 import { evaluer } from './conditions';
 import { appliquerEffets } from './effets';
@@ -150,6 +153,7 @@ function etatVide(c: Creation, graine: number): GameState {
     merites: {},
     anniversaires: [],
     consommables: {},
+    registresCombat: {},
     statut: 'actif',
     metier: { palier: 0, historique: [] },
     maitrises: {},
@@ -489,7 +493,7 @@ export function nouvellePartie(creation: Creation, graine?: number, imposes?: Pa
   for (const def of [...R.contenu.pnj, ...Object.values(s.pnjGeneres)]) s.pnj[def.id] = etatPnj(s, def);
   s.roles = { ...R.contenu.roles[c.village], parent: 'famille_parent', aine: 'famille_aine' };
   for (const def of [...R.contenu.pnj, ...Object.values(s.pnjGeneres)]) {
-    if (def.relationInitiale) s.relations[def.id] = { confiance: 0, respect: 0, amitie: 0, rivalite: 0, hostilite: 0, attachement: 0, rompue: false, souvenirs: [], ...def.relationInitiale };
+    if (def.relationInitiale) s.relations[def.id] = { confiance: 0, respect: 0, amitie: 0, rivalite: 0, hostilite: 0, attachement: 0, peur: 0, dette: 0, rompue: false, souvenirs: [], ...def.relationInitiale };
   }
   s.pnj['famille_parent'].rencontre = true;
   s.pnj['famille_aine'].rencontre = true;
@@ -642,6 +646,8 @@ export interface VueChoix {
   nature?: 'combat' | 'epreuve' | 'libre';
   /** On peut y mourir. */
   mortel?: boolean;
+  /** Ce combat se joue en Affrontement Racine : son contexte (les issues ne sont jamais annoncées à l'avance). */
+  affrontement?: { contexte: string; kanji: string };
 }
 
 /** Une attaque spéciale telle qu'on la propose : chances, récit selon la forme du combat, risque pour les alliés. */
@@ -716,7 +722,14 @@ export function choixVisibles(s: GameState, ev: EventDef): VueChoix[] {
     const ok = evaluer(c.si, s);
     if (!ok && !c.verrou) continue;
     const test = c.test ? avecAffrontement(ev.id, c.id, c.test) : undefined;
-    // Les attaques spéciales se greffent sur le premier choix de combat de la scène.
+    const racine = test?.type === 'combat' ? affrontementPour(ev.id, c.id) : undefined;
+    if (racine) {
+      // L'Affrontement Racine : on choisit une intention ici ; les techniques se choisissent dans le combat, manche par manche.
+      const regle = CONTEXTES[racine.contexte];
+      res.push({ id: c.id, texte: interpoler(c.texte, s), disponible: ok, verrou: ok ? undefined : interpoler(c.verrou!, s), indice: c.indice ? interpoler(c.indice, s) : undefined, nature: 'combat', mortel: regle.letal, affrontement: { contexte: regle.libelle, kanji: regle.kanji } });
+      continue;
+    }
+    // Les attaques spéciales se greffent sur le premier choix de combat de la scène (anciens combats, jusqu'à leur migration).
     const attaques =
       ok && test?.type === 'combat' && !attaquesPlacees
         ? attaquesSpeciales(s, test).map((tech) => ({ ...vueAttaque(s, tech, test), id: `${c.id}@${tech}`, technique: tech }))
@@ -893,9 +906,14 @@ function choisirMut(s: GameState, choixId: string): void {
   if (!ch) throw new Error(`Choix inconnu : ${choixId}`);
   if (ch !== CHOIX_PASSER && !evaluer(ch.si, s)) throw new Error('Choix indisponible : prérequis non remplis.');
 
+  if (tech && affrontementPour(ev.id, baseId)) throw new Error('Attaque spéciale indisponible.');
   s.actions.push({ a: 'choix', id: choixId });
   s.annonce = undefined;
   const ctx: Ctx = nouveauCtx();
+  if (ch.test && affrontementPour(ev.id, ch.id)) {
+    ouvrirAffrontement(s, ev, ch);
+    return;
+  }
   // Combat en plusieurs manches : le choix ouvre l'affrontement, la première manche se joue tout de suite.
   if (ch.test && nombreManches(ch.test) > 1) {
     s.scene = { type: 'combat', evenementId: ev.id, choixId: baseId, manche: 0, total: nombreManches(ch.test), touches: 0, ripostes: 0, resultats: [], journal: [], techniques: [], chakra: 0, sante: 0 };
@@ -1452,8 +1470,29 @@ function sansDoublons(ch: Changement[]): Changement[] {
   });
 }
 
+/** Une manche d'Affrontement Racine. L'action n'est enregistrée qu'une fois validée : une action refusée ne change rien. */
+function combatMut(s: GameState, a: ActionCombat): void {
+  if (s.scene.type !== 'affrontement') throw new Error('Aucun affrontement en cours.');
+  const ctx = nouveauCtx();
+  const evId = s.scene.evenementId;
+  const choixId = s.scene.choixId;
+  const fin = jouerAffrontement(s, a, ctx);
+  s.actions.push({ a: 'combat', famille: a.famille, choix: a.choix, ...(a.elan ? { elan: a.elan } : {}) });
+  if (!fin) return;
+  finaliserChoix(s, R.evenements[evId], choixId, fin.libelle, fin.texte, fin.suite, fin.issue, ctx);
+  const apres = s.scene as GameState['scene'];
+  if (apres.type === 'resultat' && fin.bilan) apres.bilanCombat = fin.bilan;
+}
+
+export function combattre(s0: GameState, a: ActionCombat): GameState {
+  const s = cloner(s0);
+  combatMut(s, a);
+  return s;
+}
+
 export function appliquerActionMut(s: GameState, a: Action): void {
   if (a.a === 'choix') choisirMut(s, a.id);
+  else if (a.a === 'combat') combatMut(s, a);
   else if (a.a === 'continuer') continuerMut(s);
   else if (a.a === 'points') pointsMut(s, a.repartition);
   else if (a.a === 'chapitre') chapitreMut(s);

@@ -1,0 +1,445 @@
+// L'Affrontement Racine : ouverture, boucle de manche, conclusion, vue pour l'interface.
+// Un seul moteur : même état, même hasard, même rejeu que le reste du jeu (§0.3.3).
+
+import type { Changement, ChoiceDef, EventDef, GameState, Issue, Outcome } from '../types';
+import { R } from '../registre';
+import { alea } from '../rng';
+import { age } from '../calendrier';
+import { Ctx, clamp, defPnj, resoudrePnj } from '../etat';
+import { interpoler, resoudreTexte } from '../texte';
+import { appliquerEffets } from '../effets';
+import { applyCombatExperience } from '../maitrise';
+import { noterMerite } from '../progression';
+import { CHANCE_MORT } from '../epreuves';
+import type { ActionCombat, AdversaireDef, AffrontementDef, EtatAffrontement, FinCombat, IntentionAdv, RegistreAdversaire } from './types';
+import { CONTEXTES, LIBELLE_NIVEAU, bonusRang, fourchettePlafond, indexNiveau, niveauJoueur } from './contextes';
+import { adversaireDef, niveauAdversaire, nomAdversaire, registreDe, statsAdversaire, techniquesAdversaire, temperamentCourant, tirerIntention } from './adversaire';
+import { TAIJUTSU, ACTIONS_FIXES, familles, resoudre, validerAction } from './resolution';
+import type { ResultatManche, VueFamille } from './resolution';
+import { choisirReplique, choisirVariante, noterReplique } from './selection';
+import type { FaitsManche } from './selection';
+import { NIVEAUX } from './types';
+
+export function affrontementPour(evenementId: string, choixId: string): AffrontementDef | undefined {
+  return R.contenu.racine.affrontements[`${evenementId}/${choixId}`];
+}
+
+/** Le genre de l'adversaire, pour accorder les textes ({il}, {Il}, {lui}, {e}). */
+function genreAdv(s: GameState, d: AdversaireDef): 'm' | 'f' {
+  if (d.pnj) return defPnj(s, resoudrePnj(s, d.pnj))?.genre ?? 'm';
+  return 'm';
+}
+
+export function accorderAdv(texte: string, genre: 'm' | 'f'): string {
+  const f = genre === 'f';
+  return texte
+    .replace(/\{Il\}/g, f ? 'Elle' : 'Il')
+    .replace(/\{il\}/g, f ? 'elle' : 'il')
+    .replace(/\{Lui\}/g, f ? 'Elle' : 'Lui')
+    .replace(/\{lui\}/g, f ? 'elle' : 'lui')
+    .replace(/\{e\}/g, f ? 'e' : '');
+}
+
+function texteAdv(s: GameState, sc: EtatAffrontement, d: AdversaireDef, t: string): string {
+  return accorderAdv(t.replace(/\{nom\}/g, sc.nomAdversaire), genreAdv(s, d));
+}
+
+/** Endurance de départ du joueur (§5.1). */
+export function enduranceJoueur(s: GameState): number {
+  const n = niveauJoueur(s);
+  const malus = s.blessures.reduce((a, b) => a + (b.gravite >= 3 ? 0.3 : b.gravite === 2 ? 0.15 : 0.05), 0);
+  return Math.max(10, Math.round((30 + 0.5 * s.jauges.sante + 0.2 * s.attributs.force + bonusRang(n)) * (1 - Math.min(0.5, malus))));
+}
+
+function nouveauRegistre(id: string): RegistreAdversaire {
+  return { id, rencontres: 0, victoires: 0, defaites: 0, nuls: 0, techniquesVuesDuJoueur: {}, habitudesDuJoueur: {}, techniquesVuesParJoueur: [], contreMesures: [], vivant: true };
+}
+
+/** Ouvre un affrontement à partir d'un choix de scène. Tirages : plafond, réplique d'entrée, puis l'ouverture de la manche 1. */
+export function ouvrirAffrontement(s: GameState, ev: EventDef, ch: ChoiceDef): void {
+  const af = affrontementPour(ev.id, ch.id)!;
+  const d = adversaireDef(af.adversaire);
+  const nAdv = niveauAdversaire(s, d);
+  const nJ = niveauJoueur(s);
+  const st = statsAdversaire(s, d);
+  const [min, max] = fourchettePlafond(nJ, nAdv);
+  const plafond = min + Math.min(max - min, Math.floor(alea(s) * (max - min + 1)));
+  const endJ = enduranceJoueur(s);
+  const registreId = registreDe(s, d);
+  const reg = s.registresCombat[registreId];
+  const sc: EtatAffrontement = {
+    type: 'affrontement',
+    evenementId: ev.id,
+    choixId: ch.id,
+    contexte: af.contexte,
+    adversaireId: d.id,
+    registreId,
+    nomAdversaire: nomAdversaire(s, d),
+    niveauAdv: nAdv,
+    niveauJoueur: nJ,
+    temperament: d.temperament,
+    manche: 1,
+    plafond,
+    plafondVisible: CONTEXTES[af.contexte].plafondAnnonce,
+    joueur: { endurance: endJ, enduranceMax: endJ, garde: 'ouverte', sonne: 0, vide: 0 },
+    adv: { endurance: st.endurance, enduranceMax: st.endurance, garde: 'ouverte', sonne: 0, vide: 0, chakra: st.chakra, substitutions: st.substitutions },
+    elan: 0,
+    intention: 'attaque',
+    annonce: { texte: '', fiabilite: 'vague' },
+    lecture: { niveau: false, nature: false, faiblesse: false, intentions: {}, techniquesVues: [...(reg?.techniquesVuesParJoueur ?? [])], habitudes: [] },
+    vuesCeCombat: {},
+    actionsJoueur: [],
+    journal: [],
+    repliquesUtilisees: {},
+    gardesConsecutives: 0,
+    ouverture: 0,
+    touchesSubiesAdv: 0,
+    techniquesUtilisees: [],
+    bilan: { reussites: {}, echecs: {} },
+  };
+  s.scene = sc;
+  // Une réplique d'entrée, ou de revanche si vous vous êtes déjà affrontés.
+  const r = alea(s);
+  const rep = choisirReplique(s, sc, d.repliques, reg && reg.rencontres > 0 ? 'revanche' : 'entree', {}, r) ?? choisirReplique(s, sc, d.repliques, 'entree', {}, r);
+  if (rep) noterReplique(s, sc, rep);
+  sc.journal.push({ manche: 0, annonce: '', action: '', execution: '', reponse: '', impact: '', lecture: '', repliques: rep ? [texteAdv(s, sc, d, interpoler(rep.texte, s))] : [], technique: `plafond=${plafond}` });
+  ouvrirManche(s, sc, d);
+}
+
+/** Ouverture d'une manche : intention adverse, technique, fiabilité, texte de l'annonce (quatre tirages, toujours). */
+function ouvrirManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef): void {
+  const [rInt, rTech, rFiab, rTexte] = [alea(s), alea(s), alea(s), alea(s)];
+  sc.temperament = temperamentCourant(sc, d);
+  sc.intention = tirerIntention(s, sc, d, rInt);
+  const techs = techniquesAdversaire(s, d);
+  sc.techniqueAdv = sc.intention === 'technique' && techs.length ? techs[Math.min(techs.length - 1, Math.floor(rTech * techs.length))].id : undefined;
+  if (sc.intention === 'technique' || sc.intention === 'majeure') sc.adv.chakra = Math.max(0, sc.adv.chakra - (sc.intention === 'majeure' ? 30 : 10));
+  sc.provoque = sc.intention === 'attaque' ? sc.provoque : false;
+  const st = statsAdversaire(s, d);
+  // Fiabilité (§7.2) : la perception du joueur contre la discrétion de l'adversaire ; les yeux du clan lisent tout.
+  const yeux = !!(s.maitrises['sharingan']?.awakened || s.maitrises['byakugan']?.awakened);
+  const habitudeConnue = d.habitudes.some((h) => sc.lecture.habitudes.includes(h.id) && h.intention === sc.intention);
+  const p = yeux || habitudeConnue ? 1 : clamp(0.5 + (s.attributs.perception - st.discretion) / 100 + (sc.lecture.niveau ? 0.1 : 0), 0.2, 0.95);
+  const letal = CONTEXTES[sc.contexte].letal;
+  const pct = sc.joueur.endurance / sc.joueur.enduranceMax;
+  const mortelle = letal && (sc.intention === 'majeure' || sc.intention === 'preparer' || pct < 0.4);
+  let fiab: EtatAffrontement['annonce']['fiabilite'] = rFiab < p ? 'fiable' : d.feinte && rFiab > 0.85 ? 'trompeur' : 'vague';
+  if (mortelle && fiab === 'trompeur') fiab = 'vague';
+  const montree: IntentionAdv = fiab === 'trompeur' ? (sc.intention === 'attaque' ? 'defense' : 'attaque') : sc.intention;
+  const banque = R.contenu.racine.annonces[montree];
+  let texte = choisirVariante(fiab === 'fiable' ? banque.fiable : banque.vague, rTexte);
+  if (sc.intention === 'majeure' && d.majeure && fiab === 'fiable') texte = d.majeure.annonce;
+  if (fiab === 'fiable' && sc.techniqueAdv && sc.lecture.techniquesVues.includes(sc.techniqueAdv)) {
+    const t = techs.find((x) => x.id === sc.techniqueAdv);
+    if (t) texte += ` Tu reconnais ce geste : ${t.nom}.`;
+  }
+  if (mortelle && sc.avertissementManche === undefined) {
+    sc.avertissementManche = sc.manche;
+    texte += ' Son regard change : {il} ne cherche plus à te blesser. {Il} cherche à en finir.';
+  }
+  sc.annonce = { texte: texteAdv(s, sc, d, texte), fiabilite: fiab, mortelle };
+}
+
+export interface ConclusionAffrontement {
+  texte: string;
+  libelle: string;
+  suite?: string;
+  issue: Issue;
+  changements: Changement[];
+  bilan?: BilanCombat;
+}
+
+export interface BilanCombat {
+  marche?: string;
+  echoue?: string;
+  appris: string[];
+  ilAppris: string[];
+  progression: string[];
+  travailler?: string;
+}
+
+/** Joue une manche : valide (sans rien modifier si l'action est refusée), tire, résout, puis conclut si c'est fini. */
+export function jouerAffrontement(s: GameState, a: ActionCombat, ctx: Ctx): ConclusionAffrontement | undefined {
+  if (s.scene.type !== 'affrontement') throw new Error('Aucun affrontement en cours.');
+  const sc = s.scene;
+  const d = adversaireDef(sc.adversaireId);
+  validerAction(s, sc, a);
+  const r = { exec: alea(s), reponse: alea(s), execAdv: alea(s), variation: alea(s), decisif: alea(s), texte: alea(s), replique: alea(s) };
+  const annonce = sc.annonce.texte;
+  const res = resoudre(s, sc, d, a, r);
+  const entree = composerManche(s, sc, d, a, res, annonce, r.texte, r.replique);
+  sc.journal.push(entree);
+  sc.actionsJoueur.push(a.choix);
+  const fin: FinCombat | undefined =
+    sc.joueur.endurance <= 0 ? 'defaite' : sc.adv.endurance <= 0 ? 'victoire' : res.fin ? res.fin : sc.manche >= sc.plafond ? departage(sc) : undefined;
+  if (fin) return conclure(s, sc, d, fin, ctx);
+  sc.manche += 1;
+  ouvrirManche(s, sc, d);
+  return undefined;
+}
+
+/** Au plafond : le pourcentage d'endurance, puis l'élan, puis la dernière manche gagnée (§6.4). */
+function departage(sc: EtatAffrontement): FinCombat {
+  const pj = sc.joueur.endurance / sc.joueur.enduranceMax;
+  const pa = sc.adv.endurance / sc.adv.enduranceMax;
+  if (Math.abs(pj - pa) > 0.02) return pj > pa ? 'departage_gagne' : 'departage_perdu';
+  if (sc.elan !== 0) return 'departage_gagne';
+  // Personne n'a pris le dessus : c'est le contexte qui tranche, et ici il ne tranche pas.
+  return 'departage_nul';
+}
+
+function nomAction(a: ActionCombat): string {
+  if (TAIJUTSU[a.choix]) return TAIJUTSU[a.choix].nom;
+  if (R.maitrises[a.choix]) return R.maitrises[a.choix].nom;
+  for (const g of Object.values(ACTIONS_FIXES)) if (g[a.choix]) return g[a.choix].nom;
+  return a.choix;
+}
+
+/** Les trois blocs du récit (exécution, réponse, impact), la phrase-cause et la réplique. */
+function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a: ActionCombat, res: ResultatManche, annonce: string, rTexte: number, rRep: number): EntreeAffrontement {
+  const recits = R.contenu.racine.recits;
+  const tech = R.maitrises[a.choix];
+  const genre = genreAdv(s, d);
+  const vari = (cle: string) => accorderAdv(choisirVariante(recits[cle] ?? recits[cle.split(':').slice(0, -1).join(':')] ?? [], rTexte).replace(/\{tech\}/g, tech?.nom ?? nomAction(a)).replace(/\{nom\}/g, sc.nomAdversaire), genre);
+  const nature = tech?.element;
+  let execution = '';
+  if (a.famille === 'taijutsu' || a.famille === 'ninjutsu') {
+    const base = a.famille === 'ninjutsu' ? `Tu composes les signes : ${tech?.nom ?? nomAction(a)}.` : `${nomAction(a)}.`;
+    execution = `${base} ${vari(`exec:${res.execution}${res.execution === 'ratee' ? `:${a.famille}` : ''}`)}`.trim();
+  } else execution = `${nomAction(a)}.`;
+  let impact = res.impact;
+  if (res.issue) {
+    const cle = nature && recits[`${nature}:${res.issue}`] ? `${nature}:${res.issue}` : `${a.famille}:${res.issue}`;
+    impact += vari(recits[cle] ? cle : `offensive:${res.issue}`);
+  } else impact += vari(`${a.famille}:${a.choix}:${res.reussi ? 'ok' : 'ko'}`);
+  if (res.inflige > 0) impact += ` (−${res.inflige} endurance pour {nom})`.replace('{nom}', sc.nomAdversaire);
+  if (res.subi > 0) impact += ` ${vari('adv:touche')} (−${res.subi} endurance)`;
+  // Une réplique au plus par manche, selon ce qui vient de se passer.
+  const faits: FaitsManche = { dejaVue: res.dejaVue, inedite: res.inedite, repetition: res.repetition, issue: res.issue };
+  const pct = sc.adv.endurance / sc.adv.enduranceMax;
+  const cats = [
+    res.repliqueCategorie,
+    res.issue === 'surprise' ? 'decouverte' : undefined,
+    res.issue === 'predite' && (res.dejaVue || res.repetition) ? (res.dejaVue ? 'reconnaissance' : 'repetition') : undefined,
+    res.issue === 'ratee' ? 'rate_joueur' : undefined,
+    res.inflige >= sc.adv.enduranceMax * 0.25 ? 'blessure' : undefined,
+    res.inflige > 0 && !sc.journal.some((j) => j.issue === 'touche' || j.issue === 'surprise') ? 'reussite_joueur' : undefined,
+    pct < 0.25 && pct > 0 ? 'defaite_imminente' : undefined,
+    sc.intention === 'preparer' ? 'preparation' : undefined,
+  ].filter(Boolean) as string[];
+  const repliques: string[] = [];
+  for (const c of cats) {
+    const rep = choisirReplique(s, sc, d.repliques, c as never, faits, rRep);
+    if (rep) {
+      noterReplique(s, sc, rep);
+      repliques.push(texteAdv(s, sc, d, interpoler(rep.texte, s)));
+      break;
+    }
+  }
+  return {
+    manche: sc.manche,
+    annonce,
+    action: nomAction(a),
+    execution,
+    reponse: accorderAdv(res.reponse, genre),
+    impact: impact.trim(),
+    lecture: accorderAdv(res.cause, genre),
+    repliques,
+    issue: res.issue,
+    technique: `intention=${sc.intention} exec=${res.execution} inflige=${res.inflige} subi=${res.subi} J=${sc.joueur.endurance}/${sc.joueur.enduranceMax} A=${sc.adv.endurance}/${sc.adv.enduranceMax} elan=${sc.elan}`,
+  };
+}
+type EntreeAffrontement = EtatAffrontement['journal'][number];
+
+/** L'issue du CheckDef d'origine qui correspond à une fin d'affrontement. */
+function issuePour(fin: FinCombat, ch: ChoiceDef, rapide: boolean): Issue {
+  const t = ch.test!;
+  if (fin === 'victoire') return rapide && t.critique ? 'critique' : 'succes';
+  if (fin === 'departage_gagne' || fin === 'reddition_adverse' || fin === 'fuite_adverse') return 'succes';
+  if (fin === 'paix' || fin === 'departage_perdu' || fin === 'departage_nul') return t.partiel ? 'partiel' : fin === 'departage_perdu' ? 'echec' : 'succes';
+  return 'echec';
+}
+
+function outcomePour(issue: Issue, ch: ChoiceDef): Outcome {
+  const t = ch.test!;
+  return issue === 'critique' ? t.critique! : issue === 'succes' ? t.succes : issue === 'partiel' ? t.partiel! : t.echec;
+}
+
+/** Conclusion : mort (contexte mortel, après avertissement), registre, relations, santé, expérience, bilan. */
+function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: FinCombat, ctx: Ctx): ConclusionAffrontement {
+  const [rMort, rTexte, rRep] = [alea(s), alea(s), alea(s)];
+  const ev = R.evenements[sc.evenementId];
+  const ch = ev.choix.find((c) => c.id === sc.choixId)!;
+  const af = affrontementPour(sc.evenementId, sc.choixId)!;
+  const regle = CONTEXTES[sc.contexte];
+  const genre = genreAdv(s, d);
+  const rapide = fin === 'victoire' && sc.manche <= Math.ceil(sc.plafond / 2) && sc.joueur.endurance / sc.joueur.enduranceMax > 0.6;
+  const issue = issuePour(fin, ch, rapide);
+  const outcome = outcomePour(issue, ch);
+  const conclusion = af.conclusions?.[fin];
+  // La mort n'est jamais la conclusion par défaut : seulement en contexte mortel, après un avertissement donné plus tôt.
+  const peutMourir = regle.letal && fin === 'defaite' && sc.avertissementManche !== undefined && sc.avertissementManche < sc.manche;
+  const mort = peutMourir && rMort < (CHANCE_MORT[s.creation.difficulte] ?? 0.45);
+
+  // Registre de l'adversaire : ce qu'il a vu de toi, ce qui s'est passé.
+  const reg = (s.registresCombat[sc.registreId] ??= nouveauRegistre(sc.registreId));
+  reg.rencontres += 1;
+  const gagneJoueur = ['victoire', 'departage_gagne', 'reddition_adverse', 'fuite_adverse'].includes(fin);
+  const perdJoueur = ['defaite', 'departage_perdu', 'fuite'].includes(fin);
+  // Paix et match nul : personne ne gagne (reg.nuls).
+  if (gagneJoueur) reg.defaites += 1;
+  else if (perdJoueur) reg.victoires += 1;
+  else reg.nuls += 1;
+  reg.derniereIssue = fin;
+  reg.derniereRencontre = { age: age(s), chapitre: s.chapitre };
+  for (const [k, n] of Object.entries(sc.vuesCeCombat)) reg.techniquesVuesDuJoueur[k] = (reg.techniquesVuesDuJoueur[k] ?? 0) + n;
+  if (sc.actionsJoueur[0]) reg.habitudesDuJoueur[`ouverture:${sc.actionsJoueur[0]}`] = (reg.habitudesDuJoueur[`ouverture:${sc.actionsJoueur[0]}`] ?? 0) + 1;
+  for (const t of sc.lecture.techniquesVues) if (!reg.techniquesVuesParJoueur.includes(t)) reg.techniquesVuesParJoueur.push(t);
+  // Un récurrent battu travaille ce qui l'a battu (§13.2) : la nature de ta technique la plus efficace, ou ton geste favori.
+  if (gagneJoueur && d.recurrent) {
+    const meilleure = Object.entries(sc.bilan.reussites).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))[0]?.[0];
+    const el = meilleure ? R.maitrises[meilleure]?.element : undefined;
+    const contre = el ? `nature:${el}` : meilleure ? `action:${meilleure}` : undefined;
+    if (contre && !reg.contreMesures.includes(contre)) reg.contreMesures.push(contre);
+  }
+
+  // Relations, s'il est un personnage du jeu.
+  const pnjId = d.pnj ? resoudrePnj(s, d.pnj) : undefined;
+  const effetsRel = pnjId
+    ? gagneJoueur
+      ? { respect: 4, rivalite: 3, peur: fin === 'reddition_adverse' ? 4 : 0 }
+      : fin === 'paix'
+        ? { amitie: 4, hostilite: -2 }
+        : fin === 'fuite'
+          ? { respect: -2, rivalite: 1 }
+          : { rivalite: 3 }
+    : undefined;
+  const effets = [...(conclusion?.effets ?? outcome.effets)];
+  if (pnjId && effetsRel) effets.push({ relation: pnjId, delta: Object.fromEntries(Object.entries(effetsRel).filter(([, v]) => v)) });
+  if (sc.provoque && pnjId) effets.push({ relation: pnjId, delta: { hostilite: 2 } });
+  if (fin === 'fuite' && regle.coutFuite) effets.push({ stat: 'social.reputation', delta: -regle.coutFuite });
+  if (!mort) appliquerEffets(s, effets, ctx);
+
+  // Ce que le combat coûte à la santé : léger dans une bagarre, réel en mission.
+  const perte = 1 - sc.joueur.endurance / sc.joueur.enduranceMax;
+  const facteur = s.creation.difficulte === 'recit' ? 0.6 : s.creation.difficulte === 'legende' ? 1.3 : 1;
+  if (mort) {
+    s.drapeaux['cause_mort'] = ch.test?.causeMort ? interpoler(ch.test.causeMort, s) : `tombé·e au combat (${interpoler(ev.titre, s).toLowerCase()})`;
+    s.drapeaux['mort_au_combat'] = true;
+    ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -s.jauges.sante });
+    s.jauges.sante = 0;
+  } else {
+    const d0 = Math.round(perte * (regle.blessuresLegeres ? 10 : 28) * facteur);
+    if (d0 > 0) {
+      s.jauges.sante = clamp(s.jauges.sante - d0, regle.blessuresLegeres ? 1 : 0, 100);
+      ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -d0 });
+    }
+    if (!regle.blessuresLegeres && fin === 'defaite') appliquerEffets(s, [{ blessure: { id: `affrontement_${sc.evenementId}`, nom: 'Blessures d’un combat perdu', gravite: 2, jours: 25 } }], ctx);
+  }
+  const xp = [...new Set([...sc.techniquesUtilisees, ...(sc.actionsJoueur.some((x) => TAIJUTSU[x]) ? ['taijutsu'] : []), ...(sc.actionsJoueur.includes('permutation') ? ['kawarimi'] : [])])];
+  applyCombatExperience(s, xp, ctx);
+  if (gagneJoueur) noterMerite(s, 'combat');
+
+  // Le récit de la fin, la dernière réplique.
+  const recits = R.contenu.racine.recits;
+  // Une scène qui a sa propre conclusion la raconte elle-même : le récit générique de la fin se tait.
+  const texteFin = conclusion?.texte ? '' : accorderAdv(choisirVariante(recits[`fin:${fin}`] ?? [], rTexte).replace(/\{nom\}/g, sc.nomAdversaire), genre);
+  const catFin = gagneJoueur ? 'defaite_adv' : perdJoueur ? 'victoire_adv' : 'paix';
+  const rep = choisirReplique(s, sc, d.repliques, catFin, { issue: sc.journal[sc.journal.length - 1]?.issue }, rRep);
+  if (rep) noterReplique(s, sc, rep);
+  const replique = rep ? texteAdv(s, sc, d, interpoler(rep.texte, s)) : '';
+  const corps = mort
+    ? 'Tout va très vite. Un coup que tu n’as pas vu venir, puis le froid qui monte. Les voix s’éloignent. Tu penses à quelqu’un, tu ne sais plus qui. Puis plus rien.'
+    : resoudreTexte(conclusion?.texte ?? outcome.texte, s);
+  const texte = [texteFin, replique && `« ${replique.replace(/^«\s*|\s*»$/g, '')} »`, corps].filter(Boolean).join('\n\n');
+  const noms = [...new Set(sc.techniquesUtilisees)].map((t) => R.maitrises[t].nom);
+  const libelle = interpoler(ch.texte, s) + (noms.length ? ` — ${noms.join(', ')}` : '');
+  return {
+    texte,
+    libelle,
+    suite: mort ? undefined : (conclusion ? undefined : outcome.suite) ?? ch.suite,
+    issue,
+    changements: ctx.changements,
+    bilan: sc.manche >= 2 ? bilanCombat(s, sc, d, xp) : undefined,
+  };
+}
+
+/** La carte de bilan (§16.2) : ce qui a marché, ce qui a échoué, ce que chacun a appris, ce qu'il faut travailler. */
+function bilanCombat(s: GameState, sc: EtatAffrontement, d: AdversaireDef, xp: string[]): BilanCombat {
+  const genre = genreAdv(s, d);
+  const meilleure = Object.entries(sc.bilan.reussites).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))[0];
+  const pire = Object.entries(sc.bilan.echecs).sort((x, y) => y[1].length - x[1].length || x[0].localeCompare(y[0]))[0];
+  const nom = (id: string) => TAIJUTSU[id]?.nom ?? R.maitrises[id]?.nom ?? Object.values(ACTIONS_FIXES).find((g) => g[id])?.[id].nom ?? id;
+  const appris: string[] = [];
+  if (sc.lecture.niveau) appris.push(`Son niveau : ${LIBELLE_NIVEAU[sc.niveauAdv]}.`);
+  if (sc.lecture.nature && d.nature) appris.push(`Sa nature : ${R.elements[d.nature]?.nom ?? d.nature}.`);
+  for (const h of d.habitudes) if (sc.lecture.habitudes.includes(h.id)) appris.push(accorderAdv(h.texte, genre));
+  for (const t of sc.lecture.techniquesVues) {
+    const tt = R.contenu.techniquesAdverses.find((x) => x.id === t);
+    if (tt) appris.push(`Sa technique : ${tt.nom}.`);
+  }
+  const ilAppris = Object.entries(sc.vuesCeCombat)
+    .sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))
+    .map(([id, n]) => `${nom(id)}${n > 1 ? ` (${n} fois)` : ''}`);
+  const progression = xp.map((id) => {
+    const ms = s.maitrises[id];
+    return ms ? `${R.maitrises[id].nom} : palier ${ms.tier}, ${ms.combatUses} combat${ms.combatUses > 1 ? 's' : ''}.` : '';
+  }).filter(Boolean);
+  let travailler: string | undefined;
+  if (pire && R.maitrises[pire[0]]) travailler = `Entraîner ${R.maitrises[pire[0]].nom} pendant le temps libre.`;
+  else if (pire) travailler = 'Travailler le taijutsu pendant le temps libre.';
+  else if (!sc.lecture.niveau) travailler = 'Observer avant de frapper : une manche de lecture peut changer tout le combat.';
+  return {
+    marche: meilleure ? `${nom(meilleure[0])} a porté ${meilleure[1]} fois.` : undefined,
+    echoue: pire ? `${nom(pire[0])} : ${accorderAdv(pire[1][0], genre).replace(/^[^:]+ : /, '')}` : undefined,
+    appris,
+    ilAppris: ilAppris.length ? [accorderAdv(`{Il} a vu : ${ilAppris.join(', ')}.`, genre)] : [],
+    progression,
+    travailler,
+  };
+}
+
+// ── Vue pour l'interface ────────────────────────────────────
+
+export interface VueAffrontement {
+  titre: string;
+  contexte: { libelle: string; kanji: string };
+  /** « Manche 2 » ; le plafond n'est montré que si un arbitre l'annonce. */
+  manche: string;
+  adversaire: { nom: string; niveau: string; pct: number; garde: string; sonne: boolean };
+  joueur: { endurance: number; enduranceMax: number; chakra: number; chakraMax: number; elan: number; garde: string; sonne: boolean };
+  annonce: { texte: string; fiabilite: string; mortelle: boolean };
+  familles: VueFamille[];
+  journal: EntreeAffrontement[];
+  lecture: string[];
+}
+
+export function vueAffrontement(s: GameState): VueAffrontement | undefined {
+  if (s.scene.type !== 'affrontement') return undefined;
+  const sc = s.scene;
+  const d = adversaireDef(sc.adversaireId);
+  const genre = genreAdv(s, d);
+  const i = indexNiveau(sc.niveauAdv);
+  const niveau = !sc.lecture.niveau ? '?' : s.attributs.perception >= 60 ? LIBELLE_NIVEAU[sc.niveauAdv] : `${LIBELLE_NIVEAU[NIVEAUX[Math.max(0, i - 1)]]} à ${LIBELLE_NIVEAU[sc.niveauAdv]}`;
+  const lecture: string[] = [];
+  if (sc.lecture.niveau) lecture.push(`Niveau estimé : ${niveau}.`);
+  if (sc.lecture.nature && d.nature) lecture.push(`Nature : ${R.elements[d.nature]?.nom ?? d.nature}.`);
+  if (sc.lecture.faiblesse) lecture.push(accorderAdv('Une faiblesse repérée : {il} protège mal son flanc gauche.', genre));
+  for (const h of d.habitudes) if (sc.lecture.habitudes.includes(h.id)) lecture.push(accorderAdv(h.texte, genre));
+  for (const t of sc.lecture.techniquesVues) {
+    const tt = R.contenu.techniquesAdverses.find((x) => x.id === t);
+    if (tt) lecture.push(`Technique vue : ${tt.nom}.`);
+  }
+  const fam = familles(s, sc).map((f) => ({ ...f, actions: f.actions.map((a) => ({ ...a, detail: accorderAdv(a.detail, genre) })) }));
+  return {
+    titre: interpoler(R.evenements[sc.evenementId].titre, s),
+    contexte: { libelle: CONTEXTES[sc.contexte].libelle, kanji: CONTEXTES[sc.contexte].kanji },
+    manche: sc.plafondVisible ? `Manche ${sc.manche} sur ${sc.plafond}` : `Manche ${sc.manche}`,
+    adversaire: { nom: sc.nomAdversaire, niveau, pct: Math.round((sc.adv.endurance / sc.adv.enduranceMax) * 100), garde: sc.adv.garde, sonne: sc.adv.sonne > 0 },
+    joueur: { endurance: sc.joueur.endurance, enduranceMax: sc.joueur.enduranceMax, chakra: s.jauges.chakra, chakraMax: s.jauges.chakraMax, elan: sc.elan, garde: sc.joueur.garde, sonne: sc.joueur.sonne > 0 },
+    annonce: { texte: sc.annonce.texte, fiabilite: sc.annonce.fiabilite, mortelle: !!sc.annonce.mortelle },
+    familles: fam,
+    journal: sc.journal,
+    lecture,
+  };
+}

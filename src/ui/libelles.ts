@@ -39,6 +39,8 @@ export const AXE_LIBELLE: Record<RelationAxe, string> = {
   rivalite: 'rivalité',
   hostilite: 'hostilité',
   attachement: 'attachement',
+  peur: 'peur',
+  dette: 'dette',
 };
 
 export const RANG_LIBELLE: Record<string, string> = {

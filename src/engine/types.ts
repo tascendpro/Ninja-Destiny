@@ -35,8 +35,8 @@ export type SocialId = 'loyaute' | 'reputation' | 'reputationOmbre' | 'influence
 export type EthiqueId = 'compassion' | 'honneur' | 'ambition';
 export type StatPath = `attributs.${AttributId}` | `jauges.${JaugeId}` | `social.${SocialId}` | `ethique.${EthiqueId}`;
 
-export type RelationAxe = 'confiance' | 'respect' | 'amitie' | 'rivalite' | 'hostilite' | 'attachement';
-export const AXES_RELATION: RelationAxe[] = ['confiance', 'respect', 'amitie', 'rivalite', 'hostilite', 'attachement'];
+export type RelationAxe = 'confiance' | 'respect' | 'amitie' | 'rivalite' | 'hostilite' | 'attachement' | 'peur' | 'dette';
+export const AXES_RELATION: RelationAxe[] = ['confiance', 'respect', 'amitie', 'rivalite', 'hostilite', 'attachement', 'peur', 'dette'];
 
 export type MissionStatut = 'en_cours' | 'reussie' | 'echouee' | 'abandonnee';
 export type Saison = 'printemps' | 'ete' | 'automne' | 'hiver';
@@ -681,6 +681,10 @@ export interface RelationState {
   rivalite: number;
   hostilite: number;
   attachement: number;
+  /** Ce qu'il craint de toi (un combat perdu, une menace, une cruauté vue). */
+  peur: number;
+  /** Ce qu'il te doit (une vie épargnée, un sauvetage). */
+  dette: number;
   rompue: boolean;
   souvenirs: string[];
 }
@@ -740,6 +744,8 @@ export interface MondeDef {
 
 export interface Contenu {
   version: string;
+  /** Le contenu de l'Affrontement Racine : adversaires, combats branchés, récits, annonces. */
+  racine: import('./combat/types').ContenuRacine;
   chapitresPublies: number[];
   monde: MondeDef;
   villages: VillageDef[];
@@ -1013,8 +1019,11 @@ export type Scene =
       changements: Changement[];
       suite?: string;
       issue?: Issue;
+      /** Carte de bilan d'un affrontement d'au moins deux manches (§16.2). */
+      bilanCombat?: import('./combat/affrontement').BilanCombat;
     }
   | { type: 'temps_libre' }
+  | import('./combat/types').EtatAffrontement
   | { type: 'bilan'; sequence: string }
   | { type: 'fin'; id: string }
   | {
@@ -1056,6 +1065,7 @@ export interface BilanPeriode {
 
 export type Action =
   | { a: 'choix'; id: string }
+  | ({ a: 'combat' } & import('./combat/types').ActionCombat)
   | { a: 'continuer' }
   | { a: 'activite'; id: string }
   | { a: 'points'; repartition: Partial<Record<AttributId, number>> }
@@ -1130,4 +1140,6 @@ export interface GameState {
   annonce?: string;
   /** Ce que la dernière période de temps libre a rapporté. */
   bilanPeriode?: BilanPeriode;
+  /** Mémoire des adversaires récurrents (Affrontement Racine) : ce qu'ils ont vu de toi, ce qui s'est passé. */
+  registresCombat: Record<string, import('./combat/types').RegistreAdversaire>;
 }

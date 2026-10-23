@@ -335,6 +335,13 @@ export const AFFRONTEMENTS: Record<string, Affrontement> = {
   'vf_chien/intercepter': DA,
   'vf_demonstration/accepter': D,
   'vf_incendie/poursuivre': EA,
+  // Villages vivants
+  'kv_suna_mitsuki_retour/defi': D,
+  'kv_kumo_reflechir/feinte': D,
+  'kv_kumo_equipe/cible': D,
+  'kv_iwa_terrain/sol': EA,
+  'kv_fer_samourai/duel': D,
+  'kv_deserteurs/combattre': E,
   'vc_clan_rival/duel': D,
   'vc_embuscade/combattre': E,
   'a_examen_kiri/combattre': D,

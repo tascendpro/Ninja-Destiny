@@ -4544,3 +4544,419 @@ body::before {
   letter-spacing: 0.05em;
   opacity: 0.8;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   L'Affrontement Racine (§22) : mobile d'abord, deux colonnes sur PC.
+   ════════════════════════════════════════════════════════════════ */
+.aff-bandeau {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 12px;
+  font-size: var(--t-s);
+  color: var(--papier-2);
+}
+.aff-contexte {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.aff-kanji {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  background: var(--vermillon);
+  color: var(--texte-bouton);
+  font-family: var(--pinceau);
+}
+.aff-manche {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  color: var(--papier);
+}
+.aff-jauges {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--trait);
+  border-radius: 12px;
+  background: var(--ardoise);
+}
+.aff-camp {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  align-content: start;
+}
+.aff-nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--t-s);
+}
+.aff-nom b {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+}
+.aff-jauge {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--papier) 10%, transparent);
+  overflow: hidden;
+}
+.aff-jauge.fine {
+  height: 5px;
+}
+.aff-jauge i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.aff-adv {
+  background: var(--vermillon-clair);
+}
+.aff-endurance {
+  background: var(--jade);
+}
+.aff-chakra {
+  background: var(--glycine);
+}
+.aff-etat {
+  font-size: var(--t-xs);
+  color: var(--brume);
+}
+.aff-elan {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--t-xs);
+  color: var(--papier-2);
+}
+.aff-elan i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid var(--or);
+}
+.aff-elan i.plein {
+  background: var(--or);
+}
+.aff-journal {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+.aff-manche-bloc {
+  padding: 12px 14px;
+  border-left: 3px solid color-mix(in srgb, var(--or) 55%, transparent);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--or) 5%, transparent);
+  animation: aff-apparait 0.35s ease both;
+}
+.aff-manche-bloc h2 {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  margin: 0 0 6px;
+}
+.aff-manche-bloc p {
+  margin: 4px 0;
+  line-height: 1.55;
+}
+.aff-annonce-passee {
+  font-style: italic;
+  color: var(--brume);
+}
+.aff-etiquette {
+  display: inline-block;
+  min-width: 74px;
+  margin-right: 6px;
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brume);
+}
+.aff-cause {
+  margin-top: 8px !important;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: var(--t-s);
+  background: color-mix(in srgb, var(--papier) 6%, transparent);
+}
+.aff-cause.issue-touche,
+.aff-cause.issue-surprise,
+.aff-cause.issue-decisive {
+  border-left: 3px solid var(--jade);
+}
+.aff-cause.issue-ratee,
+.aff-cause.issue-predite,
+.aff-cause.issue-ecrasee,
+.aff-cause.issue-dominee {
+  border-left: 3px solid var(--vermillon-clair);
+}
+.aff-cause.issue-annulee,
+.aff-cause.issue-autre {
+  border-left: 3px solid var(--or);
+}
+.aff-replique {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  color: var(--papier);
+}
+.aff-replique b {
+  font-size: var(--t-s);
+  color: var(--vermillon-clair);
+}
+.aff-annonce {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  background: var(--ardoise-2, var(--ardoise));
+}
+.aff-annonce p {
+  margin: 4px 0;
+  font-family: var(--mincho);
+  font-size: var(--t-l);
+  line-height: 1.5;
+}
+.aff-annonce small {
+  color: var(--brume);
+}
+.aff-annonce.mortelle {
+  border-color: var(--vermillon-clair);
+  box-shadow: inset 4px 0 0 var(--vermillon);
+}
+.aff-annonce.mortelle .aff-etiquette {
+  color: var(--vermillon-clair);
+  font-weight: 700;
+}
+.aff-lecture {
+  margin-top: 10px;
+  font-size: var(--t-s);
+}
+.aff-lecture summary {
+  cursor: pointer;
+  color: var(--papier-2);
+}
+.aff-lecture ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.aff-familles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+.aff-famille {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  background: var(--ardoise);
+  text-align: left;
+  font-size: var(--t-m);
+}
+.aff-famille .touche {
+  margin-left: auto;
+}
+.aff-famille.active {
+  border-color: var(--or);
+  background: color-mix(in srgb, var(--or) 12%, var(--ardoise));
+}
+.aff-famille-kanji {
+  font-family: var(--pinceau);
+  font-size: 1.35rem;
+  color: var(--vermillon-clair);
+}
+.aff-panneau {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--or);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--or) 6%, var(--ardoise));
+  animation: aff-apparait 0.25s ease both;
+}
+.aff-action {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--trait);
+  border-radius: 8px;
+  background: var(--ardoise);
+  text-align: left;
+}
+.aff-action.choisie {
+  border-color: var(--vermillon-clair);
+  box-shadow: inset 3px 0 0 var(--vermillon);
+}
+.aff-action.a-nature {
+  border-left: 3px solid var(--nat);
+}
+.aff-action:disabled {
+  opacity: 0.55;
+  border-style: dashed;
+}
+.aff-action-nom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.aff-action-meta {
+  font-size: var(--t-xs);
+  color: var(--or);
+}
+.aff-action-detail {
+  font-size: var(--t-xs);
+  color: var(--brume);
+}
+.aff-marque {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+.aff-marque.m-inédite {
+  color: var(--jade);
+}
+.aff-marque.m-éventée {
+  color: var(--vermillon-clair);
+}
+.aff-marque.m-peut-tout-finir {
+  color: var(--or);
+}
+.aff-elan-choix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.aff-elan-choix button {
+  padding: 6px 12px;
+  border: 1px solid var(--or);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--or);
+  font-size: var(--t-s);
+}
+.aff-elan-choix button[aria-pressed="true"] {
+  background: var(--or);
+  color: var(--encre);
+}
+.aff-confirmer {
+  width: 100%;
+}
+.aff-bilan {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--trait);
+  border-radius: 12px;
+  background: var(--ardoise);
+}
+.aff-bilan h2 {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  margin: 0 0 8px;
+}
+.aff-bilan dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.aff-bilan dt {
+  font-size: var(--t-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--brume);
+}
+.aff-bilan dd {
+  margin: 2px 0 0;
+  font-size: var(--t-s);
+}
+@keyframes aff-apparait {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+:root[data-animations="reduites"] .aff-manche-bloc,
+:root[data-animations="reduites"] .aff-panneau {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aff-manche-bloc,
+  .aff-panneau {
+    animation: none;
+  }
+}
+/* PC : récit et journal à gauche, jauges et actions à droite. */
+@media (min-width: 1000px) {
+  .recit-texte.affrontement {
+    max-width: 1080px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    column-gap: 28px;
+    align-items: start;
+  }
+  .recit-texte.affrontement > .titre-scene,
+  .recit-texte.affrontement > .aff-bandeau {
+    grid-column: 1 / -1;
+  }
+  .recit-texte.affrontement > .aff-manche-bloc,
+  .recit-texte.affrontement > .aff-entree,
+  .recit-texte.affrontement > .aff-journal-replie {
+    grid-column: 1;
+  }
+  .recit-texte.affrontement > .aff-manche-bloc,
+  .recit-texte.affrontement > .aff-entree {
+    grid-row: 3 / span 4;
+    margin-top: 0;
+  }
+  .recit-texte.affrontement > .aff-journal-replie {
+    grid-row: 7;
+  }
+  .recit-texte.affrontement > .aff-jauges,
+  .recit-texte.affrontement > .aff-annonce,
+  .recit-texte.affrontement > .aff-lecture,
+  .recit-texte.affrontement > .aff-familles,
+  .recit-texte.affrontement > .aff-panneau {
+    grid-column: 2;
+  }
+}
+
+.aff-jauges + .aff-manche-bloc,
+.aff-jauges + div + .aff-manche-bloc {
+  margin-top: 14px;
+}
+.aff-manche-bloc {
+  margin-top: 14px;
+}
+.aff-entree {
+  margin-top: 14px;
+}
+.aff-journal-replie {
+  margin-top: 18px;
+  font-size: var(--t-s);
+}
+.aff-journal-replie summary {
+  cursor: pointer;
+  color: var(--papier-2);
+}

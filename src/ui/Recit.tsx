@@ -12,6 +12,8 @@ import { duoPossible, genererActivites, naturesActivite, periodeMax } from '../e
 import type { Activite } from '../engine/tempsLibre';
 import { age, libelleDuree, libellePeriode, moisDe, saisonDe } from '../engine/calendrier';
 import Portrait from './Portrait';
+import Affrontement, { CarteBilan } from './combat/Affrontement';
+import type { ActionCombat } from '../engine/combat/types';
 import { cleScene, remonter } from './defilement';
 import { ATTRIBUT_LIBELLE, ETAT_PNJ, KANJI_SAISON, vueChangements } from './libelles';
 import { defPnj, nomComplet } from '../engine/etat';
@@ -136,6 +138,7 @@ export default function Recit({
   onActivite,
   onOuvrirPoints,
   onManche,
+  onCombat,
 }: {
   etat: GameState;
   theme: 'nuit' | 'washi';
@@ -145,6 +148,7 @@ export default function Recit({
   onActivite: (id: string) => void;
   onOuvrirPoints: () => void;
   onManche: (id: string) => void;
+  onCombat: (a: ActionCombat) => void;
 }) {
   const [scelle, setScelle] = useState<string | null>(null);
   const cle = cleScene(etat);
@@ -219,8 +223,9 @@ export default function Recit({
                       {i + 1}
                     </kbd>
                   )}
-                  {(ch.verrou || ch.indice || ch.risque || ch.duree || ch.manches) && (
+                  {(ch.verrou || ch.indice || ch.risque || ch.duree || ch.manches || ch.affrontement) && (
                     <span className="choix-meta">
+                      {ch.affrontement && <span>Affrontement · {ch.affrontement.contexte}</span>}
                       {ch.verrou && <span>{accorder(ch.verrou, p)}</span>}
                       {ch.risque && (
                         <span className={RISQUE_CLASSE[ch.risque]}>
@@ -294,6 +299,7 @@ export default function Recit({
           <div aria-live="polite">
             <Paragraphes texte={sc.texte} presentation={p} />
           </div>
+          {sc.bilanCombat && <CarteBilan bilan={sc.bilanCombat} presentation={p} />}
           {csq.length > 0 && (
             <ul className="consequences" aria-label="Conséquences">
               {csq.map((c, i) => (
@@ -315,6 +321,10 @@ export default function Recit({
 
   if (etat.scene.type === 'temps_libre') {
     return <TempsLibre etat={etat} theme={theme} anime={anime} onActivite={onActivite} onOuvrirPoints={onOuvrirPoints} />;
+  }
+
+  if (etat.scene.type === 'affrontement') {
+    return <Affrontement etat={etat} onCombat={onCombat} />;
   }
 
   if (etat.scene.type === 'combat') {

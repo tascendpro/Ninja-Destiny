@@ -34,7 +34,7 @@ export default function Creation({ onCommencer, onRetour, heritage }: { onCommen
   const [etape, setEtape] = useState(0);
   const [c, setC] = useState<CreationT>({
     prenom: '',
-    presentation: 'feminin',
+    presentation: 'masculin',
     ageDepart: 6,
     village: 'konoha',
     clan: '',
@@ -142,8 +142,8 @@ export default function Creation({ onCommencer, onRetour, heritage }: { onCommen
             <div className="identite-choix" role="group" aria-label="Présentation">
               {(
                 [
-                  ['feminin', 'Féminine', '女', 'Elle'],
-                  ['masculin', 'Masculine', '男', 'Il'],
+                  ['masculin', 'Masculin', '男', 'Il'],
+                  ['feminin', 'Féminin', '女', 'Elle'],
                   ['neutre', 'Neutre', '人', 'Iel'],
                 ] as [Presentation, string, string, string][]
               ).map(([id, n, k, pronom]) => (

@@ -20,6 +20,9 @@ export function cleScene(s: GameState): string {
       return `resultat-${sc.evenementId}-${s.historique.length}-${s.jour}`;
     case 'combat':
       return `combat-${sc.evenementId}-${sc.manche}`;
+    case 'affrontement':
+      // Le même écran d'une manche à l'autre : on ne remonte pas, la nouvelle manche s'affiche sous la précédente.
+      return `affrontement-${sc.evenementId}-${s.historique.length}`;
     case 'temps_libre':
       return `temps_libre-${s.jour}`;
     case 'bilan':

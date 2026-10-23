@@ -1,6 +1,6 @@
-// Sauvegardes locales : la partie est gardée dans le navigateur (localStorage), y compris quand on le ferme,
-// sur téléphone comme sur ordinateur. Aucun serveur, aucune base de données.
-// Une sauvegarde contient les décisions : la restauration rejoue la partie et vérifie l'empreinte.
+// Sauvegardes : une sauvegarde contient les décisions ; la restauration rejoue la partie et vérifie l'empreinte.
+// Le moteur ne connaît qu'un Stockage abstrait : le stockage du navigateur vit dans l'interface (src/ui/stockage.ts),
+// pour que les règles restent portables hors du navigateur.
 
 import type { Creation, GameState } from './types';
 import { R } from './registre';
@@ -31,75 +31,6 @@ export interface Stockage {
 export const PREFIXE = 'ninja-destiny:';
 export const EMPLACEMENTS = ['auto', 'manuel1', 'manuel2', 'manuel3'] as const;
 export type Emplacement = (typeof EMPLACEMENTS)[number];
-
-/**
- * Stockage durable du navigateur (localStorage) : la partie survit à la fermeture du navigateur.
- * Au premier lancement, une partie encore rangée dans l'ancien stockage de session est récupérée.
- * Repli en mémoire si le stockage est indisponible (navigation privée stricte, iframe isolée).
- */
-export function stockageDurable(): Stockage {
-  const st = stockageNavigateur('localStorage');
-  try {
-    const ancien = typeof window !== 'undefined' ? window.sessionStorage : undefined;
-    if (ancien) {
-      for (let i = 0; i < ancien.length; i++) {
-        const cle = ancien.key(i);
-        if (cle?.startsWith(PREFIXE) && st.lire(cle) === null) {
-          const v = ancien.getItem(cle);
-          if (v !== null) st.ecrire(cle, v);
-        }
-      }
-    }
-  } catch {
-    /* ancien stockage illisible : rien à récupérer */
-  }
-  return st;
-}
-
-/** Ancien stockage de l'onglet (sessionStorage), effacé à la fermeture. Gardé pour la compatibilité. */
-export function stockageSession(): Stockage {
-  return stockageNavigateur('sessionStorage');
-}
-
-function stockageNavigateur(type: 'localStorage' | 'sessionStorage'): Stockage {
-  const memoire = new Map<string, string>();
-  const ls = (() => {
-    try {
-      const x = typeof window !== 'undefined' ? window[type] : undefined;
-      if (!x) return undefined;
-      x.setItem(`${PREFIXE}test`, '1');
-      x.removeItem(`${PREFIXE}test`);
-      return x;
-    } catch {
-      return undefined;
-    }
-  })();
-  return {
-    lire(cle) {
-      try {
-        return ls ? ls.getItem(cle) : (memoire.get(cle) ?? null);
-      } catch {
-        return memoire.get(cle) ?? null;
-      }
-    },
-    ecrire(cle, valeur) {
-      try {
-        if (ls) ls.setItem(cle, valeur);
-        else memoire.set(cle, valeur);
-      } catch {
-        memoire.set(cle, valeur);
-      }
-    },
-    supprimer(cle) {
-      try {
-        if (ls) ls.removeItem(cle);
-      } catch {
-        /* ignoré */
-      }
-      memoire.delete(cle);
-    },
-  };
-}
 
 export function stockageMemoire(): Stockage {
   const m = new Map<string, string>();
@@ -152,8 +83,14 @@ export function restaurer(sv: Sauvegarde): Restauration {
   };
 }
 
-/** Point d'entrée des migrations futures du format d'état. */
+/** Mise à niveau d'un état enregistré par une version antérieure du contenu. */
 export function migrer(s: GameState): GameState {
+  // Les axes de relation « peur » et « dette » sont arrivés avec l'Affrontement Racine.
+  for (const r of Object.values(s.relations ?? {})) {
+    r.peur ??= 0;
+    r.dette ??= 0;
+  }
+  s.registresCombat ??= {};
   return s;
 }
 

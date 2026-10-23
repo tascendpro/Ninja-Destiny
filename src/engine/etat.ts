@@ -63,7 +63,7 @@ export function nomPnj(state: GameState, ref: string): string {
 }
 
 export function relationVide(): RelationState {
-  return { confiance: 0, respect: 0, amitie: 0, rivalite: 0, hostilite: 0, attachement: 0, rompue: false, souvenirs: [] };
+  return { confiance: 0, respect: 0, amitie: 0, rivalite: 0, hostilite: 0, attachement: 0, peur: 0, dette: 0, rompue: false, souvenirs: [] };
 }
 
 export function relationDe(state: GameState, id: string): RelationState {

@@ -1,7 +1,8 @@
 import type { Creation, GameState, Tirages } from '../src/engine/types';
 import { ATTRIBUTS } from '../src/engine/types';
 import { coutRepartition } from '../src/engine/progression';
-import { activite, choisir, choixVisibles, continuer, manche, nouvellePartie, repartir, vueCombat } from '../src/engine/moteur';
+import { activite, choisir, choixVisibles, combattre, continuer, manche, nouvellePartie, repartir, vueCombat } from '../src/engine/moteur';
+import { vueAffrontement } from '../src/engine/combat/affrontement';
 import { duoPossible, genererActivites } from '../src/engine/tempsLibre';
 import { R } from '../src/engine/registre';
 import { suivant } from '../src/engine/rng';
@@ -90,6 +91,13 @@ export function poursuivre(depart: GameState, graine: number, maxPas = 1500): Ra
         const v = vueCombat(s)!;
         const ids = v.adversaire ? ['esquiver', 'contrer'] : ['simple', ...v.attaques.map((a) => a.id)];
         s = manche(s, ids[pick(ids.length)]);
+      } else if (s.scene.type === 'affrontement') {
+        // Un joueur ordinaire : souvent l'attaque, parfois la défense ou la parole, rarement la fuite.
+        const v = vueAffrontement(s)!;
+        const possibles = v.familles.flatMap((f) => f.actions.filter((a) => a.disponible).map((a) => ({ famille: f.id, choix: a.id })));
+        const offensives = possibles.filter((p) => p.famille === 'taijutsu' || p.famille === 'ninjutsu');
+        const pool = offensives.length && pick(3) > 0 ? offensives : possibles.filter((p) => p.famille !== 'fuite' || pick(4) === 0);
+        s = combattre(s, (pool.length ? pool : possibles)[pick((pool.length ? pool : possibles).length)]);
       } else if (s.scene.type === 'resultat' || s.scene.type === 'bilan') {
         s = continuer(s);
       } else {
