@@ -22,6 +22,7 @@ import { equiper, lierArme, obtenirArme, perdreArme, recupererArme, transferUniq
 import { canalReputation, changeCareer, quitterMetier } from './metiers';
 import { avancerTemps } from './temps';
 import { declencherRage, estProche } from './pertes';
+import { apprendreDuo } from './duo';
 
 /** Drapeaux qui disent qu'un être cher vient de mourir sous les yeux du personnage. */
 const DEUILS_TEMOINS = new Set(['conjoint_mort', 'enfant_mort', 'ami_mort_quartier']);
@@ -30,11 +31,12 @@ const CHEMINS_VISIBLES = /^(social\.(loyaute|reputation|reputationOmbre|influenc
 
 /** Transitions de mission autorisées : une mission échouée ou réussie est close pour toujours. */
 const TRANSITIONS_MISSION: Record<string, MissionStatut[]> = {
-  aucun: ['en_cours', 'reussie', 'echouee', 'abandonnee'],
+  aucun: ['en_cours', 'reussie', 'echouee', 'abandonnee', 'confiee'],
   en_cours: ['reussie', 'echouee', 'abandonnee'],
   reussie: [],
   echouee: [],
   abandonnee: [],
+  confiee: [],
 };
 
 function modifierStat(s: GameState, chemin: StatPath, delta: number | undefined, valeur: number | undefined, ctx: Ctx): void {
@@ -196,6 +198,10 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
     return;
   }
   if ('eveilDanger' in e) return eveilSousDanger(s, e.eveilDanger, ctx);
+  if ('duo' in e) {
+    apprendreDuo(s, e.duo, ctx);
+    return;
+  }
   if ('enseigner' in e) {
     enseignerTechnique(s, e.enseigner, ctx);
     return;

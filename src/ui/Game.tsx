@@ -12,6 +12,7 @@ import Accueil from './Accueil';
 import Creation from './Creation';
 import Recit from './Recit';
 import Tableau from './Tableau';
+import Magasin from './Magasin';
 import { ModalePoints } from './Repartition';
 import Journal from './Journal';
 import Encyclopedie from './Encyclopedie';
@@ -25,11 +26,12 @@ import { gravite } from './fiche';
 import { remonter } from './defilement';
 
 type Ecran = 'accueil' | 'creation' | 'jeu' | 'savoir';
-type Onglet = 'recit' | 'ninja' | 'journal' | 'bingo' | 'savoir';
+type Onglet = 'recit' | 'ninja' | 'magasin' | 'journal' | 'bingo' | 'savoir';
 
 const NAV: { id: Onglet; kanji: string; nom: string }[] = [
   { id: 'recit', kanji: '話', nom: 'Récit' },
   { id: 'ninja', kanji: '忍', nom: 'Ninja' },
+  { id: 'magasin', kanji: '店', nom: 'Magasin' },
   { id: 'journal', kanji: '記', nom: 'Journal' },
   { id: 'bingo', kanji: '賞', nom: 'Bingo' },
   { id: 'savoir', kanji: '書', nom: 'Savoir' },
@@ -344,6 +346,7 @@ export default function Game() {
             onOuvrirPoints={() => setModalePoints(true)}
           />
         )}
+        {onglet === 'magasin' && <Magasin etat={etat} onAcheter={(id) => appliquer((s) => activite(s, id))} />}
         {onglet === 'journal' && <Journal etat={etat} />}
         {onglet === 'bingo' && <BingoBook etat={etat} />}
         {onglet === 'savoir' && <Encyclopedie etat={etat} meta={meta} />}

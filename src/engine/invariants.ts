@@ -51,7 +51,7 @@ export function verifierInvariants(s: GameState): string[] {
   }
 
   for (const [mid, st] of Object.entries(s.missions)) {
-    if (!['en_cours', 'reussie', 'echouee', 'abandonnee'].includes(st)) err.push(`statut de mission invalide ${mid}`);
+    if (!['en_cours', 'reussie', 'echouee', 'abandonnee', 'confiee'].includes(st)) err.push(`statut de mission invalide ${mid}`);
   }
 
   for (const [pid, r] of Object.entries(s.relations)) {

@@ -9,6 +9,7 @@ const PRIX_RAMEN = 12;
 const MISE_DES = 20;
 import type { AttributId, CheckDef, ElementId, GameState } from './types';
 import { R } from './registre';
+import { joursRestants } from './tableauMissions';
 import { age, libelleDuree } from './calendrier';
 import { Ctx, ajouterJournal, clamp, defPnj, decouvrir, drapeauVrai, estProdige, rangIndex, relationDe } from './etat';
 import { evaluer } from './conditions';
@@ -147,6 +148,13 @@ export function blocageNouvelleNature(s: GameState): string | undefined {
   const faibles = possedees.filter((e) => (s.maitrises[`nature_${e}`]?.tier ?? 0) < 2);
   if (faibles.length) return `Façonne d’abord ${R.elements[faibles[0]]?.nom} (palier 2).`;
   return undefined;
+}
+
+/** Ce que le tableau dit du temps qui reste avant qu'une autre équipe prenne la mission. */
+function texteDelai(j: number | undefined): string {
+  if (j === undefined) return '';
+  if (j <= 30) return ` Plus que ${j} jour${j > 1 ? 's' : ''} : passé ce délai, quelqu’un d’autre la prendra.`;
+  return ` Au tableau encore ${Math.round(j / 30)} mois environ.`;
 }
 
 export function genererActivites(s: GameState): Activite[] {
@@ -332,7 +340,7 @@ export function genererActivites(s: GameState): Activite[] {
       res.push({
         id: `mission:${m.id}`,
         libelle: `Mission ${m.rang} — ${m.titre}`,
-        description: `${m.description} Risques : ${m.risques}`,
+        description: `${m.description} Risques : ${m.risques}${texteDelai(joursRestants(s, m))}`,
         duree: m.duree,
         categorie: 'mission',
         disponible: !grave,

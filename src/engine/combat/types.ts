@@ -257,6 +257,8 @@ export interface EtatAffrontement {
   lecture: LectureEtat;
   /** Ce que l'adversaire a vu de toi pendant ce combat. */
   vuesCeCombat: Record<string, number>;
+  /** À quelle distance vous êtes l'un de l'autre (le récit d'une technique en dépend). */
+  distance?: 'loin' | 'proche';
   actionsJoueur: string[];
   journal: EntreeManche[];
   repliquesUtilisees: Record<string, number>;
@@ -287,4 +289,7 @@ export interface ContenuRacine {
   recits: Record<string, string[]>;
   /** Annonces par intention : précises et vagues. */
   annonces: Record<IntentionAdv, { fiable: string[]; vague: string[] }>;
+  /** Récits quand on relance la même technique (par nature, puis par famille), et ce que l'adversaire en dit. */
+  repetitions: Record<string, { deux: string[]; trois: string[] }>;
+  reactionsRepetition: { deux: string[]; trois: string[] };
 }

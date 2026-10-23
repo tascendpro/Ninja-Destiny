@@ -8,8 +8,10 @@ import type { GameState } from '../../engine/types';
 import { accorder } from '../../engine/texte';
 import { vueAffrontement } from '../../engine/combat/affrontement';
 import type { ActionCombat, DepenseElan, Famille } from '../../engine/combat/types';
+import GroupesNature from './GroupesNature';
+import { classeMulti, styleNatures } from '../natures';
+import { naturesMaitrise } from '../../engine/tempsLibre';
 
-const KANJI_NATURE: Record<string, string> = { katon: '火', suiton: '水', fuuton: '風', raiton: '雷', doton: '土' };
 const GARDE: Record<string, string> = { ouverte: 'garde ouverte', garde: 'en garde', desequilibre: 'déséquilibré·e' };
 
 export default function Affrontement({ etat, onCombat }: { etat: GameState; onCombat: (a: ActionCombat) => void }) {
@@ -173,35 +175,43 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
         {/* 5. Panneau d'action */}
         {fam && (
           <div id="aff-panneau" className="aff-panneau" role="group" aria-label={`Actions : ${fam.nom}`}>
-            {fam.actions.map((a) => (
-              <button
-                key={a.id}
-                className={`aff-action${choix === a.id ? ' choisie' : ''}${a.nature ? ' a-nature' : ''}`}
-                style={a.nature ? ({ '--nat': `var(--n-${a.nature}, var(--or))` } as React.CSSProperties) : undefined}
-                disabled={!a.disponible}
-                aria-pressed={choix === a.id}
-                onClick={() => setChoix(a.id)}
-              >
-                <span className="aff-action-nom">
-                  {a.nature && (
-                    <span className="badge-nature" aria-hidden="true">
-                      {KANJI_NATURE[a.nature] ?? '術'}
-                    </span>
-                  )}
-                  {a.nom}
-                  {a.marques.map((m) => (
-                    <b key={m} className={`aff-marque m-${m.replace(/\s/g, '-')}`}>
-                      {m}
-                    </b>
-                  ))}
-                </span>
-                <span className="aff-action-meta">
-                  {a.chance !== undefined && `Exécution ${a.chance} %`}
-                  {a.chakra !== undefined && ` · ${a.chakra} chakra`}
-                </span>
-                <span className="aff-action-detail">{accorder(a.raison ?? a.detail, p)}</span>
-              </button>
-            ))}
+            {(() => {
+              type A = (typeof fam.actions)[number];
+              // Sous une action : son nom seulement (et son coût en chakra). Ni taux, ni récit.
+              const bouton = (a: A) => {
+                const natures = naturesMaitrise(a.id);
+                return (
+                <button
+                  key={a.id}
+                  className={`aff-action${choix === a.id ? ' choisie' : ''}${natures.length ? ' a-nature' : ''}${classeMulti(natures)}`}
+                  style={styleNatures(natures)}
+                  disabled={!a.disponible}
+                  aria-pressed={choix === a.id}
+                  onClick={() => setChoix(a.id)}
+                >
+                  <span className="aff-action-nom">
+                    {a.nom}
+                    {a.marques.map((m) => (
+                      <b key={m} className={`aff-marque m-${m.replace(/\s/g, '-')}`}>
+                        {m}
+                      </b>
+                    ))}
+                  </span>
+                  {a.chakra !== undefined && <span className="aff-action-meta">{a.chakra} chakra</span>}
+                  {!a.disponible && a.raison && <span className="aff-action-detail">{accorder(a.raison, p)}</span>}
+                  {a.disponible && a.chakra === undefined && <span className="aff-action-detail">{accorder(a.detail, p)}</span>}
+                </button>
+                );
+              };
+              const gestes = fam.actions.filter((a) => a.chakra === undefined);
+              const techniques = fam.actions.filter((a) => a.chakra !== undefined);
+              return (
+                <>
+                  {gestes.map(bouton)}
+                  {techniques.length > 0 && <GroupesNature items={techniques} techId={(a) => a.id} titre={`${fam.nom} : techniques par nature`} rendu={bouton} />}
+                </>
+              );
+            })()}
             {offensive && v.joueur.elan >= 1 && (
               <div className="aff-elan-choix" role="group" aria-label="Dépenser de l’élan">
                 <button aria-pressed={elan === 'puissance'} onClick={() => setElan(elan === 'puissance' ? undefined : 'puissance')}>

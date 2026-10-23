@@ -245,7 +245,7 @@ p {
   bottom: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   background: color-mix(in srgb, var(--encre-2) 95%, transparent);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -2689,7 +2689,7 @@ p.entree.inconnue {
   }
 }
 .nav {
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(8, 1fr);
 }
 @media (min-width: 1024px) {
   .nav {
@@ -4959,4 +4959,239 @@ body::before {
 .aff-journal-replie summary {
   cursor: pointer;
   color: var(--papier-2);
+}
+
+/* ── Techniques par nature : en-tête « Raiton · 2 » qui ouvre son panneau (combat et fiche) ── */
+.groupes-nature {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.groupe-nature {
+  border: 1px solid var(--trait-doux);
+  border-left: 3px solid var(--nat, var(--or));
+  border-radius: var(--rayon-s);
+  background: var(--ardoise);
+  min-width: 0;
+}
+.groupe-nature.ouvert {
+  border-color: color-mix(in srgb, var(--nat, var(--or)) 55%, var(--trait));
+  border-left-color: var(--nat, var(--or));
+}
+.groupe-entete {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: none;
+  border: 0;
+  color: var(--papier);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.groupe-entete:focus-visible {
+  outline: 2px solid var(--nat, var(--or));
+  outline-offset: -2px;
+}
+.groupe-kanji {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  color: var(--papier);
+  background: color-mix(in srgb, var(--nat, var(--or)) 32%, var(--encre-2));
+  border: 1px solid var(--nat, var(--or));
+}
+.groupe-nom {
+  font-weight: 700;
+  min-width: 0;
+}
+.groupe-chevron {
+  font-size: var(--t-l);
+  color: var(--texte-2, var(--brume));
+  width: 1.2em;
+  text-align: center;
+}
+.groupe-contenu {
+  display: grid;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+/* ── Fiche Ninja : techniques apprises ── */
+.techniques-nature > h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  border-left: 3px solid var(--nat, var(--or));
+  padding-left: 10px;
+}
+.techniques-nature > h3 small {
+  font-size: var(--t-s);
+  color: var(--texte-2, var(--brume));
+  font-weight: 400;
+}
+.techniques-apprises {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 900px) {
+  .techniques-apprises {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.technique-apprise {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: baseline;
+  background: var(--ardoise);
+  border: 1px solid var(--trait-doux);
+  border-radius: var(--rayon-s);
+  padding: 10px 12px 8px;
+  min-width: 0;
+}
+.ta-nom {
+  font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ta-nom small {
+  font-weight: 400;
+  color: var(--texte-2, var(--brume));
+}
+.ta-palier {
+  font-size: var(--t-s);
+  color: var(--papier-2);
+  white-space: nowrap;
+}
+.technique-apprise .paliers {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+}
+
+/* ── Magasin ── */
+.nav button {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.mag-ferme {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--trait);
+  border-radius: var(--rayon-s);
+  color: var(--texte-2, var(--brume));
+  font-size: var(--t-s);
+}
+.magasin .groupe > h3 .kanji {
+  color: var(--or);
+}
+.mag-liste {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 900px) {
+  .mag-liste {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.mag-article {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  font: inherit;
+  color: var(--papier);
+  background: var(--ardoise);
+  border: 1px solid var(--trait-doux);
+  border-left: 3px solid var(--or);
+  border-radius: var(--rayon-s);
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.mag-article:hover:not(:disabled) {
+  border-color: var(--or);
+}
+.mag-article:focus-visible {
+  outline: 2px solid var(--or);
+  outline-offset: 2px;
+}
+.mag-article:disabled {
+  cursor: default;
+  border-left-color: var(--trait);
+  opacity: 0.75;
+}
+.mag-nom {
+  font-weight: 700;
+}
+.mag-detail {
+  font-size: var(--t-s);
+  color: var(--texte-2, var(--brume));
+}
+.mag-raison {
+  font-size: var(--t-s);
+  color: var(--danger);
+}
+.lien-discret {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--or);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ── Plusieurs natures : la couleur se partage dans l'ordre (moitié-moitié, ou en tiers) ── */
+.attaque.a-nature.multi,
+.aff-action.a-nature.multi,
+.technique-apprise.multi,
+.temps-libre .activite.multi {
+  position: relative;
+  background: var(--nat-fond);
+}
+.attaque.a-nature.multi {
+  box-shadow: none;
+}
+.aff-action.a-nature.multi {
+  border-left-color: transparent;
+}
+.attaque.a-nature.multi::before,
+.aff-action.a-nature.multi::before,
+.technique-apprise.multi::before,
+.temps-libre .activite.multi::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 3px 0 0 3px;
+  background: var(--nat-bande);
+  pointer-events: none;
+}
+.temps-libre .activite.multi {
+  box-shadow: none;
+}
+.technique-apprise {
+  position: relative;
+}
+.groupe-nature[style*='--n-combinaison'],
+.groupe-nature[style*='--n-trinite'] {
+  border-left-color: var(--glycine);
 }

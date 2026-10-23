@@ -17,6 +17,7 @@ import type { ActionCombat, AdversaireDef, EtatAffrontement, Famille, IssueOffen
 import { ErreurCombat, FAMILLES } from './types';
 import { CONTEXTES, FAMILLES_ENFANT, GABARITS, bonusRang, indexNiveau, maxFamilles } from './contextes';
 import { statsAdversaire, techniquesAdversaire } from './adversaire';
+import { duoUtilisable } from '../duo';
 
 // ── Le catalogue des actions ─────────────────────────────────
 
@@ -81,6 +82,7 @@ export function techniquesFamille(s: GameState, famille: 'taijutsu' | 'ninjutsu'
       const ms = s.maitrises[id];
       if (!t?.offensive || !ms || ms.tier < 1 || ms.bloquee || estTransformation(id) || t.exigeTransformation) return false;
       if (t.categorie === 'biju' || t.categorie === 'armes' || t.categorie === 'transformation') return false;
+      if (!duoUtilisable(s, id)) return false;
       return famille === 'taijutsu' ? t.categorie === 'taijutsu' : t.categorie !== 'taijutsu';
     })
     .sort();
@@ -125,7 +127,11 @@ export function chanceExecution(s: GameState, a: ActionCombat): number {
     const controle = a.famille === 'taijutsu' ? (s.attributs.agilite + s.attributs.controleChakra) / 2 : s.attributs.controleChakra;
     const ecart = (RANG_TECH[def.rang ?? 'C'] ?? 2) - rangJoueur(s);
     const malusRang = ecart <= 0 ? 0 : ecart === 1 ? 0.1 : ecart === 2 ? 0.25 : 0.45;
-    return clamp(0.3 + 0.15 * tier + (controle - 50) / 200 - malusRang - 0.002 * fatigue - malusBlessures(s) - malusChakra(s), 0.1, 0.98);
+    // Une technique fraîchement apprise lâche plus au mauvais moment : à bout de souffle ou quand on peut mourir.
+    const sc = s.scene.type === 'affrontement' ? s.scene : undefined;
+    const pression = !!sc && (sc.joueur.endurance / sc.joueur.enduranceMax < 0.35 || CONTEXTES[sc.contexte].letal);
+    const malusNovice = pression ? (tier <= 1 ? 0.1 : tier === 2 ? 0.05 : 0) : 0;
+    return clamp(0.3 + 0.15 * tier + (controle - 50) / 200 - malusRang - malusNovice - 0.002 * fatigue - malusBlessures(s) - malusChakra(s), 0.1, 0.98);
   }
   return 1;
 }

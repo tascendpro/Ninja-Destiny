@@ -350,7 +350,11 @@ export const APPRENTISSAGE: EventDef[] = [
     repetable: { delaiJours: 200, max: 3 },
     personnages: ['@aine'],
     si: { tout: [ACTIF, AINE, { age: { min: 7, max: 12 } }] },
-    texte: '« Jusqu’au château d’eau et retour, par les toits. Le dernier fait la vaisselle pendant un mois. » {@aine} est déjà sur le premier toit avant la fin de sa phrase.',
+    texte: [
+      { si: { drapeau: 'passage', max: 1 }, texte: '« Jusqu’au château d’eau et retour, par les toits. Le dernier fait la vaisselle pendant un mois. » {@aine} est déjà sur le premier toit avant la fin de sa phrase.' },
+      { si: { drapeau: 'passage', min: 2, max: 2 }, texte: '{@aine} frappe à ta fenêtre avant l’aube. « Revanche. Même parcours, mais cette fois je pars avec un sac de riz sur le dos. Et je ne t’attendrai pas au château d’eau, cette fois. » {Aine_il} est déjà sur le toit d’en face.' },
+      { si: { drapeau: 'passage', min: 3 }, texte: 'Plus besoin de rendez-vous : quand {@aine} passe devant ta porte en courant, tu sors. Vous ne parlez plus du château d’eau, ni de la vaisselle. Ce matin, {aine_il} accélère dès le premier toit, et tu comprends qu’{aine_il} ne retient plus rien.' },
+    ],
     choix: [
       {
         id: 'courir',
@@ -381,7 +385,11 @@ export const APPRENTISSAGE: EventDef[] = [
     repetable: { delaiJours: 220, max: 3 },
     personnages: ['@aine'],
     si: { tout: [ACTIF, AINE, { age: { min: 8, max: 12 } }] },
-    texte: '{@aine} t’emmène à la cascade derrière le terrain d’entraînement. « Assis·e dessous. Les yeux fermés. Si tu te lèves avant que je le dise, on rentre et on ne revient plus. »',
+    texte: [
+      { si: { drapeau: 'passage', max: 1 }, texte: '{@aine} t’emmène à la cascade derrière le terrain d’entraînement. « Assis·e dessous. Les yeux fermés. Si tu te lèves avant que je le dise, on rentre et on ne revient plus. »' },
+      { si: { drapeau: 'passage', min: 2, max: 2 }, texte: 'La cascade, encore. L’eau est plus haute qu’au printemps dernier, et plus froide. {@aine} s’assied sur un rocher, à côté. « La dernière fois, tu as tenu. Cette fois, je reste à côté de toi, et je vais te parler. Tout le temps. Essaie de ne pas m’écouter. »' },
+      { si: { drapeau: 'passage', min: 3 }, texte: 'Tu connais le chemin de la cascade par cœur. {@aine} ne vient plus jusqu’au bord : {aine_il} te regarde depuis le sentier, les bras croisés. « Je ne te dirai pas quand sortir, aujourd’hui. C’est toi qui décides. »' },
+    ],
     choix: [
       {
         id: 'tenir',
@@ -412,7 +420,10 @@ export const APPRENTISSAGE: EventDef[] = [
     repetable: { delaiJours: 240, max: 2 },
     personnages: ['@aine'],
     si: { tout: [ACTIF, AINE, { age: { min: 9, max: 12 } }] },
-    texte: 'Minuit. {@aine} t’attend au bord de la forêt, un bandeau dans la main. « Les yeux bandés. Je vais te lancer des pommes de pin. Tu les évites. Sans voir. Si tu en prends dix, on rentre. »',
+    texte: [
+      { si: { drapeau: 'passage', max: 1 }, texte: 'Minuit. {@aine} t’attend au bord de la forêt, un bandeau dans la main. « Les yeux bandés. Je vais te lancer des pommes de pin. Tu les évites. Sans voir. Si tu en prends dix, on rentre. »' },
+      { si: { drapeau: 'passage', min: 2 }, texte: 'Minuit, de nouveau. Le bandeau, de nouveau. Mais cette fois {@aine} a rempli deux paniers de pommes de pin, et {aine_il} a amené {@coequipierA} pour lancer de l’autre côté. « Deux directions. Tu ne peux plus te contenter d’écouter ma manche. »' },
+    ],
     choix: [
       {
         id: 'esquiver',
@@ -447,7 +458,6 @@ export const APPRENTISSAGE: EventDef[] = [
     categorie: 'amitie',
     lieu: '$terrain',
     poids: 6,
-    repetable: { delaiJours: 250, max: 3 },
     personnages: ['@coequipierA'],
     si: { tout: [ACTIF, AMI, { age: { min: 7, max: 13 } }] },
     texte: '{@coequipierA} t’attend à la sortie de l’Académie, les yeux rouges. « Je rate tout au lancer. Tout. Demain, il y a l’évaluation, et si je rate encore, ma mère va me tuer. Tu veux bien m’aider ce soir ? »',
@@ -490,7 +500,9 @@ export const APPRENTISSAGE: EventDef[] = [
     personnages: ['@rival'],
     si: { tout: [ACTIF, RIVAL, { age: { min: 8, max: 15 } }] },
     texte: [
-      { texte: '{@rival} t’attend sur le terrain, les bras croisés, avec une petite foule d’élèves autour. « Tout le monde dit que tu as progressé. Prouve-le. Un combat. Pas de techniques. Juste toi et moi. »' },
+      { si: { drapeau: 'passage', max: 1 }, texte: '{@rival} t’attend sur le terrain, les bras croisés, avec une petite foule d’élèves autour. « Tout le monde dit que tu as progressé. Prouve-le. Un combat. Pas de techniques. Juste toi et moi. »' },
+      { si: { drapeau: 'passage', min: 2, max: 2 }, texte: 'Encore {@rival}, encore le terrain. La foule est plus nombreuse que la dernière fois : on a parlé de votre combat dans toute l’Académie. « On n’a pas fini, toi et moi. Cette fois, je ne te laisserai pas lire mes épaules. »' },
+      { si: { drapeau: 'passage', min: 3 }, texte: 'Plus personne ne vient vous regarder : vos combats sont devenus une chose ordinaire, comme la pluie. {@rival} t’attend seul{e:@rival}, déjà en garde. « Je compte. Et je compte encore gagner. »' },
       { si: { relation: '@rival', axe: 'respect', min: 20 }, texte: 'Il y a dans sa voix moins de mépris qu’avant. Quelque chose comme de l’impatience.' },
     ],
     choix: [
@@ -564,7 +576,11 @@ export const APPRENTISSAGE: EventDef[] = [
     repetable: { delaiJours: 300, max: 3 },
     personnages: ['@sensei'],
     si: { tout: [ACTIF, SENSEI, { rangMin: 'genin' }, { age: { min: 11, max: 16 } }] },
-    texte: '{@sensei} te retient après l’entraînement d’équipe. « Tu as un défaut que les autres n’ont pas, et une qualité que les autres n’ont pas non plus. Ce soir, on travaille l’un des deux. Choisis. »',
+    texte: [
+      { si: { drapeau: 'passage', max: 1 }, texte: '{@sensei} te retient après l’entraînement d’équipe. « Tu as un défaut que les autres n’ont pas, et une qualité que les autres n’ont pas non plus. Ce soir, on travaille l’un des deux. Choisis. »' },
+      { si: { drapeau: 'passage', min: 2, max: 2 }, texte: '{@sensei} te fait encore signe de rester après l’entraînement d’équipe. « La dernière fois, tu as choisi. Je veux voir si ça a tenu. Ce soir, même question : ton défaut, ou ta qualité. Et ne me réponds pas la même chose par habitude. »' },
+      { si: { drapeau: 'passage', min: 3 }, texte: 'Les autres sont partis depuis longtemps. {@sensei} est assis{e:@sensei} sur la souche du terrain, et pour une fois {il:@sensei} ne te donne pas d’ordre. « C’est peut-être notre dernière leçon seul à seul. Bientôt, tu n’en auras plus besoin. Alors : le défaut, ou la qualité ? »' },
+    ],
     choix: [
       {
         id: 'defaut',

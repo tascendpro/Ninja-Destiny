@@ -24,8 +24,12 @@ const nature = (s: ReturnType<typeof base>, e: string, tier: number) => {
 };
 
 describe('Combinaisons de natures', () => {
+  // Les techniques de base qu'exige la combinaison eau + foudre.
+  const bases = (s: ReturnType<typeof base>) => {
+    for (const id of ['suiton_projectile', 'raiton_decharge']) s.maitrises[id] = { ...s.maitrises['ninjutsu'], id, kind: 'jutsu', awakened: true, tier: 2 };
+  };
   it('les dix paires de natures de base ont leur combinaison', () => {
-    const combos = R.contenu.maitrises.filter((m) => m.technique?.categorie === 'combinaison');
+    const combos = R.contenu.maitrises.filter((m) => m.technique?.categorie === 'combinaison' && m.technique.elements?.length === 2);
     expect(combos).toHaveLength(10);
     const paires = new Set(combos.map((m) => [...m.technique!.elements!].sort().join('+')));
     expect(paires.size).toBe(10);
@@ -37,7 +41,22 @@ describe('Combinaisons de natures', () => {
     nature(s, 'raiton', 1);
     expect(blocageApprentissage(s, 'combo_eau_foudre')).toMatch(/palier 2/);
     nature(s, 'raiton', 2);
+    // Les natures ne suffisent pas : il faut savoir lancer une technique de chacune.
+    expect(blocageApprentissage(s, 'combo_eau_foudre')).toMatch(/Projectile d’eau/);
+    bases(s);
     expect(blocageApprentissage(s, 'combo_eau_foudre')).toBeUndefined();
+  });
+  it('les dix trinités de trois natures existent, rang A à SS, et se bâtissent sur deux combinaisons', () => {
+    const trinites = R.contenu.maitrises.filter((m) => m.technique?.elements?.length === 3);
+    expect(trinites).toHaveLength(10);
+    expect(new Set(trinites.map((m) => [...m.technique!.elements!].sort().join('+'))).size).toBe(10);
+    expect(trinites.every((m) => ['A', 'S', 'SS'].includes(m.rang!))).toBe(true);
+    expect(trinites.every((m) => (m.technique!.requis ?? []).every((r) => R.maitrises[r.maitrise]?.technique?.categorie === 'combinaison'))).toBe(true);
+    const s = base();
+    for (const e of ['katon', 'fuuton', 'raiton'] as const) nature(s, e, 2);
+    s.attributs.intellect = 40;
+    s.attributs.controleChakra = 40;
+    expect(blocageApprentissage(s, 'trinite_orage_solaire')).toMatch(/palier 3|Exige/);
   });
   it('un esprit vif mélange ses natures dès le palier 1', () => {
     const s = base();
@@ -45,6 +64,7 @@ describe('Combinaisons de natures', () => {
     nature(s, 'raiton', 1);
     expect(blocageApprentissage(s, 'combo_eau_foudre')).toMatch(/palier 2/);
     s.attributs.intellect = 65;
+    bases(s);
     expect(blocageApprentissage(s, 'combo_eau_foudre')).toBeUndefined();
   });
   it('n’encombre pas le temps libre avant l’éveil de la deuxième nature, puis s’apprend seul·e', () => {
@@ -53,6 +73,7 @@ describe('Combinaisons de natures', () => {
     s.scene = { type: 'temps_libre' };
     expect(genererActivites(s).some((a) => a.id === 'technique:combo_eau_foudre')).toBe(false);
     nature(s, 'raiton', 2);
+    bases(s);
     const act = genererActivites(s).find((a) => a.id === 'technique:combo_eau_foudre');
     expect(act?.disponible).toBe(true);
     faireActivite(s, 'technique:combo_eau_foudre', nouveauCtx());

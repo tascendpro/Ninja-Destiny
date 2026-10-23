@@ -25,6 +25,12 @@ describe('Combats en plusieurs manches', () => {
     const jouer = (x: typeof t, attaque: string) => manche(x, vueCombat(x)!.adversaire ? 'esquiver' : attaque);
     t = jouer(t, 'simple');
     t = jouer(t, vueCombat(t)!.attaques[0]?.id ?? 'simple');
+    // Encore debout après ta dernière attaque, il lance un dernier assaut : le combat finit sur ta défense.
+    if (t.scene.type === 'combat') {
+      expect(t.scene.dernierAssaut).toBe(true);
+      expect(vueCombat(t)!.adversaire).toBeTruthy();
+      t = manche(t, 'esquiver');
+    }
     expect(t.scene.type).toBe('resultat');
     expect(t.scene.type === 'resultat' && t.scene.texte).toContain('Manche 3');
   });

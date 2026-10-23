@@ -4,6 +4,7 @@ import { age, saisonDe } from './calendrier';
 import { defPnj, lireStat, rangIndex, resoudrePnj } from './etat';
 import { R } from './registre';
 import { checkCareerEligibility } from './metiers';
+import { duoPossible } from './duo';
 
 function inclut<T>(valeur: T, attendu: T | T[]): boolean {
   return Array.isArray(attendu) ? attendu.includes(valeur) : valeur === attendu;
@@ -112,6 +113,7 @@ export function evaluer(c: Condition | undefined, s: GameState): boolean {
     );
     return a === c.possedeArmeLegendaire;
   }
+  if ('duo' in c) return !!duoPossible(s, c.duo);
   if ('missionsReussies' in c) {
     return Object.values(s.missions).filter((m) => m === 'reussie').length >= c.missionsReussies;
   }

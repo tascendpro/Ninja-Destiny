@@ -365,13 +365,70 @@ const COMBINAISONS: [ElementId, ElementId, string, string, string, number, numbe
 ];
 const NOMS_NATURES: Record<string, string> = { katon: 'Katon', suiton: 'Suiton', fuuton: 'Fūton', raiton: 'Raiton', doton: 'Doton' };
 
+/**
+ * Les liaisons logiques : avant de mêler deux natures, il faut savoir lancer une technique de chacune (palier 2).
+ * Le vent qui porte le feu exige une lame de vent et une boule de feu ; l'eau qui conduit la foudre, un jet d'eau et une décharge.
+ */
+const PREREQUIS_COMBO: Record<string, [string, string]> = {
+  combo_tempete_feu: ['katon_boule', 'fuuton_rafale'],
+  combo_eau_foudre: ['suiton_projectile', 'raiton_decharge'],
+  combo_meteores: ['katon_braises', 'doton_lances'],
+  combo_orage_ardent: ['katon_boule', 'raiton_lance'],
+  combo_typhon: ['suiton_bulles', 'fuuton_rafale'],
+  combo_tempete_sable: ['fuuton_rafale', 'doton_boue'],
+  combo_vapeur: ['katon_braises', 'suiton_bulles'],
+  combo_coulee: ['suiton_projectile', 'doton_boue'],
+  combo_ouragan: ['fuuton_lame', 'raiton_etincelles'],
+  combo_pointes: ['doton_lances', 'raiton_decharge'],
+};
+
+/** Une trinité se construit sur deux combinaisons qui la composent déjà (palier 2). */
+const PREREQUIS_TRINITE: Record<string, [string, string]> = {
+  trinite_orage_solaire: ['combo_tempete_feu', 'combo_orage_ardent'],
+  trinite_coeur_volcan: ['combo_meteores', 'combo_pointes'],
+  trinite_pluie_cendres: ['combo_tempete_feu', 'combo_meteores'],
+  trinite_geyser_lave: ['combo_vapeur', 'combo_coulee'],
+  trinite_mousson: ['combo_typhon', 'combo_eau_foudre'],
+  trinite_sable_foudre: ['combo_tempete_sable', 'combo_ouragan'],
+  trinite_ouragan_vapeur: ['combo_vapeur', 'combo_typhon'],
+  trinite_tonnerre_bouillant: ['combo_vapeur', 'combo_eau_foudre'],
+  trinite_glissement: ['combo_typhon', 'combo_coulee'],
+  trinite_marais: ['combo_coulee', 'combo_eau_foudre'],
+};
+
+const requisDe = (table: Record<string, [string, string]>, id: string) => (table[id] ?? []).map((m) => ({ maitrise: m, palierMin: 2 }));
+
 const TECHNIQUES_COMBINEES: MasteryDef[] = COMBINAISONS.map(([a, b, id, nom, description, puissance, chakra]) =>
   T(id, nom, 'C', `${NOMS_NATURES[a]} + ${NOMS_NATURES[b]}. ${description}`, {
-    // Les natures exigées (palier 2, ou 1 pour un esprit vif ou un prodige) sont vérifiées dans blocageApprentissage.
-    ...off('combinaison', puissance, chakra, [], 'partout'),
+    // Les natures exigées (palier 2, ou 1 pour un esprit vif ou un prodige) sont vérifiées dans blocageApprentissage ;
+    // les deux techniques de base, ici.
+    ...off('combinaison', puissance, chakra, requisDe(PREREQUIS_COMBO, id), 'partout'),
     elements: [a, b],
   }),
 );
+
+// Trinités : trois natures lancées ensemble, rang A, S ou SS. Il faut les trois natures un palier plus haut qu'une
+// combinaison à deux, et l'âge du rang. Toutes les liaisons de trois natures parmi cinq existent : dix techniques.
+const TRINITES: [ElementId, ElementId, ElementId, string, string, RangTechnique, string, number, number][] = [
+  ['katon', 'fuuton', 'raiton', 'trinite_orage_solaire', 'Tenkūton : Orage solaire', 'SS', 'Le vent soulève le feu jusqu’au ciel, et la foudre y naît. Un second soleil, qui tombe.', 46, 72],
+  ['katon', 'raiton', 'doton', 'trinite_coeur_volcan', 'Kazanton : Cœur du volcan foudroyé', 'SS', 'La terre s’ouvre, la lave monte, et la foudre la fait exploser de l’intérieur.', 48, 74],
+  ['katon', 'fuuton', 'doton', 'trinite_pluie_cendres', 'Haiton : Pluie de cendres', 'S', 'Un nuage de cendres brûlantes et de pierres en fusion, porté par un vent qui ne retombe pas.', 38, 56],
+  ['katon', 'suiton', 'doton', 'trinite_geyser_lave', 'Geyser de lave', 'S', 'L’eau prisonnière sous la roche bout, et la terre crache un geyser de pierre fondue.', 38, 58],
+  ['suiton', 'fuuton', 'raiton', 'trinite_mousson', 'Raiuton : Mousson foudroyée', 'S', 'Un typhon chargé de pluie et de foudre, qui frappe partout où l’eau touche.', 37, 56],
+  ['fuuton', 'raiton', 'doton', 'trinite_sable_foudre', 'Tempête de sable foudroyée', 'S', 'Un mur de sable que le vent fait tourner et que la foudre électrise grain par grain.', 36, 55],
+  ['katon', 'fuuton', 'suiton', 'trinite_ouragan_vapeur', 'Ouragan de vapeur', 'A', 'Le feu et l’eau se détruisent en vapeur, et le vent la rabat sur l’ennemi.', 31, 46],
+  ['katon', 'suiton', 'raiton', 'trinite_tonnerre_bouillant', 'Tonnerre bouillant', 'A', 'Une eau qui bout, et la foudre qui court dedans.', 31, 46],
+  ['suiton', 'fuuton', 'doton', 'trinite_glissement', 'Glissement de montagne', 'A', 'La pluie détrempe la pente, le vent la pousse, et la montagne descend.', 30, 45],
+  ['suiton', 'raiton', 'doton', 'trinite_marais', 'Marais foudroyé', 'A', 'Le sol devient marais, et la foudre court dans chaque flaque jusqu’aux genoux de l’ennemi.', 30, 44],
+];
+
+const TECHNIQUES_TRINITES: MasteryDef[] = TRINITES.map(([a, b, c, id, nom, rang, description, puissance, chakra]) =>
+  T(id, nom, rang, `${NOMS_NATURES[a]} + ${NOMS_NATURES[b]} + ${NOMS_NATURES[c]}. ${description}`, {
+    ...off('combinaison', puissance, chakra, requisDe(PREREQUIS_TRINITE, id), 'partout'),
+    elements: [a, b, c],
+  }),
+);
+
 
 
 // Pouvoirs des yeux : le Mangekyō donne à chaque porteur deux pouvoirs tirés à l'éveil (plus Susanoo pour tous),
@@ -1027,6 +1084,7 @@ export const MAITRISES: MasteryDef[] = [
   ...MAITRISES_BASE.map((m) => (TECHNIQUES_EXISTANTES[m.id] ? { ...m, technique: TECHNIQUES_EXISTANTES[m.id] } : m)),
   ...TECHNIQUES,
   ...TECHNIQUES_COMBINEES,
+  ...TECHNIQUES_TRINITES,
   ...TECHNIQUES_YEUX,
   ...TECHNIQUES_SANNIN,
   ...TECHNIQUES_CLANS,

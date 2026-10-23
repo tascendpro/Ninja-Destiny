@@ -17,6 +17,8 @@ import { adversaireDef, niveauAdversaire, nomAdversaire, registreDe, statsAdvers
 import { TAIJUTSU, ACTIONS_FIXES, familles, resoudre, validerAction } from './resolution';
 import type { ResultatManche, VueFamille } from './resolution';
 import { choisirReplique, choisirVariante, noterReplique } from './selection';
+import { texteRepetition } from './repetition';
+import { texteImpact, texteImpactJoueur, texteSombre, texteTechniqueTouche } from './impacts';
 import type { FaitsManche } from './selection';
 import { NIVEAUX } from './types';
 
@@ -202,18 +204,36 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
   const genre = genreAdv(s, d);
   const vari = (cle: string) => accorderAdv(choisirVariante(recits[cle] ?? recits[cle.split(':').slice(0, -1).join(':')] ?? [], rTexte).replace(/\{tech\}/g, tech?.nom ?? nomAction(a)).replace(/\{nom\}/g, sc.nomAdversaire), genre);
   const nature = tech?.element;
+  // Combien de fois cette action avait déjà servi dans ce combat (le compteur inclut déjà celle-ci).
+  const deja = (a.famille === 'taijutsu' || a.famille === 'ninjutsu') ? Math.max(0, (sc.vuesCeCombat[a.choix] ?? 1) - 1) : 0;
   let execution = '';
   if (a.famille === 'taijutsu' || a.famille === 'ninjutsu') {
     const base = a.famille === 'ninjutsu' ? `Tu composes les signes : ${tech?.nom ?? nomAction(a)}.` : `${nomAction(a)}.`;
     execution = `${base} ${vari(`exec:${res.execution}${res.execution === 'ratee' ? `:${a.famille}` : ''}`)}`.trim();
+    // Relancée dans ce combat : le récit change (§11.3) ; seule une exécution ratée garde son propre récit.
+    const rep = texteRepetition(a.choix, tech?.nom ?? nomAction(a), deja, sc.manche + deja);
+    if (rep && res.execution !== 'ratee') execution = accorderAdv(rep.recit, genre);
   } else execution = `${nomAction(a)}.`;
   let impact = res.impact;
+  // Taijutsu : on est au contact. Sinon, la distance de la manche d'avant.
+  const distance = a.famille === 'taijutsu' ? 'proche' : (sc.distance ?? 'loin');
+  const porte = res.issue === 'touche' || res.issue === 'surprise' || res.issue === 'decisive';
   if (res.issue) {
     const cle = nature && recits[`${nature}:${res.issue}`] ? `${nature}:${res.issue}` : `${a.famille}:${res.issue}`;
-    impact += vari(recits[cle] ? cle : `offensive:${res.issue}`);
+    // Une technique qui touche se raconte d'abord par elle-même, de loin ou au contact ; le coup décisif garde son récit.
+    const propre = tech && (res.issue === 'touche' || res.issue === 'surprise') ? texteTechniqueTouche(s, a.choix, distance, `${sc.manche}`) : '';
+    impact += propre ? accorderAdv(propre, genre) : vari(recits[cle] ? cle : `offensive:${res.issue}`);
   } else impact += vari(`${a.famille}:${a.choix}:${res.reussi ? 'ok' : 'ko'}`);
+  if (porte) {
+    const lourd = res.issue === 'decisive' || res.issue === 'surprise' || deja >= 2 || res.inflige >= sc.adv.enduranceMax * 0.25;
+    // Dans un combat où l'on peut tuer, la troisième fois, la technique finit ce qu'elle a commencé.
+    if (tech && deja >= 2 && CONTEXTES[sc.contexte].letal) impact += ` ${accorderAdv(texteSombre(s, a.choix, `${sc.manche}`), genre)}`;
+    impact += ` ${accorderAdv(texteImpact(s, lourd ? 'lourd' : 'leger', `${sc.manche}`), genre)}`;
+    sc.distance = lourd ? 'loin' : distance;
+  } else if (a.famille === 'defense' || a.famille === 'fuite') sc.distance = 'loin';
+  else if (sc.intention === 'attaque' || a.famille === 'taijutsu') sc.distance = 'proche';
   if (res.inflige > 0) impact += ` (−${res.inflige} endurance pour {nom})`.replace('{nom}', sc.nomAdversaire);
-  if (res.subi > 0) impact += ` ${vari('adv:touche')} (−${res.subi} endurance)`;
+  if (res.subi > 0) impact += ` ${vari('adv:touche')} ${texteImpactJoueur(s, res.subi >= sc.joueur.enduranceMax * 0.2 ? 'lourd' : 'leger', `${sc.manche}`)} (−${res.subi} endurance)`;
   // Une réplique au plus par manche, selon ce qui vient de se passer.
   const faits: FaitsManche = { dejaVue: res.dejaVue, inedite: res.inedite, repetition: res.repetition, issue: res.issue };
   const pct = sc.adv.endurance / sc.adv.enduranceMax;
@@ -227,13 +247,22 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
     pct < 0.25 && pct > 0 ? 'defaite_imminente' : undefined,
     sc.intention === 'preparer' ? 'preparation' : undefined,
   ].filter(Boolean) as string[];
+  // Une technique relancée appelle d'abord une réaction de l'adversaire : la sienne s'il en a une, sinon une générique.
+  if (deja >= 1) cats.splice(1, 0, 'repetition');
   const repliques: string[] = [];
   for (const c of cats) {
-    const rep = choisirReplique(s, sc, d.repliques, c as never, faits, rRep);
+    const rep = choisirReplique(s, sc, d.repliques, c as never, { ...faits, repetition: faits.repetition || deja >= 1 }, rRep);
     if (rep) {
       noterReplique(s, sc, rep);
       repliques.push(texteAdv(s, sc, d, interpoler(rep.texte, s)));
       break;
+    }
+    if (c === 'repetition') {
+      const generique = texteRepetition(a.choix, tech?.nom ?? nomAction(a), deja, sc.manche + deja);
+      if (generique) {
+        repliques.push(generique.reaction);
+        break;
+      }
     }
   }
   return {

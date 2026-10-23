@@ -15,11 +15,14 @@ import { naturesMax } from '../engine/tempsLibre';
 import Portrait from './Portrait';
 import { ATTRIBUT_LIBELLE, ETAT_PNJ, RANG_LIBELLE, SOCIAL_LIBELLE, STATUT_ARME, STATUT_LIBELLE } from './libelles';
 import Repartition from './Repartition';
+import { KANJI_GROUPE, groupeTechnique, libelleGroupe } from './combat/GroupesNature';
+import { classeMulti, styleNatures } from './natures';
+import { naturesMaitrise } from '../engine/tempsLibre';
 import { databook, gravite, noteTexte, qualificatif } from './fiche';
 
 const RARETE: Record<string, string> = { commune: 'Commune', qualite: 'De qualité', maitre: 'De maître', legendaire: 'Légendaire', maudite: 'Maudite' };
 
-const ONGLETS = ['Profil', 'Maîtrise', 'Arsenal', 'Métier', 'Relations', 'Missions', 'Décisions'] as const;
+const ONGLETS = ['Profil', 'Techniques', 'Maîtrise', 'Arsenal', 'Métier', 'Relations', 'Missions', 'Décisions'] as const;
 type Onglet = (typeof ONGLETS)[number];
 
 function Piste({ valeur, max = 100, classe = 'c-neutre' }: { valeur: number; max?: number; classe?: string }) {
@@ -73,7 +76,8 @@ export default function Tableau({
           </button>
         ))}
       </div>
-      {onglet === 'Profil' && <Profil etat={etat} onOuvrirPoints={onOuvrirPoints} />}
+      {onglet === 'Profil' && <Profil etat={etat} onOuvrirPoints={onOuvrirPoints} onArsenal={() => setOnglet('Arsenal')} />}
+      {onglet === 'Techniques' && <Techniques etat={etat} />}
       {onglet === 'Maîtrise' && <Maitrise etat={etat} />}
       {onglet === 'Arsenal' && <Arsenal etat={etat} enTempsLibre={enTempsLibre} onEquiper={onEquiper} />}
       {onglet === 'Métier' && <Metier etat={etat} />}
@@ -86,7 +90,7 @@ export default function Tableau({
 
 const ELEMENTS_BASE = ['katon', 'suiton', 'fuuton', 'raiton', 'doton'] as const;
 
-function Profil({ etat, onOuvrirPoints }: { etat: GameState; onOuvrirPoints: () => void }) {
+function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrirPoints: () => void; onArsenal: () => void }) {
   const c = etat.creation;
   const p = c.presentation;
   const note = noteFinale(etat);
@@ -140,8 +144,18 @@ function Profil({ etat, onOuvrirPoints }: { etat: GameState; onOuvrirPoints: () 
             </dd>
           </div>
           <div>
-            <dt>Arme en main</dt>
-            <dd>{arme?.nom ?? 'Aucune'}</dd>
+            <dt>Arme principale</dt>
+            <dd>
+              {arme?.nom ?? 'Aucune'}
+              {etat.arsenal.length > (arme ? 1 : 0) && (
+                <>
+                  {' · '}
+                  <button type="button" className="lien-discret" onClick={onArsenal}>
+                    changer
+                  </button>
+                </>
+              )}
+            </dd>
           </div>
           <div>
             <dt>Métier</dt>
@@ -306,6 +320,7 @@ function etatMaitrise(etat: GameState, ms: MasteryState): string[] {
   if (b === 'temps' && req.moisDepuisEveil) l.push(`stabilisation : ${req.moisDepuisEveil} mois après l’éveil`);
   if (b === 'prerequis') l.push(def.composantes ? 'ses deux natures doivent progresser d’abord' : 'une autre maîtrise doit progresser d’abord');
   if (b === 'drapeau') l.push('une condition encore inconnue');
+  if (b === 'oeil') l.push('l’illusion ne va pas plus loin sans un dōjutsu qui la comprend');
   return l;
 }
 
@@ -348,6 +363,67 @@ function LigneMaitrise({ etat, ms, cap, p }: { etat: GameState; ms: MasteryState
         <p>Coût : {def.cout}</p>
       </details>
     </li>
+  );
+}
+
+const ORDRE_GROUPES = ['katon', 'suiton', 'fuuton', 'raiton', 'doton', 'combinaison', 'trinite', 'taijutsu', 'genjutsu', 'armes', 'fuinjutsu', 'medical', 'dojutsu', 'biju'];
+
+/** Les techniques apprises, rangées par nature : nom, rang et palier. Le détail reste dans l'onglet Maîtrise. */
+function Techniques({ etat }: { etat: GameState }) {
+  const p = etat.creation.presentation;
+  const apprises = Object.values(etat.maitrises).filter((m) => {
+    const def = R.maitrises[m.id];
+    return !!def?.technique && (m.awakened || !def.eveil) && !(def.cachee && !m.awakened);
+  });
+  const groupes = new Map<string, MasteryState[]>();
+  for (const m of apprises) {
+    const g = groupeTechnique(m.id);
+    groupes.set(g, [...(groupes.get(g) ?? []), m]);
+  }
+  const ids = [...groupes.keys()].sort((a, b) => (ORDRE_GROUPES.indexOf(a) + 1 || 99) - (ORDRE_GROUPES.indexOf(b) + 1 || 99));
+  if (!apprises.length) return <p className="plafond">Aucune technique apprise pour l’instant. Un aîné, un sensei ou un parchemin t’en apprendra une.</p>;
+  return (
+    <>
+      <p className="plafond">
+        <strong>{apprises.length}</strong>
+        <span>
+          technique{apprises.length > 1 ? 's' : ''} apprise{apprises.length > 1 ? 's' : ''}, rangée{apprises.length > 1 ? 's' : ''} par nature. Chaque palier se gagne à l’entraînement, puis au combat.
+        </span>
+      </p>
+      {ids.map((g) => (
+        <section key={g} className="groupe techniques-nature" style={{ '--nat': `var(--n-${g}, var(--or))` } as React.CSSProperties}>
+          <h3>
+            <span className="kanji" aria-hidden="true">
+              {KANJI_GROUPE[g] ?? '術'}{' '}
+            </span>
+            {libelleGroupe(g)} <small>· {groupes.get(g)!.length}</small>
+          </h3>
+          <ul className="techniques-apprises">
+            {groupes
+              .get(g)!
+              .sort((a, b) => b.tier - a.tier || R.maitrises[a.id].nom.localeCompare(R.maitrises[b.id].nom))
+              .map((m) => {
+                const def = R.maitrises[m.id];
+                return (
+                  <li key={m.id} className={`technique-apprise${classeMulti(naturesMaitrise(m.id))}`} style={styleNatures(naturesMaitrise(m.id))}>
+                    <span className="ta-nom">
+                      {def.nom}
+                      {def.rang && <small> · rang {def.rang}</small>}
+                      {def.kinjutsu && <b className="risque-eleve"> · kinjutsu</b>}
+                    </span>
+                    <span className="ta-palier">{accorder(def.paliers[m.tier]?.nom ?? '', p) || `Palier ${m.tier}`}</span>
+                    <span className="paliers" role="img" aria-label={`Palier ${m.tier} sur 5`}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <i key={n} className={n <= m.tier ? 'atteint' : ''} />
+                      ))}
+                    </span>
+                  </li>
+                );
+              })}
+          </ul>
+        </section>
+      ))}
+    </>
   );
 }
 
@@ -411,7 +487,7 @@ function Arsenal({ etat, enTempsLibre, onEquiper }: { etat: GameState; enTempsLi
               <h3>{def.nom}</h3>
               <span className={`etiquette ${def.rarete === 'legendaire' ? 'or' : ''}`}>{RARETE[def.rarete]}</span>
               <span className={`etiquette ${utilisable ? '' : 'rouge'}`}>{STATUT_ARME[inst.statut]}</span>
-              {etat.armeEquipee === inst.defId && <span className="etiquette or">En main</span>}
+              {etat.armeEquipee === inst.defId && <span className="etiquette or">Arme principale</span>}
               {inst.lie && <span className="etiquette violet">Liée</span>}
               <p className="sous-titre">{def.description}</p>
               {utilisable && (
@@ -449,7 +525,7 @@ function Arsenal({ etat, enTempsLibre, onEquiper }: { etat: GameState; enTempsLi
                   {etat.armeEquipee !== inst.defId && (
                     <div className="actions-bas" style={{ marginTop: 12 }}>
                       <button className="btn-secondaire" disabled={!enTempsLibre} onClick={() => onEquiper(inst.defId)}>
-                        Prendre en main
+                        En faire mon arme principale
                       </button>
                       {!enTempsLibre && <span className="sous-titre">Possible seulement pendant le temps libre.</span>}
                     </div>
@@ -581,9 +657,15 @@ function Missions({ etat }: { etat: GameState }) {
               Rang {m?.rang} : {m?.titre}
             </strong>{' '}
             <span className={`etiquette ${st === 'reussie' ? 'or' : st === 'echouee' ? 'rouge' : ''}`}>
-              {st === 'reussie' ? 'réussie' : st === 'echouee' ? 'échouée' : st === 'en_cours' ? 'en cours' : 'abandonnée'}
+              {st === 'reussie' ? 'réussie' : st === 'echouee' ? 'échouée' : st === 'en_cours' ? 'en cours' : st === 'confiee' ? 'prise par un autre' : 'abandonnée'}
             </span>
-            <div className="sous-titre">{m?.description}</div>
+            <div className="sous-titre">
+              {st === 'confiee'
+                ? typeof etat.drapeaux[`mission_prise:${id}`] === 'string'
+                  ? `Tu l’as laissée au tableau : ${defPnj(etat, etat.drapeaux[`mission_prise:${id}`] as string)?.nom ?? 'un autre'} l’a faite, et en a tiré l’expérience.`
+                  : 'Tu l’as laissée au tableau : une autre équipe l’a prise.'
+                : m?.description}
+            </div>
           </li>
         );
       })}

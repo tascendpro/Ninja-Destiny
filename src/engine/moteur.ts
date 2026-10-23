@@ -28,6 +28,10 @@ import { JOURS_AN, age, ageA, libelleDuree, libellePeriode } from './calendrier'
 import { Ctx, ajouterJournal, clamp, cloner, defPnj, nomDeFamille, nouveauCtx, resoudrePnj } from './etat';
 import { alea, aleaEntier, tirerPondere } from './rng';
 import { affrontementPour, jouerAffrontement, ouvrirAffrontement } from './combat/affrontement';
+import { texteRepetition } from './combat/repetition';
+import { techniqueAuContact, texteImpact, texteImpactJoueur, texteSombre, texteTechniqueTouche, tirageTexte } from './combat/impacts';
+import { PORTEE_ESCOUADE, RATES_NOVICE } from '../content/combat/impacts';
+import { accorderAdv } from './combat/affrontement';
 import { CONTEXTES } from './combat/contextes';
 import type { ActionCombat } from './combat/types';
 import { reagirTransformation } from './reactions';
@@ -77,6 +81,7 @@ import type { Defense, IssueManche, NiveauRisque } from './epreuves';
 import { interpoler, resoudreTexte } from './texte';
 import { faireActivite, naturesMaitrise } from './tempsLibre';
 import { verifierFin, verifierSucces } from './fins';
+import { partenaireDuo } from './duo';
 
 export const VERSION_ETAT = 1;
 export const JOUR_DEPART = R.contenu.monde.anDepart * JOURS_AN;
@@ -759,7 +764,7 @@ export function choixVisibles(s: GameState, ev: EventDef): VueChoix[] {
 }
 
 /** Payer une attaque spéciale (chakra, santé), en tirer de l'expérience, et renforcer le test. */
-function lancerTechnique(s: GameState, test: CheckDef, tech: string, ctx: Ctx, tour = 0): { test: CheckDef; prelude: string } {
+function lancerTechnique(s: GameState, test: CheckDef, tech: string, ctx: Ctx, tour = 0, deja = 0): { test: CheckDef; prelude: string; repetition?: string } {
   const def = R.maitrises[tech];
   const t = def.technique!;
   s.jauges.chakra = clamp(s.jauges.chakra - t.chakra, 0, s.jauges.chakraMax);
@@ -780,22 +785,51 @@ function lancerTechnique(s: GameState, test: CheckDef, tech: string, ctx: Ctx, t
   applyCombatExperience(s, [tech, ...(def.element ? [`nature_${def.element}`] : []), ...(t.requis ?? []).map((x) => x.maitrise)], ctx);
   const recit = recitTechnique(s, tech, test);
   // Une transformation se raconte comme une métamorphose, pas comme un coup.
-  let prelude = t.posture
+  // Relancée dans le même combat, une technique ne se raconte plus de la même façon, et l'adversaire l'attend (§11.2).
+  const rep = t.posture ? undefined : texteRepetition(tech, def.nom, deja, tour + deja);
+  const masculin = (x: string) => x.replace(/\{Il\}/g, 'Il').replace(/\{il\}/g, 'il').replace(/\{lui\}/g, 'lui');
+  // À deux : l'équipier compose ses signes en même temps que toi.
+  const partenaire = partenaireDuo(s, tech);
+  const appel = partenaire ? `Tu cries le nom de ${defPnj(s, partenaire)?.nom ?? 'ton équipier'} ; vos signes tombent ensemble. ` : '';
+  let prelude = appel + (t.posture
     ? `${entreeTransformation(s, tech, tour + s.jour)} ${consequence}`
-    : (recit ? `${def.nom}. ${recit} ` : `${VERBE_ATTAQUE[t.categorie]} ${def.nom}. `) + consequence;
+    : rep
+      ? `${masculin(rep.recit)} « ${rep.reaction} » ${consequence}`
+      : (recit ? `${def.nom}. ${recit} ` : `${VERBE_ATTAQUE[t.categorie]} ${def.nom}. `) + consequence);
   let renforce = testAvecTechnique(s, test, tech);
+  if (rep) renforce = { ...renforce, modificateur: (renforce.modificateur ?? 0) - (deja >= 2 ? 10 : 5) };
+  // Une technique apprise depuis peu lâche au mauvais moment : fatigue, blessure, combat à mort.
+  const rate = t.posture ? 0 : chanceRateNovice(s, tech, test);
+  if (rate > 0 && alea(s) < rate) {
+    renforce = { ...renforce, modificateur: (renforce.modificateur ?? 0) - MALUS_RATE_NOVICE };
+    prelude += `${RATES_NOVICE[Math.floor(tirageTexte(s, `rate:${tech}:${tour}`) * RATES_NOVICE.length)]} `;
+  }
   // Dans la mêlée, une technique de zone peut toucher un des tiens : le coup y perd sa force.
   if (risque > 0 && alea(s) < risque) {
     renforce = { ...renforce, modificateur: (renforce.modificateur ?? 0) - MALUS_TIR_AMI };
     prelude += `${texteTirAmi(tech)} `;
     s.drapeaux['tirs_amis'] = (Number(s.drapeaux['tirs_amis']) || 0) + 1;
   }
-  return { test: renforce, prelude };
+  return { test: renforce, prelude, repetition: rep ? masculin(rep.recit) : undefined };
+}
+
+/** Malus d'une technique qui lâche au mauvais moment. */
+const MALUS_RATE_NOVICE = 20;
+
+/** Chance qu'une technique novice lâche : forte au palier 1, faible au 2, nulle ensuite ; le moment l'aggrave. */
+export function chanceRateNovice(s: GameState, tech: string, t: CheckDef): number {
+  const tier = s.maitrises[tech]?.tier ?? 1;
+  let p = tier <= 1 ? 0.15 : tier === 2 ? 0.06 : 0;
+  if (!p) return 0;
+  if (s.jauges.fatigue >= 50) p *= 1.5;
+  if (s.jauges.sante < 40) p *= 1.5;
+  if (t.letal) p *= 1.3;
+  return Math.min(0.45, p);
 }
 
 /** Une manche se raconte en une phrase ; l'ordre varie d'une manche à l'autre. */
 const LIGNES_MANCHE: Record<IssueManche, string[]> = {
-  touche: ['Le coup porte : ton adversaire recule d’un pas, le souffle coupé.', 'Tu touches. Pour la première fois, tu vois de la peur dans ses yeux.', 'Ça passe sa garde. Il saigne.', 'Il ne l’a pas vu venir. Il pose un genou à terre, puis se relève.'],
+  touche: ['Le coup porte en plein corps.', 'Tu touches. Pour la première fois, tu vois de la peur dans ses yeux.', 'Ça passe sa garde.', 'Il ne l’a pas vu venir.', 'Ton coup lui arrache un cri.'],
   esquive: ['Il esquive d’un bond, comme s’il avait lu ton geste avant toi.', 'Une substitution : ton coup frappe une bûche. Il est déjà ailleurs.', 'Il pare, de justesse, et reprend ses distances.', 'Le coup fend l’air. Il te regarde, et sourit.'],
   riposte: ['Il esquive et riposte dans le même geste. Une douleur vive au flanc.', 'Il contre et te projette au sol. Tu te relèves avec du sang dans la bouche.', 'Tu frappes dans le vide ; sa lame, elle, trouve ton épaule.', 'Il attendait exactement ça. Le coup en retour te coupe le souffle.'],
 };
@@ -1179,14 +1213,15 @@ function jouerManche(s: GameState, action?: string): void {
     // Contrer avec une technique : sa force s'ajoute au contre, et une nature qui domine la sienne aide encore.
     if (contreTech) {
       if (!attaqueDisponible(s, contreTech) || !attaquesSpeciales(s, base, 6, sc.transformation, true).includes(contreTech)) throw new Error('Technique indisponible pour contrer.');
-      const lance = lancerTechnique(s, t, contreTech, ctx, sc.manche);
+      const lance = lancerTechnique(s, t, contreTech, ctx, sc.manche, sc.techniques.filter((x) => x === contreTech).length);
       const av = avantageTechnique(contreTech, adv.element);
       t = { ...lance.test, modificateur: (lance.test.modificateur ?? 0) + (av === 'fort' ? 8 : av === 'faible' ? -8 : 0) };
       prelude = `Tu contres avec ${R.maitrises[contreTech].nom}. `;
       sc.techniques.push(contreTech);
     }
     const r = resoudreDefense(s, t, sc.priorite, mode, ctx);
-    const ligne = `${prelude}${LIGNES_DEFENSE[mode][r.issue]!}`;
+    let ligne = `${prelude}${LIGNES_DEFENSE[mode][r.issue]!}`;
+    if (r.issue === 'riposte') ligne += ` ${texteImpactJoueur(s, tirageTexte(s, `force-j:${sc.manche}`) < 0.5 ? 'lourd' : 'leger', `def:${sc.manche}`)}`;
     if (r.issue === 'touche') sc.touches++;
     if (r.issue === 'riposte') sc.ripostes++;
     sc.resultats.push(r.issue);
@@ -1230,6 +1265,7 @@ function jouerManche(s: GameState, action?: string): void {
   if (tech && (!attaqueDisponible(s, tech) || !attaquesSpeciales(s, base, 6, sc.transformation, true).includes(tech))) throw new Error('Attaque spéciale indisponible.');
   let test = base;
   let prelude = enEntree;
+  let repetition: string | undefined;
   // Transformé·e : chaque attaque porte la force de la transformation ; les yeux activés aussi.
   if (sc.transformation) test = { ...test, modificateur: (test.modificateur ?? 0) + bonusPosture(s, sc.transformation).attaque };
   if (sc.dojutsu) test = { ...test, modificateur: (test.modificateur ?? 0) + bonusDojutsu(s, sc.dojutsu).attaque };
@@ -1243,9 +1279,10 @@ function jouerManche(s: GameState, action?: string): void {
   }
   if (tech) {
     const ench = enchainement(s, sc.techniques.at(-1), tech);
-    const lance = lancerTechnique(s, test, tech, ctx, sc.manche);
+    const lance = lancerTechnique(s, test, tech, ctx, sc.manche, sc.techniques.filter((x) => x === tech).length);
     test = lance.test;
     prelude += lance.prelude;
+    repetition = lance.repetition;
     if (ench) {
       test = { ...test, modificateur: (test.modificateur ?? 0) + BONUS_ENCHAINEMENT };
       prelude = `Enchaînement ! Ton ${R.elements[ench[0]]?.nom} nourrit ton ${R.elements[ench[1]]?.nom}. ${prelude}`;
@@ -1260,7 +1297,35 @@ function jouerManche(s: GameState, action?: string): void {
   }
   const r = resoudreManche(s, test, ctx, protege);
   const lignes = LIGNES_MANCHE[r.issue];
-  const ligne = lignes[(sc.manche + (tech?.length ?? 0) + sc.touches) % lignes.length];
+  let ligne = lignes[(sc.manche + (tech?.length ?? 0) + sc.touches) % lignes.length];
+  // Un coup qui porte se raconte par la technique (de loin ou au contact), puis par l'endroit où le corps s'écrase.
+  const contact = !objet && techniqueAuContact(tech);
+  const distance = contact ? 'proche' : (sc.distance ?? 'loin');
+  if (r.issue === 'touche') {
+    const cle = `${sc.manche}`;
+    const deja = tech ? sc.techniques.filter((x) => x === tech).length - 1 : 0;
+    const groupe = base.forme === 'escouade';
+    const lourd = !groupe && (deja >= 2 || ['A', 'S', 'SS'].includes(R.maitrises[tech ?? '']?.rang ?? '') || tirageTexte(s, `force:${cle}`) < 0.35);
+    const propre = tech && !groupe ? texteTechniqueTouche(s, tech, distance, cle) : '';
+    // Le texte de distance remplace le récit générique de la technique : les deux se contrediraient (« au contact » / « par le sol »).
+    const generique = tech ? recitTechnique(s, tech, base) : undefined;
+    if (propre && generique) prelude = prelude.replace(`${generique} `, '');
+    // Relancée, la technique était « attendue » ; si elle porte quand même, on ne raconte pas qu'il l'a parée.
+    if (repetition && tech) prelude = prelude.replace(repetition, `${R.maitrises[tech].nom}, encore. Il croit l’avoir lue ; il se trompe.`);
+    const parties = [propre || ligne];
+    // Contre quelqu'un qu'on a le droit de tuer, la troisième fois, la technique finit ce qu'elle a commencé.
+    if (tech && !groupe && base.letal && deja >= 2) parties.push(texteSombre(s, tech, cle));
+    parties.push(texteImpact(s, groupe ? 'groupe' : lourd ? 'lourd' : 'leger', cle));
+    if (groupe && tech && porteeTechnique(tech) !== 'cible') parties.push(PORTEE_ESCOUADE.zone[Math.floor(tirageTexte(s, `zone:${cle}`) * PORTEE_ESCOUADE.zone.length)]);
+    ligne = accorderAdv(parties.filter(Boolean).join(' '), 'm');
+    sc.distance = lourd ? 'loin' : distance;
+  } else if (r.issue === 'riposte') {
+    sc.distance = 'proche';
+    ligne += ` ${texteImpactJoueur(s, tirageTexte(s, `force-j:${sc.manche}`) < 0.4 ? 'lourd' : 'leger', `rip:${sc.manche}`)}`;
+  } else sc.distance = 'loin';
+  // Contre une escouade, frapper un seul (coup simple ou technique ciblée) laisse les autres te tomber dessus.
+  sc.expose = base.forme === 'escouade' && !objet && (!tech || porteeTechnique(tech) === 'cible');
+  if (sc.expose) ligne += ` ${PORTEE_ESCOUADE.expose[Math.floor(tirageTexte(s, `expose:${sc.manche}`) * PORTEE_ESCOUADE.expose.length)]}`;
   if (r.issue === 'touche') sc.touches++;
   if (r.issue === 'riposte') sc.ripostes++;
   sc.resultats.push(r.issue);
@@ -1271,8 +1336,23 @@ function jouerManche(s: GameState, action?: string): void {
     prendreInitiative(s, base);
     return;
   }
+  // Encore debout après ta dernière attaque : il jette ce qui lui reste dans un dernier assaut, et c'est à toi de le recevoir.
+  if (!sc.dernierAssaut && sc.touches < sc.total) {
+    sc.dernierAssaut = true;
+    sc.total += 1;
+    sc.priorite = tirerTechniqueAdverse(s, base);
+    sc.journal.push(LIGNES_DERNIER_ASSAUT[Math.floor(tirageTexte(s, `assaut:${sc.manche}`) * LIGNES_DERNIER_ASSAUT.length)]);
+    return;
+  }
   conclureManches(s, ev, ch, base, ctx);
 }
+
+/** Le dernier assaut de l'adversaire, après ta dernière attaque. */
+const LIGNES_DERNIER_ASSAUT = [
+  'Il n’est pas fini. Il crache du sang, se redresse, et rassemble ce qui lui reste pour un dernier assaut.',
+  'Il recule d’un bond, compose ses signes plus vite que jamais. Un dernier coup, tout ce qu’il a.',
+  'Ses yeux changent. Il n’essaie plus de gagner : il essaie de t’emporter avec lui.',
+];
 
 /**
  * Après chaque manche, une transformation se paie : chakra, santé ou fatigue. Faute de pouvoir payer,
@@ -1363,7 +1443,8 @@ function prendreInitiative(s: GameState, t: CheckDef): void {
   if (s.scene.type !== 'combat') return;
   const sc = s.scene;
   if (sc.ouverture) return;
-  if (alea(s) < chancePriorite(s, t)) sc.priorite = tirerTechniqueAdverse(s, t);
+  // Exposé·e après avoir frappé un seul d'entre eux : les autres prennent plus souvent l'initiative.
+  if (alea(s) < Math.min(0.8, chancePriorite(s, t) + (sc.expose ? 0.25 : 0))) sc.priorite = tirerTechniqueAdverse(s, t);
 }
 
 /** Dernière manche : l'issue du combat dépend de l'ensemble. */
@@ -1372,7 +1453,8 @@ function conclureManches(s: GameState, ev: EventDef, ch: ChoiceDef, base: CheckD
   const sc = s.scene;
   const fin = nouveauCtx();
   fin.changements.push(...ctx.changements);
-  const res = conclureCombat(s, base, sc.touches, sc.ripostes, sc.total, fin);
+  // Le dernier assaut ne compte pas comme une manche à gagner : il ajoute un coup porté (contre) ou une riposte encaissée.
+  const res = conclureCombat(s, base, sc.touches, sc.ripostes, sc.dernierAssaut ? sc.total - 1 : sc.total, fin);
   const recit = sc.journal.join('\n\n');
   let texte: string;
   let suite = ch.suite;

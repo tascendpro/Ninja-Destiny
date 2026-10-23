@@ -38,7 +38,8 @@ export type StatPath = `attributs.${AttributId}` | `jauges.${JaugeId}` | `social
 export type RelationAxe = 'confiance' | 'respect' | 'amitie' | 'rivalite' | 'hostilite' | 'attachement' | 'peur' | 'dette';
 export const AXES_RELATION: RelationAxe[] = ['confiance', 'respect', 'amitie', 'rivalite', 'hostilite', 'attachement', 'peur', 'dette'];
 
-export type MissionStatut = 'en_cours' | 'reussie' | 'echouee' | 'abandonnee';
+/** « confiee » : laissée trop longtemps au tableau, quelqu'un d'autre l'a faite. */
+export type MissionStatut = 'en_cours' | 'reussie' | 'echouee' | 'abandonnee' | 'confiee';
 export type Saison = 'printemps' | 'ete' | 'automne' | 'hiver';
 export type Difficulte = 'recit' | 'shinobi' | 'legende';
 export type Presentation = 'masculin' | 'feminin' | 'neutre';
@@ -137,6 +138,8 @@ export type Condition =
   | { difficulte: Difficulte | Difficulte[] }
   | { possedeArmeLegendaire: boolean }
   | { missionsReussies: number }
+  /** Assez proche de cet équipier pour mêler vos natures en une technique à deux. */
+  | { duo: string }
   | { ageDepart: number };
 
 // ── Effets ───────────────────────────────────────────────────
@@ -176,6 +179,8 @@ export type Effect =
   | { apprendre: string; source?: string }
   /** Enseignement du clan ou d'un aîné : la technique s'apprend même sans l'affinité, et la nature qui va avec s'éveille. */
   | { enseigner: string }
+  /** Créer avec cet équipier la technique combinée de vos deux natures (elle ne se lance qu'à deux). */
+  | { duo: string }
   | { copier: string }
   | { obtenirArme: string; statut?: 'possedee' | 'pretee' | 'derobee' }
   | { perdreArme: string; statut: 'perdue' | 'confisquee' | 'detruite' | 'vendue' | 'rendue'; vers?: string }
@@ -1053,6 +1058,12 @@ export type Scene =
       transfoTours?: number;
       /** Dōjutsu activé (Sharingan, Byakugan…) : il se paie en chakra à chaque manche. */
       dojutsu?: string;
+      /** À quelle distance vous êtes l'un de l'autre : une technique ne se raconte pas pareil de loin et au contact. */
+      distance?: 'loin' | 'proche';
+      /** Contre une escouade, frapper un seul laisse les autres prendre l'initiative à la manche suivante. */
+      expose?: boolean;
+      /** Après ta dernière attaque, il a lancé un dernier assaut : le combat finit sur ta défense. */
+      dernierAssaut?: boolean;
     };
 
 /** Ce que la dernière période de temps libre a rapporté (pour le mini-bilan). */

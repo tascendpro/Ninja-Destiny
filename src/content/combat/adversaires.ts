@@ -44,6 +44,11 @@ export const ADVERSAIRES: AdversaireDef[] = [
       // Répétition, reconnaissance, découverte
       { id: 'r_repet_1', categorie: 'repetition', texte: 'Encore ? Tu crois que je n’ai pas compris ?' },
       { id: 'r_repet_2', categorie: 'repetition', texte: 'Deux fois le même geste. Tu me facilites la tâche.' },
+      { id: 'r_repet_touche_1', categorie: 'repetition', texte: 'Encore celle-là… et ça passe quand même. Je déteste ça.', quand: { issue: ['touche'] } },
+      { id: 'r_repet_touche_2', categorie: 'repetition', texte: 'D’accord, d’accord. Celle-là, je vais devoir l’apprendre.', quand: { issue: ['touche'] } },
+      { id: 'r_repet_predite_1', categorie: 'repetition', texte: 'Tu crois que je n’ai pas compris ? Je t’attendais.', quand: { issue: ['predite'] } },
+      { id: 'r_repet_predite_2', categorie: 'repetition', texte: 'Trop tard : je l’ai déjà vue. Change de disque.', quand: { issue: ['predite'] } },
+      { id: 'r_repet_annulee', categorie: 'repetition', texte: 'La même chose, la même réponse. On peut continuer longtemps comme ça.', quand: { issue: ['annulee', 'dominee'] } },
       { id: 'r_reco_1', categorie: 'reconnaissance', texte: 'C’est exactement ce que j’attendais.', quand: { dejaVue: true } },
       { id: 'r_reco_2', categorie: 'reconnaissance', texte: 'Je l’ai déjà vue, celle-là. J’ai eu le temps d’y penser.', quand: { dejaVue: true } },
       { id: 'r_decouverte_1', categorie: 'decouverte', texte: 'Attends… Cette technique, tu ne l’avais jamais utilisée.', quand: { inedite: true } },

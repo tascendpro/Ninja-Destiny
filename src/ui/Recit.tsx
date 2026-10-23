@@ -13,6 +13,8 @@ import type { Activite } from '../engine/tempsLibre';
 import { age, libelleDuree, libellePeriode, moisDe, saisonDe } from '../engine/calendrier';
 import Portrait from './Portrait';
 import Affrontement, { CarteBilan } from './combat/Affrontement';
+import GroupesNature from './combat/GroupesNature';
+import { classeMulti, styleNatures } from './natures';
 import type { ActionCombat } from '../engine/combat/types';
 import { cleScene, remonter } from './defilement';
 import { ATTRIBUT_LIBELLE, ETAT_PNJ, KANJI_SAISON, vueChangements } from './libelles';
@@ -230,7 +232,7 @@ export default function Recit({
                       {ch.risque && (
                         <span className={RISQUE_CLASSE[ch.risque]}>
                           {ch.chance !== undefined && <PointsEncre chance={ch.chance} />}
-                          {precis && ch.chance !== undefined ? `${ch.chance} % de réussite` : `Risque ${ch.risque}`}
+                          {precis && ch.chance !== undefined && ch.nature !== 'combat' ? `${ch.chance} % de réussite` : `Risque ${ch.risque}`}
                           {ch.principal && ` · ${ATTRIBUT_LIBELLE[ch.principal]}`}
                         </span>
                       )}
@@ -245,28 +247,24 @@ export default function Recit({
                     <span className="attaques-titre">
                       Ou avec une attaque spéciale <FormeCombat forme={ch.forme} allies={ch.allies} /> :
                     </span>
-                    {ch.attaques.map((at) => (
-                      <button
-                        key={at.id}
-                        className={`attaque ${scelle === at.id ? 'scelle' : ''}${at.natures.length ? ' a-nature' : ''}`}
-                        style={at.natures.length ? ({ '--nat': `var(--n-${at.natures[0]}, var(--or))` } as React.CSSProperties) : undefined}
-                        data-sceau="技"
-                        disabled={scelle !== null && scelle !== at.id}
-                        onClick={() => choisir(at.id)}
-                      >
-                        <span className="attaque-nom">
-                          {at.natures.length > 0 && <BadgesNature natures={at.natures} />}
-                          {at.nom}
-                        </span>
-                        <span className="attaque-meta">
-                          {at.chakra > 0 ? `${at.chakra} chakra` : 'sans chakra'}
-                          {at.avantage === 'fort' && <b className="risque-faible"> · avantage d’élément</b>}
-                          {at.avantage === 'faible' && <b className="risque-eleve"> · élément défavorable</b>}
-                          <span className={RISQUE_CLASSE[at.risque]}> · {precis ? `${at.chance} %` : `risque ${at.risque}`}</span>
-                        </span>
-                        <DetailAttaque at={at} precis={precis} p={p} />
-                      </button>
-                    ))}
+                    <GroupesNature
+                      items={ch.attaques}
+                      techId={(at) => at.technique}
+                      titre="Attaques spéciales par nature"
+                      rendu={(at) => (
+                        <button
+                          key={at.id}
+                          className={`attaque ${scelle === at.id ? 'scelle' : ''}${at.natures.length ? ' a-nature' : ''}${classeMulti(at.natures)}`}
+                          style={styleNatures(at.natures)}
+                          data-sceau="技"
+                          disabled={scelle !== null && scelle !== at.id}
+                          onClick={() => choisir(at.id)}
+                        >
+                          <span className="attaque-nom">{at.nom}</span>
+                          <MetaAttaque at={at} />
+                        </button>
+                      )}
+                    />
                   </div>
                 )}
               </li>
@@ -340,7 +338,7 @@ export default function Recit({
 
 // ── Temps libre ────────────────────────────────────────────────
 
-type CategorieTL = 'missions' | 'route' | 'entrainement' | 'techniques' | 'liens' | 'vie' | 'forge';
+type CategorieTL = 'missions' | 'route' | 'entrainement' | 'techniques' | 'liens' | 'vie';
 
 const CATEGORIES: { id: CategorieTL; nom: string; kanji: string; filtre: (a: Activite) => boolean }[] = [
   { id: 'missions', nom: 'Missions', kanji: '任', filtre: (a) => a.categorie === 'mission' },
@@ -349,7 +347,6 @@ const CATEGORIES: { id: CategorieTL; nom: string; kanji: string; filtre: (a: Act
   { id: 'techniques', nom: 'Techniques', kanji: '術', filtre: (a) => a.categorie === 'technique' },
   { id: 'liens', nom: 'Liens', kanji: '絆', filtre: (a) => a.categorie === 'social' || a.categorie === 'famille' },
   { id: 'vie', nom: 'Vie', kanji: '生', filtre: (a) => ['repos', 'etude', 'travail', 'metier'].includes(a.categorie) },
-  { id: 'forge', nom: 'Échoppe', kanji: '鍛', filtre: (a) => a.categorie === 'forge' || a.categorie === 'equipement' },
 ];
 const KANJI_CATEGORIE = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.kanji])) as Record<CategorieTL, string>;
 
@@ -382,8 +379,8 @@ function LigneActivite({
       <button
         data-kanji={natures.length ? KANJI_NATURE[natures[0]] ?? kanji : kanji}
         data-nature={natures[0]}
-        style={natures.length ? ({ '--cat': `var(--n-${natures[0]}, var(--or))` } as React.CSSProperties) : undefined}
-        className={`activite${choisie ? ' choisie' : ''}${!a.disponible ? ' bloquee' : ''}`}
+        style={styleNatures(natures, '--cat')}
+        className={`activite${choisie ? ' choisie' : ''}${!a.disponible ? ' bloquee' : ''}${classeMulti(natures)}`}
         disabled={!a.disponible}
         aria-pressed={a.groupe && cocher ? choisie : undefined}
         onClick={() => onActivite(a.id)}
@@ -469,22 +466,6 @@ function TempsLibre({
     else if (sort || discipline) onActivite((sort ?? discipline)!.id);
   };
   const estChoisie = (a: Activite) => !!a.groupe && programme[a.groupe] === a.id;
-  // Ce qu'on ne peut pas améliorer est masqué ; le choix d'afficher ou non est retenu pour la session.
-  const [voirBloquees, setVoirBloquees] = useState(() => {
-    try {
-      return typeof window !== 'undefined' && window.sessionStorage.getItem('ninja-destiny:voir-bloquees') === '1';
-    } catch {
-      return false;
-    }
-  });
-  const basculerBloquees = (v: boolean) => {
-    setVoirBloquees(v);
-    try {
-      window.sessionStorage.setItem('ninja-destiny:voir-bloquees', v ? '1' : '0');
-    } catch {
-      /* stockage indisponible : le choix vaut pour cet écran */
-    }
-  };
 
   const alertes: string[] = [];
   if (etat.jauges.fatigue >= 60) alertes.push('La fatigue s’accumule : t’entraîner encore expose à la blessure.');
@@ -492,12 +473,11 @@ function TempsLibre({
   else if (etat.blessures.length) alertes.push(`Blessure en cours : ${etat.blessures.map((b) => b.nom.toLowerCase()).join(', ')}.`);
 
   const liste = parCategorie[cat] ?? [];
-  const achatsHorsPortee = cat === 'forge' ? liste.filter((a) => a.id.startsWith('forge:acheter:') && !a.disponible) : [];
-  const sansAchats = liste.filter((a) => !achatsHorsPortee.includes(a));
-  // Tout ce qui est en rouge descend en bas, quelle que soit la catégorie : ce qui est impossible pour l'instant,
-  // et ce qui bute sur un mur (âge, maître, expérience) que l'entraînement seul ne franchira pas.
-  const bloquees = sansAchats.filter((a) => !a.disponible || !!a.alerte);
-  const principales = sansAchats.filter((a) => !bloquees.includes(a));
+  // Achats et réparations sont dans l'onglet Magasin ; l'arme principale se choisit dans Ninja › Arsenal.
+  // Ce qui est impossible pour l'instant, ou bute sur un mur (âge, maître, expérience, œil) que l'entraînement
+  // seul ne franchira pas, n'est pas proposé : l'onglet Techniques de la fiche Ninja dit où en est chaque maîtrise.
+  const bloquees = liste.filter((a) => !a.disponible || !!a.alerte);
+  const principales = liste.filter((a) => !bloquees.includes(a));
 
   return (
     <div className="recit">
@@ -569,32 +549,6 @@ function TempsLibre({
               </ul>
             )}
             {principales.length === 0 && <p className="tl-vide">Rien à faire ici pour l’instant.</p>}
-            {bloquees.length > 0 && (
-              <button type="button" className="lien-bloquees" aria-expanded={voirBloquees} onClick={() => basculerBloquees(!voirBloquees)}>
-                {voirBloquees ? 'Masquer' : 'Voir'} {bloquees.length === 1 ? 'l’activité bloquée' : `les ${bloquees.length} activités bloquées`}
-              </button>
-            )}
-            {bloquees.length > 0 && voirBloquees && (
-              <div className="sous-groupe bloquees">
-                <h3>Bloqué ou impossible à améliorer pour l’instant</h3>
-                <ul className="activites">
-                  {bloquees.map((a) => (
-                    <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
-                  ))}
-                </ul>
-              </div>
-            )}
-            {cat === 'forge' && <p className="tl-note">Achats, réparations et changement d’arme sont instantanés : ils ne comptent pas comme ta décision. Pilules, parchemins et fumigènes s’utilisent pendant les combats en manches.</p>}
-            {achatsHorsPortee.length > 0 && (
-              <details className="hors-portee">
-                <summary>Hors de portée pour l’instant ({achatsHorsPortee.length})</summary>
-                <ul className="activites">
-                  {achatsHorsPortee.map((a) => (
-                    <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
-                  ))}
-                </ul>
-              </details>
-            )}
             {double && (valides.sort || valides.discipline) && (
               <div className="programme actif" role="region" aria-label="Programme d’entraînement">
                 <span className="programme-choix">
@@ -744,23 +698,16 @@ function FormeCombat({ forme, allies }: { forme?: 'duel' | 'escouade'; allies?: 
   );
 }
 
-/** Ce que fait la technique sur ce terrain, sa portée, et le risque de toucher un des tiens. */
-function DetailAttaque({ at, precis, p }: { at: VueAttaque; precis: boolean; p: Presentation }) {
+/** Sous une technique : seulement son coût, l'avantage de nature et un avertissement s'il y a un prix à payer. Ni récit ni chance. */
+function MetaAttaque({ at }: { at: { chakra: number; avantage?: 'fort' | 'faible'; kinjutsu?: string; usages?: number; portee?: VueAttaque['portee'] } }) {
   return (
-    <>
-      {at.recit && <span className="attaque-recit">{accorder(at.recit, p)}</span>}
-      {at.kinjutsu && (
-        <span className="attaque-kinjutsu">
-          <b>Kinjutsu</b> · {at.kinjutsu}
-          {at.usages !== undefined && ` · ${at.usages} usage${at.usages > 1 ? 's' : ''} restant${at.usages > 1 ? 's' : ''}`}
-          {at.avertissement && ` · ${at.avertissement}`}
-        </span>
-      )}
-      <span className="attaque-portee">
-        {at.rang && `Rang ${at.rang} · `}Portée : {LIBELLE_PORTEE[at.portee]}
-        {at.risqueAllie > 0 && <b className="risque-eleve"> · {precis ? `${at.risqueAllie} % de toucher un allié` : 'peut toucher un allié'}</b>}
-      </span>
-    </>
+    <span className="attaque-meta">
+      {at.chakra > 0 ? `${at.chakra} chakra` : 'sans chakra'}
+      {at.portee && ` · ${LIBELLE_PORTEE[at.portee]}`}
+      {at.avantage === 'fort' && <b className="risque-faible"> · avantage de nature</b>}
+      {at.avantage === 'faible' && <b className="risque-eleve"> · nature défavorable</b>}
+      {at.kinjutsu && <b className="risque-eleve"> · kinjutsu{at.usages !== undefined ? ` (${at.usages} usage${at.usages > 1 ? 's' : ''})` : ''}</b>}
+    </span>
   );
 }
 
@@ -857,7 +804,7 @@ function Combat({ etat, theme, anime, onManche }: { etat: GameState; theme: 'nui
               <button className="attaque" onClick={() => onManche('esquiver')}>
                 <span className="attaque-nom">Esquiver</span>
                 <span className="attaque-meta">
-                  Sûr, mais tu ne touches pas. Réussie, elle ouvre sa garde{precis ? ` · ${v.adversaire.esquive} %` : ''}
+                  Sûr, mais tu ne touches pas. Réussie, elle ouvre sa garde
                   {v.adversaire.permutation && <b className="risque-faible"> · ta permutation aide</b>}
                 </span>
               </button>
@@ -865,38 +812,35 @@ function Combat({ etat, theme, anime, onManche }: { etat: GameState; theme: 'nui
                 <button className="attaque transformation" data-sceau="替" onClick={() => onManche('permutation')}>
                   <span className="attaque-nom">Permutation</span>
                   <span className="attaque-meta">
-                    Une bûche prend le coup ; réussie, tu surgis dans son dos (gros avantage){precis ? ` · ${v.adversaire.permutationChance} %` : ''}
+                    Une bûche prend le coup ; réussie, tu surgis dans son dos (gros avantage)
                   </span>
                 </button>
               )}
               <button className="attaque" data-sceau="返" onClick={() => onManche('contrer')}>
                 <span className="attaque-nom">Contre-attaquer</span>
                 <span className="attaque-meta">
-                  Frapper dans son attaque : compte comme un coup porté, mais raté, il fait très mal{precis ? ` · ${v.adversaire.contre} %` : ''}
+                  Frapper dans son attaque : compte comme un coup porté, mais raté, il fait très mal
                   {v.adversaire.natureFavorable && <b className="risque-faible"> · ton {v.adversaire.natureFavorable} domine sa nature</b>}
                 </span>
               </button>
               {v.adversaire.contres.length > 0 && <span className="attaques-titre">Ou contrer avec une technique :</span>}
-              {v.adversaire.contres.map((c) => (
-                <button
-                  key={c.id}
-                  className={`attaque${c.natures.length ? ' a-nature' : ''}`}
-                  style={c.natures.length ? ({ '--nat': `var(--n-${c.natures[0]}, var(--or))` } as React.CSSProperties) : undefined}
-                  data-sceau="返"
-                  onClick={() => onManche(`contrer:${c.id}`)}
-                >
-                  <span className="attaque-nom">
-                    {c.natures.length > 0 && <BadgesNature natures={c.natures} />}
-                    {c.nom}
-                  </span>
-                  <span className="attaque-meta">
-                    {c.chakra > 0 ? `${c.chakra} chakra` : 'sans chakra'}
-                    {c.avantage === 'fort' && <b className="risque-faible"> · ta nature domine la sienne</b>}
-                    {c.avantage === 'faible' && <b className="risque-eleve"> · sa nature domine la tienne</b>}
-                    {precis ? ` · ${c.chance} %` : ''}
-                  </span>
-                </button>
-              ))}
+              <GroupesNature
+                items={v.adversaire.contres}
+                techId={(c) => c.id}
+                titre="Contrer, par nature"
+                rendu={(c) => (
+                  <button
+                    key={c.id}
+                    className={`attaque${c.natures.length ? ' a-nature' : ''}${classeMulti(c.natures)}`}
+                    style={styleNatures(c.natures)}
+                    data-sceau="返"
+                    onClick={() => onManche(`contrer:${c.id}`)}
+                  >
+                    <span className="attaque-nom">{c.nom}</span>
+                    <MetaAttaque at={c} />
+                  </button>
+                )}
+              />
             </div>
           </div>
         ) : (
@@ -904,36 +848,34 @@ function Combat({ etat, theme, anime, onManche }: { etat: GameState; theme: 'nui
         <p className="combat-aide">
           {v.ouverture ? 'Ton esquive a ouvert sa garde : ta prochaine attaque en profite. ' : 'L’adversaire n’est pas tombé. '}
           Choisis ta prochaine attaque : chaque coup porté compte, chaque riposte encaissée te coûte. <FormeCombat forme={v.forme} allies={v.allies} />
-          {v.permutation > 0 && <span className="forme-combat"> · ta permutation peut détourner un coup mortel{precis ? ` (${v.permutation} %)` : ''}</span>}
+          {v.permutation > 0 && <span className="forme-combat"> · ta permutation peut détourner un coup mortel</span>}
         </p>
         <div className="attaques combat-attaques" role="group" aria-label="Attaques de la manche">
           <button className="attaque" onClick={() => onManche('simple')}>
             <span className="attaque-nom">Attaque simple</span>
-            <span className="attaque-meta">sans chakra{precis ? ` · ${v.simple} %` : ''}</span>
+            <span className="attaque-meta">sans chakra</span>
           </button>
-          {v.attaques.map((at) => (
+        </div>
+        <GroupesNature
+          items={v.attaques}
+          techId={(at) => at.id}
+          titre="Techniques de la manche, par nature"
+          rendu={(at) => (
             <button
               key={at.id}
-              className={`attaque${at.enchainement ? ' enchainable' : ''}${at.natures.length ? ' a-nature' : ''}`}
-              style={at.natures.length ? ({ '--nat': `var(--n-${at.natures[0]}, var(--or))` } as React.CSSProperties) : undefined}
+              className={`attaque${at.enchainement ? ' enchainable' : ''}${at.natures.length ? ' a-nature' : ''}${classeMulti(at.natures)}`}
+              style={styleNatures(at.natures)}
               data-sceau="技"
               onClick={() => onManche(at.id)}
             >
               <span className="attaque-nom">
-                {at.natures.length > 0 && <BadgesNature natures={at.natures} />}
                 {at.nom}
                 {at.enchainement && <b className="badge-enchainement"> Enchaînement {at.enchainement}</b>}
               </span>
-              <span className="attaque-meta">
-                {at.chakra > 0 ? `${at.chakra} chakra` : 'sans chakra'}
-                {at.avantage === 'fort' && <b className="risque-faible"> · avantage d’élément</b>}
-                {at.avantage === 'faible' && <b className="risque-eleve"> · élément défavorable</b>}
-                <span className={RISQUE_CLASSE[at.risque]}> · {precis ? `${at.chance} %` : `risque ${at.risque}`}</span>
-              </span>
-              <DetailAttaque at={at} precis={precis} p={p} />
+              <MetaAttaque at={at} />
             </button>
-          ))}
-        </div>
+          )}
+        />
         {v.dojutsu.some((d) => !d.actif) && (
           <div className="attaques combat-transformations" role="group" aria-label="Dōjutsu">
             <span className="attaques-titre">Activer tes yeux (ne coûte pas la manche) :</span>
@@ -983,7 +925,6 @@ function Combat({ etat, theme, anime, onManche }: { etat: GameState; theme: 'nui
                 </span>
                 <span className="attaque-meta">
                   {o.effet}
-                  {precis ? ` · ${o.chance} %` : ''}
                 </span>
               </button>
             ))}

@@ -242,7 +242,6 @@ export const EVENEMENTS_MISSIONS_GENIN: EventDef[] = [
     categorie: 'quotidien',
     lieu: '$village',
     poids: 5,
-    repetable: { delaiJours: 400, max: 2 },
     si: { tout: [ACTIF, { age: { min: 9, max: 15 } }] },
     texte: 'Quatre grands de la dernière année rackettent le vieux vendeur de brochettes. Ils renversent son étal pour rire. Personne ne bouge. Le vieux ramasse ses brochettes dans la poussière sans rien dire.',
     choix: [
@@ -276,7 +275,6 @@ export const EVENEMENTS_MISSIONS_GENIN: EventDef[] = [
     categorie: 'entrainement',
     lieu: '$terrain',
     poids: 4,
-    repetable: { delaiJours: 365, max: 2 },
     si: { tout: [ACTIF, { age: { min: 10, max: 16 } }] },
     texte: 'Un chūnin de passage organise un combat de démonstration pour les élèves et les jeunes genin. Il cherche un adversaire « qui n’a pas peur ». Personne ne lève la main. Il te regarde. « Toi. Tu as les yeux de quelqu’un qui veut. »',
     choix: [

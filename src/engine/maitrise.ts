@@ -81,7 +81,22 @@ export function porteurPnj(s: GameState, id: string): Porteur | undefined {
   };
 }
 
-export type RaisonBlocage = 'max' | 'eveil' | 'bloquee' | 'age' | 'entrainement' | 'combat' | 'temps' | 'drapeau' | 'prerequis';
+export type RaisonBlocage = 'max' | 'eveil' | 'bloquee' | 'age' | 'entrainement' | 'combat' | 'temps' | 'drapeau' | 'prerequis' | 'oeil';
+
+/** Le genjutsu plafonne à ce palier : au-delà, seul un œil qui voit à travers les illusions peut le porter. */
+export const PALIER_MAX_GENJUTSU = 3;
+/** Les dōjutsu qui comprennent le genjutsu (éveillés). Le Byakugan voit le chakra, pas l'illusion. */
+export const DOJUTSU_GENJUTSU = ['sharingan', 'mangekyo', 'rinnegan'];
+
+/** Le genjutsu pur (la discipline et ses techniques hors clan), soumis au plafond sans œil. */
+export function estGenjutsu(id: string): boolean {
+  const def = R.maitrises[id];
+  return id === 'genjutsu' || (def?.technique?.categorie === 'genjutsu' && !def.clan);
+}
+
+export function oeilDuGenjutsu(maitrises: Record<string, MasteryState>): boolean {
+  return DOJUTSU_GENJUTSU.some((d) => maitrises[d]?.awakened && (maitrises[d]?.tier ?? 0) >= 1);
+}
 
 /** Explique ce qui empêche le palier suivant ; undefined si rien ne l'empêche. */
 export function blocagePalier(p: Porteur, id: string): RaisonBlocage | undefined {
@@ -95,6 +110,7 @@ export function blocagePalier(p: Porteur, id: string): RaisonBlocage | undefined
   // Pour un pouvoir à éveil, le palier 1 ne vient que de l'éveil.
   if (def.eveil && next === 1) return 'eveil';
   if (p.drapeau(`greffe:${id}`) && next > PALIER_MAX_GREFFE) return 'max';
+  if (next > PALIER_MAX_GENJUTSU && estGenjutsu(id) && !oeilDuGenjutsu(p.maitrises)) return 'oeil';
   const req = exigence(def, next as 1 | 2 | 3 | 4 | 5);
   if (ms.trainingDays < req.jours) return 'entrainement';
   // Règle : l'entraînement seul plafonne au palier 2.
@@ -152,10 +168,11 @@ export function etatProgression(s: GameState, id: string): EtatProgression | und
   else if (mur === 'temps') murTexte = `Palier ${next} : ton pouvoir doit d’abord se stabiliser avec le temps.`;
   else if (mur === 'prerequis') murTexte = `Palier ${next} : une autre maîtrise doit progresser d’abord.`;
   else if (mur === 'drapeau') murTexte = `Palier ${next} : il faut un maître ou un événement.`;
+  else if (mur === 'oeil') murTexte = `Palier ${next} : l’illusion ne va pas plus loin sans un œil qui la comprend (Sharingan, Mangekyō, Rinnegan).`;
   else if (mur === 'eveil') murTexte = 'Pas encore éveillé.';
   else if (mur === 'bloquee') murTexte = 'Inexécutable pour l’instant.';
   const pct = req.jours > 0 ? Math.min(1, ms.trainingDays / req.jours) : 1;
-  return { tier: ms.tier, prochain: next, jours: ms.trainingDays, requis: req.jours, pct, mur, murTexte, inutile: !!mur && ms.trainingDays >= req.jours };
+  return { tier: ms.tier, prochain: next, jours: ms.trainingDays, requis: req.jours, pct, mur, murTexte, inutile: !!mur && (mur === 'oeil' || ms.trainingDays >= req.jours) };
 }
 
 export function canAdvanceTier(p: Porteur, id: string): boolean {
@@ -506,11 +523,12 @@ export function blocageApprentissage(s: GameState, id: string): string | undefin
   if (def.clan && def.clan !== s.creation.clan && !porteLignee(s, def.clan)) return 'Technique d’un autre clan.';
   if (t.drapeau && !drapeauVrai(s, t.drapeau)) return 'Ce pouvoir n’appartient pas à tes yeux.';
   if (t.categorie === 'combinaison' && t.elements) {
-    const palier = paliersCombinaison(s);
+    // Trois natures : un palier de plus que pour une combinaison à deux.
+    const palier = paliersCombinaison(s) + (t.elements.length >= 3 ? 1 : 0);
     for (const e of t.elements) {
       if ((s.maitrises[`nature_${e}`]?.tier ?? 0) < palier) {
         const nom = R.maitrises[`nature_${e}`]?.nom ?? e;
-        return palier <= 1 ? `Exige ${nom}.` : `Exige ${nom} au palier 2 (au palier 1 pour un esprit vif ou un prodige).`;
+        return palier <= 1 ? `Exige ${nom}.` : `Exige ${nom} au palier ${palier} (un de moins pour un esprit vif ou un prodige).`;
       }
     }
   }

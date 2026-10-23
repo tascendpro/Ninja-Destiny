@@ -1,6 +1,7 @@
 import type { ContenuRacine } from '../../engine/combat/types';
 import { ADVERSAIRES } from './adversaires';
 import { ANNONCES, RECITS } from './lignes';
+import { REACTIONS_REPETITION, REPETITIONS } from './repetitions';
 
 /**
  * Les combats branchés sur l'Affrontement Racine, par « scène/choix ».
@@ -46,4 +47,6 @@ export const RACINE: ContenuRacine = {
   affrontements: AFFRONTEMENTS_RACINE,
   recits: RECITS,
   annonces: ANNONCES,
+  repetitions: REPETITIONS,
+  reactionsRepetition: REACTIONS_REPETITION,
 };

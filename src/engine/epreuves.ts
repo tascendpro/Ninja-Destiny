@@ -7,6 +7,7 @@ import { alea } from './rng';
 import { applyCombatExperience, exigence, tierEffectif } from './maitrise';
 import { getWeaponModifiers, idFamille, usureArme } from './armes';
 import { noterMerite } from './progression';
+import { duoUtilisable } from './duo';
 
 export type NiveauRisque = 'faible' | 'modéré' | 'élevé' | 'extrême';
 
@@ -78,7 +79,7 @@ export function bonusTechnique(s: GameState, techId: string, t: CheckDef): numbe
 /** Une technique de zone balaie un groupe mais se dilue en duel ; une technique ciblée fait l'inverse. */
 const BONUS_PORTEE: Record<FormeCombat, Record<PorteeTechnique, number>> = {
   duel: { cible: 3, zone: 0, large: -3 },
-  escouade: { cible: -2, zone: 4, large: 8 },
+  escouade: { cible: -5, zone: 5, large: 9 },
 };
 
 export function porteeTechnique(techId: string): PorteeTechnique {
@@ -159,6 +160,8 @@ export function attaqueDisponible(s: GameState, techId: string): boolean {
   const ms = s.maitrises[techId];
   if (!def?.technique?.offensive || !ms || ms.tier < 1 || ms.bloquee) return false;
   if (usagesRestants(s, techId) === 0) return false;
+  // Une technique à deux ne se lance pas sans l'équipier à tes côtés.
+  if (!duoUtilisable(s, techId)) return false;
   return s.jauges.chakra >= def.technique.chakra && s.jauges.sante > (def.technique.sante ?? 0);
 }
 

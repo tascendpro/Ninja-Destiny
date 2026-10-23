@@ -40,6 +40,9 @@ export function evenementDisponible(s: GameState, ev: EventDef): boolean {
     if (!ev.repetable) return false;
     if (s.jour - vu.dernier < ev.repetable.delaiJours) return false;
     if (ev.repetable.max !== undefined && vu.n >= ev.repetable.max) return false;
+    // Une rencontre tirée au hasard ne revient que si elle a quelque chose de neuf à dire : son texte doit varier selon le passage.
+    // (Les scènes de trame ou planifiées qui se répètent sont des mécaniques, pas des rencontres.)
+    if ((ev.poids ?? 0) > 0 && !(ev.priorite ?? 0) && !variePassage(ev)) return false;
   }
   // Un personnage mort ou disparu ne peut pas être présent dans une scène.
   for (const ref of ev.personnages ?? []) {
@@ -49,6 +52,17 @@ export function evenementDisponible(s: GameState, ev: EventDef): boolean {
     if (st && (st.etat === 'mort' || st.etat === 'disparu')) return false;
   }
   return evaluer(ev.si, s);
+}
+
+const VARIE_PASSAGE = new Map<string, boolean>();
+/** Le texte de la scène (ou de ses choix) change-t-il selon le drapeau « passage » ? */
+function variePassage(ev: EventDef): boolean {
+  let v = VARIE_PASSAGE.get(ev.id);
+  if (v === undefined) {
+    v = JSON.stringify(ev).includes('"passage"');
+    VARIE_PASSAGE.set(ev.id, v);
+  }
+  return v;
 }
 
 export function evenementsDisponibles(s: GameState): EventDef[] {
@@ -98,6 +112,8 @@ export function entrerEvenement(s: GameState, id: string): void {
   s.scene = { type: 'evenement', id };
   const vu = s.evenementsVus[id];
   s.evenementsVus[id] = { n: (vu?.n ?? 0) + 1, dernier: s.jour };
+  // Le numéro du passage dans cette scène : 1 la première fois, 2 la deuxième… (les textes s'y accordent).
+  s.drapeaux['passage'] = s.evenementsVus[id].n;
   const lieu = resoudreLieu(s, ev.lieu);
   s.drapeaux['lieu_scene'] = lieu;
   decouvrir(s, `lieu:${lieu}`);
