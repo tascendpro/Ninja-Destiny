@@ -5065,22 +5065,33 @@ body::before {
   }
 }
 
-/* ── 5. Barre de lancement : collée au-dessus de la navigation, toujours à portée du pouce ── */
+
+/* ── 5. Barre de lancement : fixe en bas de l'écran ── */
 .aff-lancer {
-  position: sticky;
+  position: fixed;
   bottom: calc(66px + env(safe-area-inset-bottom, 0px));
-  z-index: 5;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 760px);
+  box-sizing: border-box;
+  z-index: 1000;
+
   display: grid;
   gap: 8px;
-  margin-top: 12px;
+
+  margin: 0;
   padding: 10px;
+
   border: 1px solid var(--trait);
   border-radius: 14px;
-  background: color-mix(in srgb, var(--encre-2) 92%, transparent);
+
+  background: color-mix(in srgb, var(--encre-2) 96%, transparent);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
+
   box-shadow: 0 -10px 24px -18px rgba(0, 0, 0, 0.8);
 }
+
 .aff-elan-choix {
   display: flex;
   flex-wrap: wrap;
@@ -5215,13 +5226,40 @@ body::before {
   .aff-famille-nom {
     font-size: var(--t-xs);
   }
-  .aff-lancer {
-    bottom: 12px;
-  }
   .aff-duel {
     grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
   }
 }
+
+
+@media (max-width: 768px) {
+  .aff-lancer {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    transform: none;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 10px;
+    gap: 8px;
+    z-index: 1000;
+    border-radius: 14px;
+  }
+
+  .aff-confirmer {
+    width: 100%;
+    min-height: 50px;
+    font-size: 16px;
+    touch-action: manipulation;
+  }
+
+  .aff-commande {
+    padding-bottom: 130px;
+  }
+}
+
 
 /* ── Techniques par nature : en-tête « Raiton · 2 » qui ouvre son panneau (combat et fiche) ── */
 .groupes-nature {
