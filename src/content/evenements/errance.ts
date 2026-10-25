@@ -4,7 +4,7 @@ import type { Condition, EventDef } from '../../engine/types';
 // Sur la route, on progresse en se battant ailleurs ; on peut aussi y mourir, et parfois revenir.
 
 const base = { chapitre: 1, arc: 'formation' as const };
-const SUR_LA_ROUTE: Condition = { statut: ['errant', 'deserteur'] };
+const SUR_LA_ROUTE: Condition = { statut: ['errant', 'deserteur', 'exile'] };
 const VOIE = (v: string): Condition => ({ drapeau: 'errance_voie', egal: v });
 
 export const ERRANCE: EventDef[] = [

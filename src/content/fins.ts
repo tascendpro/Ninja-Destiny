@@ -263,7 +263,7 @@ export const FINS: EndingDef[] = [
     texte: [
       { texte: 'Tu as posé les armes. Les années passent sans sang, au rythme des saisons. Il t’arrive de te réveiller la nuit, la main cherchant un kunai qui n’est plus là. Puis tu te rendors.' },
       { si: { drapeau: 'famille_fondee' }, texte: 'Tes petits-enfants grimpent sur tes genoux et te demandent si c’est vrai, tout ce qu’on raconte. Tu dis que non. Tu mens.' },
-      { si: { statut: ['errant', 'deserteur'] }, texte: 'Le village sans nom où tu t’es installé·e t’a adopté·e. Pour la première fois, tu as un chez-toi.' },
+      { si: { statut: ['errant', 'deserteur', 'exile'] }, texte: 'Le village sans nom où tu t’es installé·e t’a adopté·e. Pour la première fois, tu as un chez-toi.' },
       { texte: 'Ton histoire est complète. Une autre peut commencer.' },
     ],
   },

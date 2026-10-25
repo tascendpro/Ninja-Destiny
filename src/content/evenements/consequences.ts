@@ -1,4 +1,5 @@
 import type { Condition, Effect, EventDef } from '../../engine/types';
+import { partirEnExil } from './exil';
 
 // Ce qui suit un combat mortel, quel qu'il soit : l'adversaire vaincu à ta merci, ou ta propre captivité.
 // Ces scènes sont ouvertes par le moteur (voir apresCombat) et peuvent revenir à chaque combat.
@@ -65,7 +66,7 @@ export const CONSEQUENCES: EventDef[] = [
           },
           echec: {
             texte: 'Tes mots tombent à plat. Tu le vois dans leurs yeux avant qu’ils parlent. « Tu quittes le village avant la lune nouvelle. Ton bandeau reste ici. » Personne ne te raccompagne à la porte. Personne n’en a besoin.',
-            effets: [{ drapeau: 'conseil_sang', valeur: 'exile' }, { statut: 'exile' }, { stat: 'social.loyaute', delta: -20 }, { journal: 'Exilé·e par le conseil pour les vaincus que tu as achevés.', importance: 3 }],
+            effets: [{ drapeau: 'conseil_sang', valeur: 'exile' }, { statut: 'exile' }, { stat: 'social.loyaute', delta: -20 }, ...partirEnExil('exil prononcé par le conseil')],
           },
         },
       },
@@ -76,7 +77,7 @@ export const CONSEQUENCES: EventDef[] = [
           {
             hasard: [
               { poids: 55, effets: [{ drapeau: 'conseil_sang', valeur: 'averti' }, { stat: 'social.suspicion', delta: 6 }, { stat: 'social.loyaute', delta: 3 }] },
-              { poids: 45, effets: [{ drapeau: 'conseil_sang', valeur: 'exile' }, { statut: 'exile' }, { stat: 'social.loyaute', delta: -10 }, { journal: 'Exilé·e par le conseil pour les vaincus que tu as achevés.', importance: 3 }] },
+              { poids: 45, effets: [{ drapeau: 'conseil_sang', valeur: 'exile' }, { statut: 'exile' }, { stat: 'social.loyaute', delta: -10 }, ...partirEnExil('exil prononcé par le conseil')] },
             ],
           },
         ],
@@ -88,7 +89,7 @@ export const CONSEQUENCES: EventDef[] = [
       {
         id: 'fuir',
         texte: 'Sauter par la fenêtre avant la sentence',
-        effets: [{ drapeau: 'conseil_sang', valeur: 'fui' }, { statut: 'deserteur' }, { stat: 'social.loyaute', delta: -40 }, { journal: 'Tu as fui le conseil. Ton nom est sur la liste des déserteurs.', importance: 3 }],
+        effets: [{ drapeau: 'conseil_sang', valeur: 'fui' }, { statut: 'deserteur' }, { stat: 'social.loyaute', delta: -40 }, ...partirEnExil('fuite devant le conseil')],
         resultat: 'Le verre éclate, les toits défilent. Derrière toi, les cloches sonnent. Ce soir, ton visage est dans le Bingo Book de ton propre village.',
       },
     ],

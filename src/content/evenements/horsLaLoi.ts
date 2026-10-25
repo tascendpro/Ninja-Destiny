@@ -6,7 +6,7 @@ import type { Condition, EventDef } from '../../engine/types';
  * puis les traqueurs de ton ancien village ; et au bout, il y a ce village lui-même, et son Kage.
  */
 const base = { chapitre: 1, chapitres: [1, 2, 3, 4, 5, 6], arc: 'crise' as const };
-const SUR_LA_ROUTE: Condition = { statut: ['errant', 'deserteur'] };
+const SUR_LA_ROUTE: Condition = { statut: ['errant', 'deserteur', 'exile'] };
 const HORS_LA_LOI: Condition = { tout: [SUR_LA_ROUTE, { drapeau: 'hors_la_loi' }] };
 const AMI_VIVANT: Condition = { pnj: '@coequipierA', etat: ['vivant', 'blesse'] };
 const ENTRER = [
@@ -373,7 +373,7 @@ export const HORS_LA_LOI_EVENEMENTS: EventDef[] = [
     categorie: 'trahison',
     lieu: 'route_commerce',
     enchaine: true,
-    si: { statut: ['errant', 'deserteur'] },
+    si: { statut: ['errant', 'deserteur', 'exile'] },
     texte: [
       { texte: 'Ils ne se montrent pas. Tu les sens d’abord : quatre chakras qui se resserrent autour de ton camp, avec la discipline exacte qu’on t’enseignait autrefois. Puis les masques blancs apparaissent entre les arbres. Les traqueurs de ton ancien village.' },
       { si: AMI_VIVANT, texte: 'L’un d’eux retire son masque. {@coequipierA}. « On m’a demandé si je voulais cette mission. J’ai dit oui. Je préférais que ce soit moi. »' },

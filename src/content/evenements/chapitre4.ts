@@ -7,7 +7,7 @@ import { combatPouvoir, entrainerPouvoir } from './outils';
 
 const base = { chapitre: 4, arc: 'heritage' as const };
 const ACTIF: Condition = { statut: 'actif' };
-const ROUTE: Condition = { statut: ['errant', 'deserteur'] };
+const ROUTE: Condition = { statut: ['errant', 'deserteur', 'exile'] };
 
 /** Fonder un foyer : un enfant naît dans l'année ; les dangers de la vie de famille sont planifiés. */
 const FONDER: Effect[] = [

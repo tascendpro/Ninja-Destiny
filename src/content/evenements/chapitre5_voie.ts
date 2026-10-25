@@ -7,7 +7,7 @@ import { combatPouvoir, entrainerPouvoir, segmentsParVillage } from './outils';
 
 const base = { chapitre: 5, arc: 'heritage' as const };
 const ACTIF: Condition = { statut: 'actif' };
-const ROUTE: Condition = { statut: ['errant', 'deserteur'] };
+const ROUTE: Condition = { statut: ['errant', 'deserteur', 'exile'] };
 const VOIE = (v: string): Condition => ({ drapeau: 'voie', egal: v });
 
 /** La suite commune à toutes les voies du village. */

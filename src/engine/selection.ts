@@ -16,7 +16,7 @@ export function resoudreLieu(s: GameState, lieu: string): string {
       return typeof ici === 'string' ? ici : resoudreLieu(s, '$village');
     }
     // Loin du village, « chez soi » c'est la route où l'on se trouve.
-    if ((s.statut === 'errant' || s.statut === 'deserteur') && ['village', 'maison', 'terrain'].includes(suffixe)) {
+    if ((s.statut === 'errant' || s.statut === 'deserteur' || s.statut === 'exile') && ['village', 'maison', 'terrain'].includes(suffixe)) {
       const ici = s.drapeaux['lieu_errance'];
       return typeof ici === 'string' ? ici : 'route_commerce';
     }

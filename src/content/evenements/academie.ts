@@ -1,4 +1,5 @@
 import type { Effect, EventDef } from '../../engine/types';
+import { partirEnExil } from './exil';
 import { effetsHeritage, segmentsParVillage } from './outils';
 
 const base = { chapitre: 1, arc: 'formation' as const };
@@ -1143,13 +1144,13 @@ export const ACADEMIE: EventDef[] = [
       {
         id: 'mer',
         texte: 'Prendre la barque et quitter l’archipel',
-        effets: [{ drapeau: 'exil_mer' }, { statut: 'exile' }, { fin: 'exil', cause: 'fuite par la mer' }],
+        effets: [{ drapeau: 'exil_mer' }, { statut: 'exile' }, ...partirEnExil('fuite par la mer')],
         resultat: 'Vous ramez toute la nuit. Au matin, Kiri n’est plus qu’une ombre grise à l’horizon. Tu as douze ans, aucun village, et un ami. Ce n’est pas rien.',
       },
       {
         id: 'marais',
         texte: 'Rejoindre les dissidents cachés dans les marais',
-        effets: [{ drapeau: 'exil_dissidents' }, { secret: 'dissidence_kiri' }, { fin: 'exil', cause: 'dissidents des marais' }],
+        effets: [{ drapeau: 'exil_dissidents' }, { secret: 'dissidence_kiri' }, ...partirEnExil('dissidents des marais')],
         resultat: 'Des silhouettes surgissent des roseaux. Une femme à la gorge balafrée vous regarde. « Encore des enfants », dit-elle. « Entrez. Il était temps que quelqu’un commence à dire non. »',
       },
       {

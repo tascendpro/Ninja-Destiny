@@ -40,7 +40,7 @@ export function gainsAnnuels(s: GameState, nouvelAge: number): GainAnnuel[] {
   const ajouter = (source: string, points: number) => points > 0 && g.push({ source, points });
   ajouter('Croissance', nouvelAge <= 20 ? 2 : nouvelAge <= 35 ? 1 : 0);
   if (s.statut === 'actif') ajouter(NOM_RANG[s.rang] ?? 'Rang', POINTS_RANG[s.rang] ?? 0);
-  if (s.statut === 'errant' || s.statut === 'deserteur') ajouter('La route', 1);
+  if (s.statut === 'errant' || s.statut === 'deserteur' || s.statut === 'exile') ajouter('La route', 1);
   ajouter('Missions réussies', Math.min(3, missionsReussies(s) - (m.missionsBase ?? 0)));
   ajouter('Combats gagnés', Math.min(2, Math.floor(((m.combat ?? 0) + 1) / 2)));
   ajouter('Épreuves réussies', Math.min(2, Math.floor((m.epreuve ?? 0) / 2)));

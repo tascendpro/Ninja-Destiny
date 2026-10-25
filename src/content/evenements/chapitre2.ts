@@ -7,7 +7,7 @@ import { POUVOIR_EVEILLE, combatPouvoir, entrainerPouvoir, segmentsParVillage } 
 
 const base = { chapitre: 2, arc: 'examens' as const };
 const ACTIF: Condition = { statut: 'actif' };
-const ROUTE: Condition = { statut: ['errant', 'deserteur'] };
+const ROUTE: Condition = { statut: ['errant', 'deserteur', 'exile'] };
 const A_VIVANT: Condition = { pnj: '@coequipierA', etat: ['vivant', 'blesse'] };
 const RIVAL_VIVANT: Condition = { pnj: '@rival', etat: ['vivant', 'blesse'] };
 

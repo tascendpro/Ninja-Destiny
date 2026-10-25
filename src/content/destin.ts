@@ -99,7 +99,7 @@ export const SEQUENCES: SequenceDef[] = [
     id: 'route',
     titre: 'Sur les routes',
     kanji: '道',
-    si: { statut: ['errant', 'deserteur'] },
+    si: { statut: ['errant', 'deserteur', 'exile'] },
     fin: { statut: 'actif' },
   },
 ];

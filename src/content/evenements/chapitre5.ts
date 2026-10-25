@@ -3,11 +3,12 @@
 // Voie de la route : le maître errant, et ce qui restera de lui.
 
 import type { Condition, EventDef } from '../../engine/types';
+import { partirEnExil } from './exil';
 import { combatPouvoir, entrainerPouvoir, segmentsParVillage } from './outils';
 
 const base = { chapitre: 6, arc: 'heritage' as const };
 const ACTIF: Condition = { statut: 'actif' };
-const ROUTE: Condition = { statut: ['errant', 'deserteur'] };
+const ROUTE: Condition = { statut: ['errant', 'deserteur', 'exile'] };
 const KAGE_POSSIBLE: Condition = { tout: [{ rangMin: 'jonin' }, { un: [{ stat: 'social.reputation', min: 60 }, { stat: 'social.influence', min: 30 }] }] };
 
 export const CHAPITRE5: EventDef[] = [
@@ -388,7 +389,7 @@ export const CHAPITRE5: EventDef[] = [
       {
         id: 'amiral',
         texte: 'Rejoindre l’Amiral',
-        effets: [{ statut: 'deserteur' }, { ethique: { honneur: -10, ambition: 10 } }, { fin: 'exil', cause: 'parti·e avec la flotte du Navire noir' }],
+        effets: [{ statut: 'deserteur' }, { ethique: { honneur: -10, ambition: 10 } }, ...partirEnExil('parti·e avec la flotte du Navire noir')],
         resultat: 'Tu montes à bord. Derrière toi, la côte brûle. Tu te dis que tu ne leur dois rien. Tu te le diras longtemps.',
       },
     ],

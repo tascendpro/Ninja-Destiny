@@ -217,7 +217,7 @@ export function genererActivites(s: GameState): Activite[] {
   }
 
   // Techniques : celles qu'on peut apprendre maintenant, et quelques-unes à portée (avec ce qui manque).
-  if (s.statut === 'actif' || s.statut === 'errant' || s.statut === 'deserteur') {
+  if (s.statut === 'actif' || s.statut === 'errant' || s.statut === 'deserteur' || s.statut === 'exile') {
     const aPortee: Activite[] = [];
     for (const def of R.contenu.maitrises) {
       if (!def.technique || (s.maitrises[def.id]?.tier ?? 0) >= 1) continue;
@@ -246,7 +246,7 @@ export function genererActivites(s: GameState): Activite[] {
   }
 
   // Sur les routes : des combats pour progresser, des contrats pour vivre. On peut y mourir.
-  if (s.statut === 'errant' || s.statut === 'deserteur') {
+  if (s.statut === 'errant' || s.statut === 'deserteur' || s.statut === 'exile') {
     res.push({
       id: 'route:duel',
       libelle: 'Chercher des adversaires',
@@ -418,7 +418,7 @@ export function genererActivites(s: GameState): Activite[] {
     }
   }
 
-  if ((a < 12 || s.rang === 'eleve') && (s.statut === 'actif' || s.statut === 'errant' || s.statut === 'deserteur')) {
+  if ((a < 12 || s.rang === 'eleve') && (s.statut === 'actif' || s.statut === 'errant' || s.statut === 'deserteur' || s.statut === 'exile')) {
     const route = s.statut !== 'actif';
     res.push({
       id: 'travail',
@@ -505,7 +505,7 @@ export const PART_DUO = 0.6;
 
 /** Le programme double s'ouvre avec le bandeau : quand arrivent les missions et les vrais combats. */
 export function duoPossible(s: GameState): boolean {
-  return rangIndex(s.rang) >= rangIndex('genin') || s.statut === 'errant' || s.statut === 'deserteur';
+  return rangIndex(s.rang) >= rangIndex('genin') || s.statut === 'errant' || s.statut === 'deserteur' || s.statut === 'exile';
 }
 
 function activiteDuo(s: GameState, id: string): Activite | undefined {

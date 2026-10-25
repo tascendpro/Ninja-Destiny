@@ -3,11 +3,12 @@
 // Voie de la route : les mercenaires que les deux camps s'arrachent.
 
 import type { ChoiceDef, Condition, Effect, EventDef, MissionDef } from '../../engine/types';
+import { partirEnExil } from './exil';
 import { combatPouvoir, entrainerPouvoir, segmentsParVillage } from './outils';
 
 const base = { chapitre: 3, arc: 'conflit' as const };
 const ACTIF: Condition = { statut: 'actif' };
-const ROUTE: Condition = { statut: ['errant', 'deserteur'] };
+const ROUTE: Condition = { statut: ['errant', 'deserteur', 'exile'] };
 const A_VIVANT: Condition = { pnj: '@coequipierA', etat: ['vivant', 'blesse'] };
 const SENSEI_VIVANT: Condition = { pnj: '@sensei', etat: ['vivant', 'blesse'] };
 
@@ -667,7 +668,7 @@ function guerreParVillage(): EventDef[] {
           id: 'clan',
           texte: 'Prendre le parti du clan',
           si: { clan: 'uchiha' },
-          effets: [{ statut: 'deserteur' }, { stat: 'social.confianceClan', delta: 20 }, { journal: 'Tu as pris le parti du clan contre le village.', importance: 3 }, { fin: 'exil', cause: 'fuite après l’échec du coup d’État Uchiha' }],
+          effets: [{ statut: 'deserteur' }, { stat: 'social.confianceClan', delta: 20 }, { journal: 'Tu as pris le parti du clan contre le village.', importance: 3 }, ...partirEnExil('fuite après l’échec du coup d’État Uchiha')],
           resultat: 'Le coup d’État échoue avant de commencer. Tu fuis avec les survivants. Konoha t’inscrit au registre des déserteurs.',
         },
       ],

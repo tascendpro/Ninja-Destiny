@@ -1,4 +1,5 @@
 import type { Condition, EventDef } from '../../engine/types';
+import { partirEnExil } from './exil';
 import { POUVOIR_EVEILLE, effetsLeconElement, entrainerPouvoir, segmentsParVillage } from './outils';
 
 const base = { chapitre: 1, arc: 'premieres_missions' as const };
@@ -400,7 +401,7 @@ export const GENIN: EventDef[] = [
       {
         id: 'fuir',
         texte: 'Partir cette nuit',
-        effets: [{ statut: 'deserteur' }, { relation: '@parent', delta: { attachement: 20 } }, { fin: 'exil', cause: 'traque des Yuki' }],
+        effets: [{ statut: 'deserteur' }, { relation: '@parent', delta: { attachement: 20 } }, ...partirEnExil('traque des Yuki')],
         resultat: 'Tu embrasses {parent} une dernière fois. La brume t’avale. Derrière toi, Kiri reste Kiri.',
       },
       {
@@ -414,7 +415,7 @@ export const GENIN: EventDef[] = [
           maitrises: { hyoton: 2, arme: 1 },
           succes: {
             texte: 'Tu les attends sur le seuil. Quand c’est fini, il y a de la glace partout, et deux masques brisés. Tu ne peux plus rester. Tu le savais.',
-            effets: [{ statut: 'deserteur' }, { combatSur: ['hyoton'] }, { fin: 'exil', cause: 'combat contre les chasseurs' }],
+            effets: [{ statut: 'deserteur' }, { combatSur: ['hyoton'] }, ...partirEnExil('combat contre les chasseurs')],
           },
           echec: {
             texte: 'Ils sont quatre. Tu en blesses deux. Les deux autres suffisent.',
