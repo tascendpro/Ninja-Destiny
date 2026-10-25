@@ -5748,3 +5748,42 @@ body::before {
     z-index: 5;
   }
 }
+
+/* Ce que la dernière manche a coûté à chacun, en pastille sur sa carte. */
+.aff-delta {
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  animation: aff-delta 0.6s ease both;
+}
+.aff-delta.perte {
+  color: var(--texte-bouton);
+  background: var(--vermillon);
+}
+.aff-delta.gain {
+  color: var(--encre);
+  background: var(--jade);
+}
+@keyframes aff-delta {
+  0% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+:root[data-animations='reduites'] .aff-delta {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aff-delta {
+    animation: none;
+  }
+}

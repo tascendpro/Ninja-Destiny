@@ -301,6 +301,8 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
     lecture: accorderAdv(res.cause, genre),
     repliques,
     issue: res.issue,
+    inflige: res.inflige,
+    subi: res.subi,
     technique: `intention=${sc.intention} exec=${res.execution} inflige=${res.inflige} subi=${res.subi} J=${sc.joueur.endurance}/${sc.joueur.enduranceMax} A=${sc.adv.endurance}/${sc.adv.enduranceMax} elan=${sc.elan}`,
   };
 }

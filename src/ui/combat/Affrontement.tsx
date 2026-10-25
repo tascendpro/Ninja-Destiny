@@ -150,6 +150,11 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
                 <span className="aff-chiffre">
                   {v.joueur.endurance}/{v.joueur.enduranceMax}
                 </span>
+                {!!derniere?.subi && (
+                  <span key={`j${derniere.manche}`} className="aff-delta perte">
+                    −{derniere.subi}
+                  </span>
+                )}
                 {gJ && <span className={`aff-pastille ${gJ.classe}`}>{accorder(gJ.mot, p)}</span>}
                 {v.joueur.sonne && <span className="aff-pastille sonne">{accorder('sonné·e', p)}</span>}
                 <span className="aff-elan" aria-label={`Élan : ${v.joueur.elan} sur 3`}>
@@ -179,6 +184,11 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
               </span>
               <span className="aff-pastilles">
                 <span className="aff-chiffre">{v.adversaire.pct} %</span>
+                {!!derniere?.inflige && (
+                  <span key={`a${derniere.manche}`} className="aff-delta gain">
+                    −{derniere.inflige}
+                  </span>
+                )}
                 {gA && <span className={`aff-pastille ${gA.classe}`}>{accorder(gA.mot, 'masculin')}</span>}
                 {v.adversaire.sonne && <span className="aff-pastille sonne">souffle coupé</span>}
               </span>

@@ -218,6 +218,9 @@ export interface EntreeManche {
   lecture: string;
   repliques: string[];
   issue?: IssueOffensive;
+  /** Endurance que tu lui as fait perdre, et celle que tu as perdue, cette manche. */
+  inflige?: number;
+  subi?: number;
   /** Journal technique interne, pour le débogage (§0.3.18). */
   technique: string;
 }
