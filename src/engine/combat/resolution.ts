@@ -323,6 +323,8 @@ export function enchainement(precedente: string | undefined, tech: string): [Ele
   return undefined;
 }
 export const BONUS_ENCHAINEMENT = 12;
+/** Le palier à partir duquel une transformation tient pendant qu'on lance d'autres techniques. */
+export const PALIER_TRANSFO_TENUE = 3;
 
 /** Les marques utiles à la décision : inédite, éventée, peut tout finir, enchaînement (§22.2). */
 function marquer(s: GameState, sc: EtatAffrontement, id: string, v: VueAction): void {
@@ -483,6 +485,13 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
       if (t.sante) s.jauges.sante = clamp(s.jauges.sante - t.sante, 1, 100);
       s.drapeaux[`usages_${cle}`] = (Number(s.drapeaux[`usages_${cle}`]) || 0) + 1;
       if (t.limite) res.impact += consequenceUltime(s, cle, nouveauCtx());
+      // Une transformation encore mal tenue (palier 1 ou 2) ne survit pas à une autre technique : elle y laisse son chakra.
+      // Dès le palier 3, on garde l'armure et on attaque avec ses techniques. Celles qui n'existent que transformé·e ne la coupent pas.
+      const transfo = sc.transformation;
+      if (transfo && !t.exigeTransformation?.includes(transfo) && (s.maitrises[transfo]?.tier ?? 1) <= PALIER_TRANSFO_TENUE - 1) {
+        sc.transformation = undefined;
+        res.impact += `${R.maitrises[transfo].nom} s’éteint : la technique a puisé dans son chakra, et tu ne sais pas encore tenir les deux à la fois. `;
+      }
     }
     let elanDepense = 0;
     if (a.elan) {

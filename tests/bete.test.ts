@@ -130,6 +130,19 @@ describe('Transformations', () => {
     expect(t.scene.journal.at(-1)!.impact).toMatch(/armure de Raiton|éclair|foudre/);
   });
 
+  it('au palier 1 ou 2, lancer une autre technique éteint la transformation ; dès le palier 3, elle tient', () => {
+    for (const [tier, tient] of [[2, false], [3, true]] as const) {
+      let t = combat([['raiton_yoroi', tier], ['raiton_decharge', 2], ['nature_raiton', 3]]);
+      if (t.scene.type !== 'affrontement') continue;
+      t.scene.plafond = 10;
+      t = combattre(t, { famille: 'pouvoir', choix: 'raiton_yoroi' });
+      if (t.scene.type !== 'affrontement') continue;
+      t = combattre(t, { famille: 'ninjutsu', choix: 'raiton_decharge' });
+      if (t.scene.type !== 'affrontement') continue;
+      expect(t.scene.transformation === 'raiton_yoroi').toBe(tient);
+    }
+  });
+
   it('certaines techniques n’existent que transformé', () => {
     let t = combat([['raiton_yoroi', 3], ['raiton_lariat', 1]]);
     expect(actions(t, 'taijutsu')).not.toContain('raiton_lariat');

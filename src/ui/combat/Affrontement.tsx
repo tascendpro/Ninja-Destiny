@@ -132,32 +132,8 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
       <article className="recit-texte affrontement">
         <h1 className="titre-scene">{accorder(v.titre, p)}</h1>
 
-        {/* 1. Face-à-face */}
+        {/* 1. Face-à-face : toi à gauche, l'adversaire à droite */}
         <div className="aff-duel" ref={haut}>
-          <div className="aff-carte adv">
-            <span className="aff-avatar adv" aria-hidden="true">
-              敵
-            </span>
-            <div className="aff-carte-corps">
-              <span className="aff-carte-nom">
-                {v.adversaire.nom} <small>{v.adversaire.niveau}</small>
-              </span>
-              <span className="aff-jauge" role="meter" aria-label={`Endurance de ${v.adversaire.nom}`} aria-valuenow={v.adversaire.pct} aria-valuemin={0} aria-valuemax={100}>
-                <i className="aff-adv" style={{ width: `${v.adversaire.pct}%` }} />
-              </span>
-              <span className="aff-pastilles">
-                <span className="aff-chiffre">{v.adversaire.pct} %</span>
-                {gA && <span className={`aff-pastille ${gA.classe}`}>{accorder(gA.mot, 'masculin')}</span>}
-                {v.adversaire.sonne && <span className="aff-pastille sonne">souffle coupé</span>}
-              </span>
-            </div>
-          </div>
-          <div className="aff-centre" aria-hidden="true">
-            <span className="aff-tai">対</span>
-            <span className="aff-contexte" title={v.contexte.libelle}>
-              {v.contexte.kanji}
-            </span>
-          </div>
           <div className="aff-carte joueur">
             <span className="aff-avatar">
               <Portrait nom={etat.creation.prenom} village={etat.creation.village} clan={etat.creation.clan} taille={40} />
@@ -181,6 +157,30 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
                     <i key={i} className={i < v.joueur.elan ? 'plein' : ''} aria-hidden="true" />
                   ))}
                 </span>
+              </span>
+            </div>
+          </div>
+          <div className="aff-centre" aria-hidden="true">
+            <span className="aff-tai">対</span>
+            <span className="aff-contexte" title={v.contexte.libelle}>
+              {v.contexte.kanji}
+            </span>
+          </div>
+          <div className="aff-carte adv">
+            <span className="aff-avatar adv" aria-hidden="true">
+              敵
+            </span>
+            <div className="aff-carte-corps">
+              <span className="aff-carte-nom">
+                {v.adversaire.nom} <small>{v.adversaire.niveau}</small>
+              </span>
+              <span className="aff-jauge" role="meter" aria-label={`Endurance de ${v.adversaire.nom}`} aria-valuenow={v.adversaire.pct} aria-valuemin={0} aria-valuemax={100}>
+                <i className="aff-adv" style={{ width: `${v.adversaire.pct}%` }} />
+              </span>
+              <span className="aff-pastilles">
+                <span className="aff-chiffre">{v.adversaire.pct} %</span>
+                {gA && <span className={`aff-pastille ${gA.classe}`}>{accorder(gA.mot, 'masculin')}</span>}
+                {v.adversaire.sonne && <span className="aff-pastille sonne">souffle coupé</span>}
               </span>
             </div>
           </div>

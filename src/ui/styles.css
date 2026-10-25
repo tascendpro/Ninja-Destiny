@@ -4583,11 +4583,11 @@ body::before {
 }
 .aff-carte.adv {
   border-color: color-mix(in srgb, var(--vermillon-clair) 40%, var(--trait));
-  background: linear-gradient(160deg, color-mix(in srgb, var(--vermillon) 10%, var(--ardoise)), var(--ardoise) 70%);
+  background: linear-gradient(200deg, color-mix(in srgb, var(--vermillon) 10%, var(--ardoise)), var(--ardoise) 70%);
 }
 .aff-carte.joueur {
   border-color: color-mix(in srgb, var(--jade) 40%, var(--trait));
-  background: linear-gradient(200deg, color-mix(in srgb, var(--jade) 10%, var(--ardoise)), var(--ardoise) 70%);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--jade) 10%, var(--ardoise)), var(--ardoise) 70%);
 }
 .aff-avatar {
   flex: none;
@@ -5715,4 +5715,36 @@ body::before {
 }
 .aff-marque.m-enchaînement {
   color: var(--glycine);
+}
+
+/* Face-à-face en miroir : l'adversaire, à droite, regarde vers toi. */
+.aff-carte.adv {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+.aff-carte.adv .aff-pastilles {
+  justify-content: flex-end;
+}
+.aff-carte.adv .aff-jauge {
+  transform: scaleX(-1);
+}
+@media (max-width: 520px) {
+  .aff-carte.adv {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+}
+
+/* PC : la barre de lancement reste dans la colonne de commande, sous les actions (pas centrée sur toute la fenêtre). */
+@media (min-width: 1000px) {
+  .aff-lancer {
+    position: sticky;
+    bottom: 12px;
+    left: auto;
+    right: auto;
+    transform: none;
+    width: auto;
+    margin-top: 12px;
+    z-index: 5;
+  }
 }
