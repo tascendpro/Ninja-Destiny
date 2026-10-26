@@ -1,6 +1,8 @@
 import type { ContenuRacine } from '../../engine/combat/types';
 import { ADVERSAIRES } from './adversaires';
+import { ADVERSAIRES_AKATSUKI, AFFRONTEMENTS_AKATSUKI } from './akatsuki';
 import { ANNONCES, RECITS } from './lignes';
+import { RECITS_SUPP } from './lignesSupp';
 import { REACTIONS_REPETITION, REPETITIONS } from './repetitions';
 
 /**
@@ -51,9 +53,10 @@ const AFFRONTEMENTS_RACINE: ContenuRacine['affrontements'] = {
 };
 
 export const RACINE: ContenuRacine = {
-  adversaires: ADVERSAIRES,
-  affrontements: AFFRONTEMENTS_RACINE,
-  recits: RECITS,
+  adversaires: [...ADVERSAIRES, ...ADVERSAIRES_AKATSUKI],
+  affrontements: { ...AFFRONTEMENTS_RACINE, ...AFFRONTEMENTS_AKATSUKI },
+  // Les récits de base et leurs variantes supplémentaires, réunis clé par clé.
+  recits: Object.fromEntries([...new Set([...Object.keys(RECITS), ...Object.keys(RECITS_SUPP)])].map((k) => [k, [...(RECITS[k] ?? []), ...(RECITS_SUPP[k] ?? [])]])),
   annonces: ANNONCES,
   repetitions: REPETITIONS,
   reactionsRepetition: REACTIONS_REPETITION,

@@ -18,37 +18,42 @@ export const BINGO: FicheBingo[] = [
     description: 'Seule femme de l’Akatsuki, toujours aux côtés de Pain. Son corps se défait en milliers de feuilles de papier, qui deviennent lames, ailes ou explosifs.',
     techniques: ['Danse du papier divin', 'Ailes de papier'], consigne: 'Ne pas engager seul.',
     si: { un: [{ drapeau: 'akatsuki_connue' }, { vu: 'ak_chef' }] },
+    notes: [{ si: { drapeau: 'akatsuki_capture_konan' }, texte: 'Livrée vivante. Elle plie des oiseaux de papier dans sa cellule, et attend quelqu’un.' }, { si: { drapeau: 'akatsuki_mort_konan' }, texte: 'Abattue par toi. Le bureau des primes a payé, et ton nom circule désormais dans les auberges.' }]
   },
   {
     id: 'itachi', nom: 'Itachi Uchiha', surnom: 'Le massacreur du clan', village: 'Konoha (déserteur)', rang: 'S', prime: 45000, liste: 'recherches', affiliation: 'Akatsuki',
     description: 'A exterminé son propre clan en une nuit, à treize ans, puis a quitté Konoha. Ses yeux suffisent : un regard, et l’adversaire passe trois jours dans son esprit.',
     techniques: ['Mangekyō Sharingan', 'Tsukuyomi', 'Amaterasu', 'Susanoo'], consigne: 'Fuir à vue. Ne jamais croiser son regard.',
     si: { drapeau: 'akatsuki_connue' },
+    notes: [{ si: { drapeau: 'akatsuki_capture_itachi' }, texte: 'Livré vivant par toi. Il s’est laissé faire : personne ne sait pourquoi, et ça inquiète tout le monde.' }, { si: { drapeau: 'akatsuki_itachi_echappe' }, texte: 'Tu l’as eu à ta merci. C’est du moins ce qu’il t’a laissé croire.' }, { si: { drapeau: 'akatsuki_mort_itachi' }, texte: 'Abattu par toi. Le bureau des primes a payé, et ton nom circule désormais dans les auberges.' }]
   },
   {
     id: 'kisame', nom: 'Kisame Hoshigaki', surnom: 'Le monstre de la Brume', village: 'Kiri (déserteur)', rang: 'S', prime: 32000, liste: 'recherches', affiliation: 'Akatsuki, ancien des Sept Épéistes',
     description: 'Un homme à la peau bleue et aux dents de requin, l’un des Sept Épéistes de la Brume. Sa grande épée bandée dévore le chakra de ceux qu’elle touche. Il a tué ses propres camarades pour protéger les secrets de Kiri.',
     techniques: ['Requins d’eau', 'Prison de la mer', 'Fusion avec l’épée'], consigne: 'Ne pas engager près de l’eau.',
     si: { drapeau: 'akatsuki_connue' },
+    notes: [{ si: { drapeau: 'akatsuki_kisame_suicide' }, texte: 'Il s’est donné à ses propres requins plutôt qu’à tes chaînes. Il n’a rien dit.' }, { si: { drapeau: 'akatsuki_mort_kisame' }, texte: 'Abattu par toi. Le bureau des primes a payé, et ton nom circule désormais dans les auberges.' }]
   },
   {
     id: 'sasori', nom: 'Sasori', surnom: 'Sasori de la Sable rouge', village: 'Suna (déserteur)', rang: 'S', prime: 28000, liste: 'recherches', affiliation: 'Akatsuki',
     description: 'Le plus grand marionnettiste de l’histoire de Suna. On dit qu’il a fait de son propre corps une marionnette, et qu’il collectionne celui de ses victimes. Chacune de ses lames est empoisonnée.',
     techniques: ['Marionnettes humaines', 'Le Troisième Kazekage', 'Poisons'], consigne: 'Antidote obligatoire avant tout contact.',
     si: { drapeau: 'akatsuki_connue' },
+    notes: [{ si: { drapeau: 'akatsuki_capture_sasori' }, texte: 'Son cœur bat dans une boîte de cuivre scellée, quelque part sous les archives.' }, { si: { drapeau: 'akatsuki_mort_sasori' }, texte: 'Abattu par toi. Le bureau des primes a payé, et ton nom circule désormais dans les auberges.' }]
   },
   {
     id: 'deidara', nom: 'Deidara', surnom: 'L’artiste explosif', village: 'Iwa (déserteur)', rang: 'S', prime: 22000, liste: 'recherches', affiliation: 'Akatsuki',
     description: 'Ancien de la division des explosifs d’Iwa. Des bouches dans les paumes, qui mâchent une argile chargée de chakra qu’il modèle en oiseaux et en araignées. Pour lui, l’art est une explosion.',
     techniques: ['Argile explosive', 'Oiseaux d’argile', 'C4 Karura'], consigne: 'Ne pas engager à découvert.',
     si: { drapeau: 'akatsuki_connue' },
+    notes: [{ si: { drapeau: 'akatsuki_capture_deidara' }, texte: 'Livré vivant, les paumes scellées. Il réclame de l’argile à chaque repas.' }, { si: { drapeau: 'akatsuki_deidara_explose' }, texte: 'Il s’est fait exploser plutôt que d’être pris. Il n’est rien resté à livrer.' }, { si: { drapeau: 'akatsuki_mort_deidara' }, texte: 'Abattu par toi. Le bureau des primes a payé, et ton nom circule désormais dans les auberges.' }]
   },
   {
     id: 'kakuzu', nom: 'Kakuzu', surnom: 'Le trésorier', village: 'Taki (déserteur)', rang: 'S', prime: 35000, liste: 'recherches', affiliation: 'Akatsuki',
     description: 'Le plus vieux membre de l’Akatsuki : il aurait combattu le Premier Hokage. Ses fils noirs recousent son corps, qui abrite cinq cœurs volés. Il chasse les primes et compte chaque pièce deux fois.',
     techniques: ['Fils noirs', 'Cinq cœurs', 'Toutes les natures'], consigne: 'Il faut le tuer cinq fois.',
     si: { drapeau: 'akatsuki_connue' },
-    notes: [
+    notes: [{ si: { drapeau: 'akatsuki_capture_kakuzu' }, texte: 'Livré vivant. Il a demandé le montant de sa prime, et l’a trouvé juste.' }, { si: { drapeau: 'akatsuki_mort_kakuzu' }, texte: 'Abattu par toi. Le bureau des primes a payé, et ton nom circule désormais dans les auberges.' }, 
       { si: { vu: 'ak_recrutement' }, texte: 'Tu l’as rencontré. Il t’a proposé un anneau.' },
       { si: { drapeau: 'akatsuki_traque_vaincue' }, texte: 'Tu l’as fait fuir, ce qui restait de ses cœurs sous le bras.' },
     ],
@@ -58,7 +63,7 @@ export const BINGO: FicheBingo[] = [
     description: 'Prêtre du dieu Jashin, armé d’une faux à trois lames. Il ne peut pas mourir. Une goutte de ton sang, un cercle tracé au sol, et chaque blessure qu’il s’inflige devient la tienne.',
     techniques: ['Rituel de Jashin', 'Faux à trois lames'], consigne: 'Ne jamais le laisser goûter ton sang.',
     si: { drapeau: 'akatsuki_connue' },
-    notes: [{ si: { drapeau: 'akatsuki_traque_vaincue' }, texte: 'Enterré vivant sous un éboulis, par tes soins. Il jure encore.' }],
+    notes: [{ si: { drapeau: 'akatsuki_capture_hidan' }, texte: 'Sa tête jure toujours, dans un sac scellé trois fois. Les gardiens se relaient toutes les heures.' }, { si: { drapeau: 'akatsuki_mort_hidan' }, texte: 'Abattu par toi. Le bureau des primes a payé, et ton nom circule désormais dans les auberges.' }, { si: { drapeau: 'akatsuki_traque_vaincue' }, texte: 'Enterré vivant sous un éboulis, par tes soins. Il jure encore.' }],
   },
   {
     id: 'zetsu', nom: 'Zetsu', surnom: 'L’espion végétal', village: 'Inconnu', rang: 'S', prime: 12000, liste: 'recherches', affiliation: 'Akatsuki',

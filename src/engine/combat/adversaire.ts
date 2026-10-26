@@ -7,7 +7,7 @@ import { age } from '../calendrier';
 import { defPnj, resoudrePnj } from '../etat';
 import type { AdversaireDef, EtatAffrontement, IntentionAdv, NiveauAdv, StatsAdv, Temperament } from './types';
 import { INTENTIONS, NIVEAUX } from './types';
-import { PREFIXE_GENERIQUE, adversaireGenerique } from './generique';
+import { PREFIXE_GENERIQUE, adversaireGenerique, identiteGeneree } from './generique';
 import { GABARITS, indexNiveau, niveauJoueur } from './contextes';
 
 export function adversaireDef(id: string): AdversaireDef {
@@ -45,6 +45,7 @@ export function nomAdversaire(s: GameState, d: AdversaireDef): string {
     const p = defPnj(s, resoudrePnj(s, d.pnj));
     if (p) return p.nom;
   }
+  if (d.nomGenere) return identiteGeneree(s, d).nom;
   return d.nom ?? 'L’adversaire';
 }
 
@@ -54,7 +55,7 @@ export function techniquesAdversaire(s: GameState, d: AdversaireDef): TechniqueA
   if (d.techniques) return d.techniques.map((id) => toutes.find((t) => t.id === id)!).filter(Boolean);
   const rangMax = Math.max(0, indexNiveau(niveauAdversaire(s, d)) - 1);
   return toutes
-    .filter((t) => t.rang <= rangMax && (!t.element || !d.nature || t.element === d.nature))
+    .filter((t) => !t.signature && t.rang <= rangMax && (!t.element || !d.nature || t.element === d.nature))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -124,9 +125,11 @@ export function tirerIntention(s: GameState, sc: EtatAffrontement, d: Adversaire
   const scores = scoresIntentions(s, sc, d);
   const total = INTENTIONS.reduce((a, k) => a + scores[k], 0);
   let x = r * total;
+  // Une bête ne parle pas : là où un homme parlerait, elle observe.
+  const pour = (k: IntentionAdv): IntentionAdv => (d.type === 'bete' && k === 'parler' ? 'observer' : k);
   for (const k of INTENTIONS) {
     x -= scores[k];
-    if (x < 0) return k;
+    if (x < 0) return pour(k);
   }
   return 'attaque';
 }

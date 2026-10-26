@@ -31,6 +31,8 @@ import { DUOS } from './evenements/duos';
 import { JINCHURIKI_EVENEMENTS } from './evenements/jinchuriki';
 import { EPREUVE_LAMES } from './evenements/epreuveLames';
 import { EXIL } from './evenements/exil';
+import { AKATSUKI_CHASSE } from './evenements/akatsukiChasse';
+import { TECHNIQUES_AKATSUKI } from './combat/akatsuki';
 import { VILLAGES_VIVANTS } from './evenements/villages';
 import { VOIX_CLANS } from './evenements/voixClans';
 import { RACINE } from './combat';
@@ -57,10 +59,10 @@ import { BINGO } from './bingo';
 import { CATALOGUE } from './catalogue';
 import { DECORS_EVENEMENTS, DECORS_LIEUX, prioriserDecors } from './decors';
 
-const EVENEMENTS = [...ORIGINES, ...EVENEMENTS_CLANS, ...ACADEMIE, ...GENIN, ...EVENEMENTS_MISSIONS, ...YUNAGI, ...ALEATOIRES, ...ENFANCE, ...ADOLESCENCE, ...JEUNESSE, ...MATURITE, ...HORS_LA_LOI_EVENEMENTS, ...VIOLENCE, ...REMORDS, ...VISAGES, ...ARCS_CLANS_1, ...ARCS_CLANS_2, ...ARCS_CLANS_3, ...APPRENTISSAGE, ...DUOS, ...JINCHURIKI_EVENEMENTS, ...EPREUVE_LAMES, ...EXIL, ...EVENEMENTS_MISSIONS_GENIN, ...VILLAGES_VIVANTS, ...VOIX_CLANS, ...SECRETS, ...EVENEMENTS_BIJU, ...ERRANCE, ...CHAPITRE2, ...CHAPITRE3, ...CHAPITRE4, ...ALEATOIRES_ADULTES, ...CHAPITRE5_VOIE, ...CHAPITRE5, ...DESTINS, ...MARGES, ...CONSEQUENCES, ...LEGENDES, ...ADULTE, ...RENCONTRES, ...BETE];
+const EVENEMENTS = [...ORIGINES, ...EVENEMENTS_CLANS, ...ACADEMIE, ...GENIN, ...EVENEMENTS_MISSIONS, ...YUNAGI, ...ALEATOIRES, ...ENFANCE, ...ADOLESCENCE, ...JEUNESSE, ...MATURITE, ...HORS_LA_LOI_EVENEMENTS, ...VIOLENCE, ...REMORDS, ...VISAGES, ...ARCS_CLANS_1, ...ARCS_CLANS_2, ...ARCS_CLANS_3, ...APPRENTISSAGE, ...DUOS, ...JINCHURIKI_EVENEMENTS, ...EPREUVE_LAMES, ...EXIL, ...AKATSUKI_CHASSE, ...EVENEMENTS_MISSIONS_GENIN, ...VILLAGES_VIVANTS, ...VOIX_CLANS, ...SECRETS, ...EVENEMENTS_BIJU, ...ERRANCE, ...CHAPITRE2, ...CHAPITRE3, ...CHAPITRE4, ...ALEATOIRES_ADULTES, ...CHAPITRE5_VOIE, ...CHAPITRE5, ...DESTINS, ...MARGES, ...CONSEQUENCES, ...LEGENDES, ...ADULTE, ...RENCONTRES, ...BETE];
 
 export const CONTENU: Contenu = {
-  version: '2.13.0',
+  version: '2.16.0',
   racine: RACINE,
   chapitresPublies: [1, 2, 3, 4, 5, 6],
   monde: MONDE,
@@ -88,7 +90,7 @@ export const CONTENU: Contenu = {
   recitsTechniques: RECITS_TECHNIQUES,
   affrontements: AFFRONTEMENTS,
   tirsAmis: TIRS_AMIS,
-  techniquesAdverses: TECHNIQUES_ADVERSES,
+  techniquesAdverses: [...TECHNIQUES_ADVERSES, ...TECHNIQUES_AKATSUKI],
   bingo: BINGO,
   catalogue: CATALOGUE,
   decors: prioriserDecors(EVENEMENTS),

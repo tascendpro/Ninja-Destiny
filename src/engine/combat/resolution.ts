@@ -24,7 +24,7 @@ import { clamp } from '../etat';
 import type { ActionCombat, AdversaireDef, EtatAffrontement, Famille, IssueOffensive, Vitesse } from './types';
 import { ErreurCombat, FAMILLES } from './types';
 import { CONTEXTES, FAMILLES_ENFANT, GABARITS, bonusRang, indexNiveau, maxFamilles } from './contextes';
-import { statsAdversaire, techniquesAdversaire } from './adversaire';
+import { adversaireDef, statsAdversaire, techniquesAdversaire } from './adversaire';
 import { duoUtilisable } from '../duo';
 
 // ── Le catalogue des actions ─────────────────────────────────
@@ -216,6 +216,8 @@ export function familles(s: GameState, sc: EtatAffrontement): VueFamille[] {
     if (enfant && !FAMILLES_ENFANT.includes(f)) continue;
     if (f === 'fuite' && !regle.fuite) continue;
     if (sc.interdit?.includes(f)) continue;
+    // On ne raisonne pas une bête, on ne lui demande pas de se rendre.
+    if (f === 'parole' && adversaireDef(sc.adversaireId).type === 'bete') continue;
     const actions: VueAction[] = [];
     const bloque = (raison: string) => ({ disponible: false, raison });
     if (f === 'arme') {

@@ -5787,3 +5787,12 @@ body::before {
     animation: none;
   }
 }
+
+/* Le geste d'une bête : raconté, pas dit. */
+.aff-geste {
+  margin: 10px 0 0;
+  padding: 6px 12px;
+  border-left: 3px solid var(--vermillon-clair);
+  font-style: italic;
+  color: var(--papier-2);
+}

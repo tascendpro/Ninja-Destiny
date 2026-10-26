@@ -157,12 +157,18 @@ export interface AdversaireDef {
   genre?: 'm' | 'f';
   /** Plusieurs ennemis : une technique de zone les prend tous, une ciblée n'en touche qu'un. */
   escouade?: boolean;
+  /** Ce qu'il est (bête, bandit, élève…) : sa voix, ses annonces, ses fins. Une bête ne parle pas et ne compose pas de signes. */
+  type?: import('../../content/combat/generiques').TypeAdversaire;
+  /** Ninja sans nom propre : son nom, son genre et son village sont tirés de la graine de la partie. */
+  nomGenere?: boolean;
 }
 
 /** Une issue de conclusion propre à un affrontement : son texte et ses effets (sinon, ceux du CheckDef d'origine). */
 export interface ConclusionDef {
   texte?: Texte;
   effets?: Effect[];
+  /** La scène qui suit cette fin (le sort d'un adversaire vaincu, par exemple). */
+  suite?: string;
 }
 
 /** Un combat branché sur l'Affrontement Racine : la scène et le choix qui l'ouvrent, l'adversaire, le contexte. */

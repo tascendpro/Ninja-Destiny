@@ -380,6 +380,8 @@ export interface TechniqueAdverse {
   element?: ElementId;
   duel: string;
   escouade: string;
+  /** Technique signature d'un adversaire nommé : jamais tirée pour un adversaire ordinaire. */
+  signature?: boolean;
 }
 
 // ── Bibliothèque des lieux (décors illustrés) ──

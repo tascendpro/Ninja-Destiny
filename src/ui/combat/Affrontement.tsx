@@ -226,10 +226,10 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
           <div>
             <span className="aff-etiquette">{v.annonce.mortelle ? 'Danger' : 'Ce que tu lis'}</span>
             <p>{accorder(v.annonce.texte, p)}</p>
-            {v.annonce.fiabilite !== 'fiable' && <small>Lecture incertaine : ce n’est peut-être pas ce que {v.adversaire.nom} prépare.</small>}
+            {v.annonce.fiabilite !== 'fiable' && <small>Lecture incertaine : ce n’est peut-être pas ce {elide('que', minusculeArticle(v.adversaire.nom))} prépare.</small>}
             {v.lecture.length > 0 && (
               <details className="aff-lecture">
-                <summary>Ce que tu sais de {accorder(v.adversaire.nom, p)} ({v.lecture.length})</summary>
+                <summary>Ce que tu sais {elide('de', minusculeArticle(v.adversaire.nom))} ({v.lecture.length})</summary>
                 <ul>
                   {v.lecture.map((l, i) => (
                     <li key={i}>{accorder(l, p)}</li>
@@ -320,7 +320,18 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
 
 type Entree = NonNullable<ReturnType<typeof vueAffrontement>>['journal'][number];
 
+/** « que Itachi » → « qu’Itachi », « de Itachi » → « d’Itachi ». */
+function elide(mot: 'que' | 'de', suite: string): string {
+  return /^[aeiouyéèêâîôœāīōū]/i.test(suite) ? `${mot.slice(0, -1)}’${suite}` : `${mot} ${suite}`;
+}
+/** « Le chien » au milieu d'une phrase devient « le chien » ; un nom propre ne change pas. */
+function minusculeArticle(nom: string): string {
+  return /^(Le|La|Les|L’)\s?/.test(nom) ? nom.charAt(0).toLowerCase() + nom.slice(1) : nom;
+}
+
 function Replique({ nom, texte }: { nom: string; texte: string }) {
+  // Un geste (« ~ » : une bête qui gronde, qui recule) se raconte sans guillemets ni nom.
+  if (texte.startsWith('~')) return <p className="aff-geste">{texte.slice(1)}</p>;
   return (
     <p className="aff-replique">
       <b>{nom}</b>« {texte} »

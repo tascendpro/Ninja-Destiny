@@ -177,6 +177,7 @@ export const ENCYCLOPEDIE: EntreeEncyclopedie[] = [
   O('dissidence_kiri', 'La dissidence de Kiri', 'Ceux qui veulent mettre fin à la Brume sanglante, de l’intérieur ou depuis les marais.'),
   O('navire_noir', 'Le Navire noir', 'Une organisation de déserteurs qui rassemble les lames perdues de Kiri.', ['Son emblème : un navire noir sur fond gris.']),
   S('enfant_cache', 'L’enfant du porche', 'Tu as caché un enfant d’une lignée traquée à Kiri.'),
+  S('reve_yahiko', 'Le rêve de Yahiko', 'Konan t’a raconté le garçon qui voulait arrêter la guerre, et celui qui a voulu la gagner à sa place.'),
   S('otages_kumo', 'Les otages de Kumo', 'Kumo « collectionne » les enfants des lignées étrangères.'),
   S('surveillance_uchiha', 'Le clan surveillé', 'Les unités de l’ombre surveillent le clan Uchiha.'),
   S('sceau_oiseau_cage', 'Le sceau de la branche', 'Le sceau de la branche secondaire Hyūga permet à la branche principale de tuer son porteur.'),

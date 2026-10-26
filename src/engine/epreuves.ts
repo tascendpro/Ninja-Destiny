@@ -351,7 +351,7 @@ export function chancePriorite(s: GameState, t: CheckDef): number {
 /** La technique qu'il lance : de sa nature si on la connaît, jamais au-dessus de son rang ; les plus fortes plus souvent. */
 export function tirerTechniqueAdverse(s: GameState, t: CheckDef): string {
   const rang = rangAdversaire(t);
-  const pool = R.contenu.techniquesAdverses.filter((a) => a.rang <= rang && (!a.element || a.element === t.elementAdverse));
+  const pool = R.contenu.techniquesAdverses.filter((a) => !a.signature && a.rang <= rang && (!a.element || a.element === t.elementAdverse));
   const total = pool.reduce((n, a) => n + a.rang, 0);
   let r = alea(s) * total;
   for (const a of pool) {

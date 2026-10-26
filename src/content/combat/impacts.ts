@@ -667,3 +667,97 @@ export const IMPACTS_JOUEUR: Partial<Record<Terrain, string[]>> = {
   quai: ['Tu tombes du quai. L’eau glacée te coupe le souffle.'],
   roche: ['Tu t’écrases contre la paroi de la carrière. Des pierres tombent sur toi.'],
 };
+
+/** Ce qui reste quand le combat s'arrête, selon le lieu : une phrase avant que la scène reprenne. */
+export const APRES_COMBAT: Record<Terrain, { victoire: string[]; defaite: string[]; neutre: string[] }> = {
+  foret: {
+    victoire: ['Les oiseaux reviennent un à un dans les branches, comme si rien ne s’était passé.', 'Une feuille tombe lentement sur ta main encore tremblante. La forêt a déjà oublié.'],
+    defaite: ['Tu restes allongé·e dans les fougères. Au-dessus de toi, les branches se balancent sans rien te dire.', 'L’humus est froid contre ta joue. Quelque part, un pic-vert reprend son travail.'],
+    neutre: ['Le silence retombe entre les troncs, épais comme de la mousse.'],
+  },
+  rue: {
+    victoire: ['Les volets s’entrouvrent un à un. Quelqu’un applaudit, puis s’arrête, gêné.', 'Un marchand redresse son étal renversé en te regardant de travers.'],
+    defaite: ['Des pas s’éloignent sur les pavés. Derrière les volets, personne n’ose sortir.', 'Une lanterne se balance encore au-dessus de toi. Tu comptes ses oscillations pour ne pas penser.'],
+    neutre: ['La rue reprend son bruit, lentement, comme une respiration après une apnée.'],
+  },
+  terrain: {
+    victoire: ['Les poteaux d’entraînement penchent, criblés, témoins muets de ce qui vient d’arriver.', 'La poussière retombe sur le terrain. Tes mains, elles, mettent plus longtemps.'],
+    defaite: ['Tu regardes le ciel depuis l’herbe arrachée du terrain. Il est trop bleu pour un jour pareil.', 'Le poteau contre lequel tu es tombé·e porte encore l’entaille de ta première année.'],
+    neutre: ['Sur le terrain, il ne reste que vos traces de pas, emmêlées.'],
+  },
+  cour: {
+    victoire: ['Aux fenêtres de l’Académie, des visages se retirent vite. Ce soir, on parlera de toi.', 'La cloche de la cour sonne, très loin, comme dans un autre monde.'],
+    defaite: ['Le gravier de la cour t’écorche les paumes. Des rires étouffés derrière les vitres.', 'Tu te relèves seul·e. Personne dans la cour ne t’aide, et personne ne se moque. C’est pire.'],
+    neutre: ['Le préau résonne encore, puis se tait.'],
+  },
+  interieur: {
+    victoire: ['La pièce est dévastée. Le thé renversé fume encore sur le tatami.', 'Un rouleau suspendu se décroche lentement du mur et tombe à tes pieds.'],
+    defaite: ['Le plafond tourne au-dessus de toi. Une poutre craque, puis plus rien.', 'Le tatami sent le thé et le sang. Tu restes là, à écouter la maison.'],
+    neutre: ['La maison retient son souffle, cloison par cloison.'],
+  },
+  forge: {
+    victoire: ['Le feu de la forge ronfle toujours, indifférent. L’enclume a pris un coup de plus.', 'Les braises renversées crépitent dans la poussière de charbon.'],
+    defaite: ['La chaleur du foyer te brûle le visage. Tu n’as pas la force de t’en éloigner.', 'Au-dessus de toi, les lames pendues au mur tintent doucement.'],
+    neutre: ['Le soufflet expire une dernière fois, seul.'],
+  },
+  porte: {
+    victoire: ['Sur le chemin de ronde, les gardes échangent un regard. L’un d’eux hoche la tête.', 'La grande porte grince sur ses gonds, comme si elle approuvait.'],
+    defaite: ['Les gardes regardent ailleurs. La grande porte, elle, ne regarde personne.', 'Tu restes au pied de la palissade, là où tous les voyageurs te verront en partant.'],
+    neutre: ['Le vent passe sous la grande porte en sifflant.'],
+  },
+  plaine: {
+    victoire: ['Le vent couche les hautes herbes vers toi, comme une révérence.', 'Un vieux casque rouillé, à tes pieds, a vu d’autres combats. Il n’en dit rien.'],
+    defaite: ['Les herbes se referment au-dessus de toi. D’ici, on ne voit que le ciel et les corbeaux.', 'La terre de la plaine a bu le sang de tant de guerres. Le tien ne change rien pour elle.'],
+    neutre: ['La plaine reprend sa respiration lente, d’un horizon à l’autre.'],
+  },
+  desert: {
+    victoire: ['Le vent efface déjà vos traces dans le sable. Dans une heure, il n’y aura plus rien.', 'Le soleil tape sur ta nuque. Tu avais oublié la chaleur, pendant le combat.'],
+    defaite: ['Le sable brûlant colle à tes lèvres. Les vautours tournent, patients.', 'Une dune glisse lentement sur ta jambe. Tu n’as pas la force de la repousser.'],
+    neutre: ['Le désert ne garde rien. Le vent s’en charge.'],
+  },
+  ruines: {
+    victoire: ['Un pan de mur finit de s’effondrer derrière toi. Les ruines ont l’habitude.', 'La pluie recommence à tomber entre les piliers brisés.'],
+    defaite: ['Les ruines te regardent depuis leurs fenêtres vides.', 'De l’eau goutte d’une poutre tordue, juste à côté de ton oreille. Tu la comptes.'],
+    neutre: ['Le silence des ruines est plus vieux que vous deux.'],
+  },
+  cotes: {
+    victoire: ['La marée monte et efface le sang sur les galets.', 'Une mouette se pose sur un récif et te regarde, la tête penchée.'],
+    defaite: ['L’écume te lèche les doigts. La mer attend son tour.', 'Le ressac couvre tout, même ta respiration.'],
+    neutre: ['Les vagues continuent, comme elles l’ont toujours fait.'],
+  },
+  montagne: {
+    victoire: ['Une pierre dévale la pente longtemps après le dernier coup.', 'Le vent du col te glace la sueur sur le dos. Tu es en vie.'],
+    defaite: ['Au-dessus de toi, l’orage gronde comme s’il avait vu le combat.', 'Le vide est à un pas. Tu ne sais pas comment tu ne t’y es pas trouvé·e.'],
+    neutre: ['L’écho de vos coups met longtemps à mourir entre les pics.'],
+  },
+  neige: {
+    victoire: ['La neige recommence à tomber, et recouvre déjà les traces rouges.', 'Ton souffle fume dans l’air froid. C’est la seule chose qui bouge encore.'],
+    defaite: ['La neige est douce contre ta joue. Trop douce. Il ne faut pas fermer les yeux.', 'Les flocons s’accumulent sur tes cils. Tu ne sens plus tes doigts.'],
+    neutre: ['Le blanc reprend tout, sans bruit.'],
+  },
+  marche: {
+    victoire: ['Les marchands ramassent leurs fruits éparpillés. Le plus vieux te fait un signe de tête.', 'Quelqu’un te tend un gobelet d’eau, sans un mot.'],
+    defaite: ['Les clients enjambent tes jambes pour atteindre les étals. Personne ne s’arrête.', 'Un enfant te regarde depuis derrière les jupes de sa mère, et ne comprend pas.'],
+    neutre: ['Le marché reprend son vacarme, comme si rien n’avait eu lieu.'],
+  },
+  temple: {
+    victoire: ['L’encens brûle toujours devant l’autel. La statue n’a pas changé d’expression.', 'La cloche du temple vibre encore, longtemps, très bas.'],
+    defaite: ['Allongé·e sur les dalles froides, tu entends les moines psalmodier, très loin.', 'La statue te regarde d’en haut avec une patience de mille ans.'],
+    neutre: ['La fumée de l’encens monte droit, comme si rien n’avait bougé.'],
+  },
+  route: {
+    victoire: ['Une charrette passe au loin. Le conducteur fouette ses bœufs pour ne pas s’arrêter.', 'La poussière de la route retombe sur toi. Tu reprends ta marche.'],
+    defaite: ['Dans le fossé, l’eau boueuse te monte aux chevilles. La route continue sans toi.', 'Une borne de pierre marque la distance jusqu’au prochain village. Tu n’as pas la force de la lire.'],
+    neutre: ['La route s’étire, indifférente, dans les deux sens.'],
+  },
+  quai: {
+    victoire: ['Les pêcheurs reprennent leurs filets, sans te regarder.', 'Un bateau quitte le quai dans la brume. La mer avale le bruit.'],
+    defaite: ['Les planches mouillées du quai craquent sous tes doigts. L’eau noire attend en dessous.', 'La brume te recouvre comme une couverture froide.'],
+    neutre: ['Le clapotis contre les pilotis reprend son rythme.'],
+  },
+  roche: {
+    victoire: ['Des cailloux roulent encore le long de la paroi, longtemps après.', 'La carrière te renvoie l’écho de ta propre respiration.'],
+    defaite: ['La poussière de roche te remplit la bouche. Au-dessus, la paroi est immense.', 'Un wagonnet abandonné grince sur ses rails, poussé par le vent.'],
+    neutre: ['La roche garde tout, même les bruits.'],
+  },
+};

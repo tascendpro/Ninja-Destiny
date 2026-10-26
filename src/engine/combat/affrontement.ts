@@ -21,11 +21,12 @@ import { idFamille } from '../armes';
 import type { ResultatManche, VueFamille } from './resolution';
 import { choisirReplique, choisirVariante, noterReplique } from './selection';
 import { texteRepetition } from './repetition';
-import { texteImpact, texteImpactJoueur, texteSombre, texteTechniqueTouche, tirageTexte } from './impacts';
-import { PORTEE_ESCOUADE } from '../../content/combat/impacts';
+import { terrainCourant, texteImpact, texteImpactJoueur, texteSombre, texteTechniqueTouche, tirageTexte } from './impacts';
+import { APRES_COMBAT, PORTEE_ESCOUADE } from '../../content/combat/impacts';
 import { porteeTechnique } from '../epreuves';
 import type { FaitsManche } from './selection';
-import { affrontementGenerique } from './generique';
+import { affrontementGenerique, identiteGeneree } from './generique';
+import { ANNONCES_BETE, COUPS_BETE } from '../../content/combat/generiques';
 import { NIVEAUX } from './types';
 
 /** Le combat d'un choix : sa fiche s'il en a une, sinon un combat tiré de son épreuve. Tous les combats passent par ici. */
@@ -36,6 +37,7 @@ export function affrontementPour(evenementId: string, choixId: string): Affronte
 /** Le genre de l'adversaire, pour accorder les textes ({il}, {Il}, {lui}, {e}). */
 function genreAdv(s: GameState, d: AdversaireDef): 'm' | 'f' {
   if (d.pnj) return defPnj(s, resoudrePnj(s, d.pnj))?.genre ?? 'm';
+  if (d.nomGenere) return identiteGeneree(s, d).genre;
   return d.genre ?? 'm';
 }
 
@@ -50,7 +52,28 @@ export function accorderAdv(texte: string, genre: 'm' | 'f'): string {
 }
 
 function texteAdv(s: GameState, sc: EtatAffrontement, d: AdversaireDef, t: string): string {
-  return accorderAdv(t.replace(/\{nom\}/g, sc.nomAdversaire), genreAdv(s, d));
+  return accorderAdv(avecNom(t, sc.nomAdversaire), genreAdv(s, d));
+}
+
+/** Ce que l'adversaire lance cette manche, nommé et raconté : sa technique, ou sa grande technique annoncée. */
+function techniqueAdverseRacontee(s: GameState, sc: EtatAffrontement, d: AdversaireDef): string {
+  // Le lanceur est nommé : sans lui, on confondrait sa technique avec la tienne quand ce sont les mêmes.
+  if (sc.intention === 'majeure' && d.majeure) return avecNom(`{nom} lance sa grande technique : ${d.majeure.nom} ! `, sc.nomAdversaire);
+  if (sc.intention !== 'technique' || !sc.techniqueAdv) return '';
+  const t = techniquesAdversaire(s, d).find((x) => x.id === sc.techniqueAdv);
+  if (!t) return '';
+  // Les textes anciens disaient « il » en dur : on les accorde à l'adversaire.
+  const texte = (d.escouade ? t.escouade : t.duel).replace(/\bIl\b/g, '{Il}').replace(/\bil\b/g, '{il}').replace(/\blui\b/g, '{lui}');
+  return `${avecNom('{nom} répond', sc.nomAdversaire)} : ${t.nom} ! ${texte} `;
+}
+
+/** Place le nom de l'adversaire : « Le chien enragé » en début de phrase, « le chien enragé » au milieu. */
+export function avecNom(t: string, nom: string): string {
+  return t.replace(/\{nom\}/g, (_m, i: number) => {
+    const avant = t.slice(0, i).trimEnd();
+    const debut = avant === '' || /[.!?…:«\n]$/.test(avant);
+    return !debut && /^(Le|La|Les|L’)\s?/.test(nom) ? nom.charAt(0).toLowerCase() + nom.slice(1) : nom;
+  });
 }
 
 /** Endurance de départ du joueur (§5.1). */
@@ -112,7 +135,7 @@ export function ouvrirAffrontement(s: GameState, ev: EventDef, ch: ChoiceDef): v
   const r = alea(s);
   const rep = choisirReplique(s, sc, d.repliques, reg && reg.rencontres > 0 ? 'revanche' : 'entree', {}, r) ?? choisirReplique(s, sc, d.repliques, 'entree', {}, r);
   if (rep) noterReplique(s, sc, rep);
-  sc.journal.push({ manche: 0, annonce: '', action: '', execution: '', reponse: '', impact: '', lecture: '', repliques: rep ? [texteAdv(s, sc, d, interpoler(rep.texte, s))] : [], technique: `plafond=${plafond}` });
+  sc.journal.push({ manche: 0, annonce: '', action: '', execution: '', reponse: '', impact: '', lecture: '', repliques: rep ? [interpoler(texteAdv(s, sc, d, rep.texte), s)] : [], technique: `plafond=${plafond}` });
   ouvrirManche(s, sc, d);
 }
 
@@ -138,7 +161,8 @@ function ouvrirManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef): voi
   let fiab: EtatAffrontement['annonce']['fiabilite'] = rFiab < p ? 'fiable' : d.feinte && rFiab > 0.85 ? 'trompeur' : 'vague';
   if (mortelle && fiab === 'trompeur') fiab = 'vague';
   const montree: IntentionAdv = fiab === 'trompeur' ? (sc.intention === 'attaque' ? 'defense' : 'attaque') : sc.intention;
-  const banque = R.contenu.racine.annonces[montree];
+  // Une bête se lit à ses muscles et à sa gueule, pas à ses mains.
+  const banque = (d.type === 'bete' ? ANNONCES_BETE : R.contenu.racine.annonces)[montree];
   let texte = choisirVariante(fiab === 'fiable' ? banque.fiable : banque.vague, rTexte);
   if (sc.intention === 'majeure' && d.majeure && fiab === 'fiable') texte = d.majeure.annonce;
   if (fiab === 'fiable' && sc.techniqueAdv && sc.lecture.techniquesVues.includes(sc.techniqueAdv)) {
@@ -221,7 +245,7 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
   const recits = R.contenu.racine.recits;
   const tech = R.maitrises[a.choix];
   const genre = genreAdv(s, d);
-  const vari = (cle: string) => accorderAdv(choisirVariante(recits[cle] ?? recits[cle.split(':').slice(0, -1).join(':')] ?? [], rTexte).replace(/\{tech\}/g, tech?.nom ?? nomAction(a)).replace(/\{nom\}/g, sc.nomAdversaire), genre);
+  const vari = (cle: string) => accorderAdv(avecNom(choisirVariante(recits[cle] ?? recits[cle.split(':').slice(0, -1).join(':')] ?? [], rTexte).replace(/\{tech\}/g, tech?.nom ?? nomAction(a)), sc.nomAdversaire), genre);
   const nature = tech?.element;
   // Combien de fois cette action avait déjà servi dans ce combat (le compteur inclut déjà celle-ci).
   const offensive = a.famille === 'taijutsu' || a.famille === 'ninjutsu' || a.famille === 'arme';
@@ -258,8 +282,8 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
     sc.distance = lourd ? 'loin' : distance;
   } else if (a.famille === 'defense' || a.famille === 'fuite') sc.distance = 'loin';
   else if (sc.intention === 'attaque' || a.famille === 'taijutsu' || a.famille === 'arme') sc.distance = 'proche';
-  if (res.inflige > 0) impact += ` (−${res.inflige} endurance pour {nom})`.replace('{nom}', sc.nomAdversaire);
-  if (res.subi > 0) impact += ` ${vari('adv:touche')} ${texteImpactJoueur(s, res.subi >= sc.joueur.enduranceMax * 0.2 ? 'lourd' : 'leger', `${sc.manche}`)} (−${res.subi} endurance)`;
+  if (res.inflige > 0) impact += avecNom(` (−${res.inflige} endurance pour {nom})`, sc.nomAdversaire);
+  if (res.subi > 0) impact += ` ${d.type === 'bete' ? choisirVariante(COUPS_BETE, rTexte) : vari('adv:touche')} ${texteImpactJoueur(s, res.subi >= sc.joueur.enduranceMax * 0.2 ? 'lourd' : 'leger', `${sc.manche}`)} (−${res.subi} endurance)`;
   // Une réplique au plus par manche, selon ce qui vient de se passer.
   const faits: FaitsManche = { dejaVue: res.dejaVue, inedite: res.inedite, repetition: res.repetition, issue: res.issue };
   const pct = sc.adv.endurance / sc.adv.enduranceMax;
@@ -280,7 +304,7 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
     const rep = choisirReplique(s, sc, d.repliques, c as never, { ...faits, repetition: faits.repetition || deja >= 1 }, rRep);
     if (rep) {
       noterReplique(s, sc, rep);
-      repliques.push(texteAdv(s, sc, d, interpoler(rep.texte, s)));
+      repliques.push(interpoler(texteAdv(s, sc, d, rep.texte), s));
       break;
     }
     if (c === 'repetition') {
@@ -296,7 +320,7 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
     annonce,
     action: nomAction(a),
     execution,
-    reponse: accorderAdv(res.reponse, genre),
+    reponse: accorderAdv(`${techniqueAdverseRacontee(s, sc, d)}${res.reponse}`.trim(), genre),
     impact: impact.trim(),
     lecture: accorderAdv(res.cause, genre),
     repliques,
@@ -415,21 +439,32 @@ function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: Fin
   // Le récit de la fin, la dernière réplique.
   const recits = R.contenu.racine.recits;
   // Une scène qui a sa propre conclusion la raconte elle-même : le récit générique de la fin se tait.
-  const texteFin = conclusion?.texte ? '' : accorderAdv(choisirVariante(recits[`fin:${fin}`] ?? [], rTexte).replace(/\{nom\}/g, sc.nomAdversaire), genre);
+  // La fin se raconte selon ce qu'il est : une bête qui s'enfuit n'est pas un ninja qui disparaît dans la fumée.
+  // Un adversaire sans fiche : la scène raconte elle-même la fin ; une phrase générique la doublerait, et se répéterait de combat en combat.
+  const generique = d.id.startsWith('gen:');
+  // En combat mortel, une égalité ne se raconte pas comme dans une cour d'école ; et la mort se suffit à elle-même.
+  const banqueFin = (regle.letal ? recits[`fin:${fin}:letal`] : undefined) ?? recits[`fin:${fin}`] ?? [];
+  const texteFin = conclusion?.texte || generique || mort ? '' : accorderAdv(avecNom(choisirVariante(banqueFin, rTexte), sc.nomAdversaire), genre);
   const catFin = gagneJoueur ? 'defaite_adv' : perdJoueur ? 'victoire_adv' : 'paix';
   const rep = choisirReplique(s, sc, d.repliques, catFin, { issue: sc.journal[sc.journal.length - 1]?.issue }, rRep);
   if (rep) noterReplique(s, sc, rep);
-  const replique = rep ? texteAdv(s, sc, d, interpoler(rep.texte, s)) : '';
+  const replique = rep ? interpoler(texteAdv(s, sc, d, rep.texte), s) : '';
+  // Ce qui reste quand le combat s'arrête : le lieu, et ce qu'on y laisse.
+  const terrainFin = APRES_COMBAT[terrainCourant(s)];
+  const bancAmbiance = gagneJoueur ? terrainFin.victoire : perdJoueur ? terrainFin.defaite : terrainFin.neutre;
+  const ambiance = mort ? '' : bancAmbiance[Math.floor(tirageTexte(s, `apres:${sc.evenementId}`) * bancAmbiance.length)];
   const corps = mort
     ? 'Tout va très vite. Un coup que tu n’as pas vu venir, puis le froid qui monte. Les voix s’éloignent. Tu penses à quelqu’un, tu ne sais plus qui. Puis plus rien.'
     : resoudreTexte(conclusion?.texte ?? outcome.texte, s);
-  const texte = [texteFin, replique && `« ${replique.replace(/^«\s*|\s*»$/g, '')} »`, corps].filter(Boolean).join('\n\n');
+  // Un geste (une bête qui gronde) se raconte tel quel ; une parole se met entre guillemets.
+  const repliqueTexte = !replique ? '' : replique.startsWith('~') ? replique.slice(1) : `« ${replique.replace(/^«\s*|\s*»$/g, '')} »`;
+  const texte = [texteFin, repliqueTexte, ambiance, corps].filter(Boolean).join('\n\n');
   const noms = [...new Set(sc.techniquesUtilisees)].map((t) => R.maitrises[t].nom);
   const libelle = interpoler(ch.texte, s) + (noms.length ? ` — ${noms.join(', ')}` : '');
   return {
     texte,
     libelle,
-    suite: mort ? undefined : (conclusion ? undefined : outcome.suite) ?? ch.suite,
+    suite: mort ? undefined : (conclusion ? conclusion.suite : outcome.suite) ?? ch.suite,
     issue,
     changements: ctx.changements,
     bilan: sc.manche >= 2 ? bilanCombat(s, sc, d, xp) : undefined,
