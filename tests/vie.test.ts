@@ -23,7 +23,8 @@ describe('Une vie entière, du premier au dernier chapitre', () => {
     const cs = combinaisons();
     // 80 vies : avec 40, un tirage malchanceux pouvait faire échouer le test sans que l'équilibre ait changé.
     for (let i = 0; i < 80; i++) {
-      const v = vieComplete(creation(cs[i % cs.length]), 9000 + i);
+      // On joue au réglage d'avant la Légende : ce test vérifie que chaque chapitre s'enchaîne, et le robot doit y arriver vivant.
+      const v = vieComplete(creation({ ...cs[i % cs.length], difficulte: 'shinobi' }), 9000 + i);
       expect(v.erreurs).toEqual([]);
       expect(v.fin).toBeDefined();
       expect(chapitreSuivantDisponible(v.etat)).toBe(false);

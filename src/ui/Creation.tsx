@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { AttributId, Creation as CreationT, Difficulte, ElementId, Presentation, VillageId } from '../engine/types';
+import type { AttributId, Creation as CreationT, ElementId, Presentation, VillageId } from '../engine/types';
 import { R } from '../engine/registre';
 import { APTITUDES, CHANCE_JINCHURIKI, CHANCE_PRODIGE, validerCreation } from '../engine/moteur';
 import { nomDeFamille } from '../engine/etat';
@@ -18,14 +18,8 @@ const INTROS = [
   'Le clan te donne ton nom de famille, tes pouvoirs et tes chaînes. Sans clan, tu n’as que ton prénom.',
   'L’affinité innée : la nature de chakra qui te viendra le plus facilement. D’autres s’apprendront plus tard, plus lentement.',
   'Deux traits de caractère : chacun renforce tes aptitudes, et ton point fort en découle. Les dons hors norme, eux, ne se choisissent pas.',
-  'Ce que tu poursuis, et la dureté du monde qui t’attend.',
+  'Ce que tu poursuis. Le monde, lui, ne te fera pas de cadeau.',
   'Vérifie une dernière fois. Ensuite, le destin tire ses dés.',
-];
-
-const DIFFICULTES: { id: Difficulte; nom: string; texte: string }[] = [
-  { id: 'recit', nom: 'Récit', texte: 'Les épreuves sont plus clémentes, les blessures guérissent plus vite. Pour découvrir l’histoire.' },
-  { id: 'shinobi', nom: 'Shinobi', texte: 'L’équilibre voulu : chaque risque compte, sans être injuste.' },
-  { id: 'legende', nom: 'Légende', texte: 'Épreuves plus dures, blessures plus lourdes, valeurs chiffrées masquées.' },
 ];
 
 const pourcent = (x: number) => `${Math.round(x * 100)} %`;
@@ -42,7 +36,8 @@ export default function Creation({ onCommencer, onRetour, heritage }: { onCommen
     traits: [],
     aptitude: 'perception',
     objectif: '',
-    difficulte: 'shinobi',
+    // Une seule difficulté : la Légende. Le monde ne fait pas de cadeau.
+    difficulte: 'legende',
   });
   const maj = (p: Partial<CreationT>) => setC((x) => ({ ...x, ...p }));
   const P = c.presentation;
@@ -96,7 +91,7 @@ export default function Creation({ onCommencer, onRetour, heritage }: { onCommen
     !!c.clan,
     !!c.element && (!clan?.elementsRequis || clan.elementsRequis.includes(c.element)),
     normaux.length === 2 && !!c.aptitude,
-    !!c.objectif && !!c.difficulte,
+    !!c.objectif,
     validerCreation(c).length === 0,
   ];
   // La position dans le parcours (etape) et le contenu affiché (k) : voir ORDRE.
@@ -402,17 +397,6 @@ export default function Creation({ onCommencer, onRetour, heritage }: { onCommen
               </button>
             ))}
           </div>
-          <div className="groupe">
-            <h3>Difficulté</h3>
-            <div className="options trois" style={{ marginTop: 10 }}>
-              {DIFFICULTES.map((d) => (
-                <button key={d.id} className="option" aria-pressed={c.difficulte === d.id} onClick={() => maj({ difficulte: d.id })}>
-                  <strong>{d.nom}</strong>
-                  <p>{d.texte}</p>
-                </button>
-              ))}
-            </div>
-          </div>
         </section>
       )}
 
@@ -457,7 +441,7 @@ export default function Creation({ onCommencer, onRetour, heritage }: { onCommen
             <div>
               <dt>Départ</dt>
               <dd>
-                {c.ageDepart} ans, difficulté {DIFFICULTES.find((d) => d.id === c.difficulte)?.nom}
+                {c.ageDepart} ans
               </dd>
             </div>
           </dl>

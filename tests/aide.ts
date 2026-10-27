@@ -19,7 +19,7 @@ export const CREATION_BASE: Creation = {
   traits: ['determine', 'curieux'],
   aptitude: 'perception',
   objectif: 'verite',
-  difficulte: 'shinobi',
+  difficulte: 'legende',
 };
 
 export function creation(partiel: Partial<Creation> = {}): Creation {

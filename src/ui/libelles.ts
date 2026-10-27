@@ -95,12 +95,10 @@ export interface VueChangement {
   classe: string;
 }
 
-/** Traduit les changements bruts en indicateurs lisibles. En difficulté Légende, les valeurs exactes sont masquées. */
+/** Traduit les changements bruts en indicateurs lisibles.  */
 export function vueChangements(s: GameState, ch: Changement[]): VueChangement[] {
-  const precis = s.creation.difficulte !== 'legende';
   const res: VueChangement[] = [];
-  const fleche = (d: number) => (d > 0 ? '▲' : '▼');
-  const valeur = (d: number) => (precis ? ` ${d > 0 ? '+' : ''}${Math.round(d)}` : ` ${fleche(d)}`);
+  const valeur = (d: number) => ` ${d > 0 ? '+' : ''}${Math.round(d)}`;
   const relations = new Map<string, { axe: RelationAxe; delta: number }[]>();
   let tempsTotal = 0;
   for (const c of ch) {
@@ -172,7 +170,7 @@ export function vueChangements(s: GameState, ch: Changement[]): VueChangement[] 
   }
   if (tempsTotal >= 5) res.unshift({ texte: `Temps écoulé : ${libelleDuree(tempsTotal)}`, classe: '' });
   for (const [pnj, axes] of relations) {
-    const txt = axes.map((a) => `${AXE_LIBELLE[a.axe]}${precis ? ` ${a.delta > 0 ? '+' : ''}${a.delta}` : ` ${fleche(a.delta)}`}`).join(', ');
+    const txt = axes.map((a) => `${AXE_LIBELLE[a.axe]} ${a.delta > 0 ? '+' : ''}${a.delta}`).join(', ');
     const positif = axes.reduce((t, a) => t + (['rivalite', 'hostilite'].includes(a.axe) ? -a.delta : a.delta), 0) >= 0;
     res.push({ texte: `${nomPnjId(s, pnj)} : ${txt}`, classe: positif ? 'hausse' : 'baisse' });
   }

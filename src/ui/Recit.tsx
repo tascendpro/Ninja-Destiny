@@ -155,8 +155,6 @@ export default function Recit({
   const [scelle, setScelle] = useState<string | null>(null);
   const cle = cleScene(etat);
   const p = etat.creation.presentation;
-  // En Légende, les chances exactes restent cachées : seul le niveau de risque est affiché.
-  const precis = etat.creation.difficulte !== 'legende';
 
   useEffect(() => {
     setScelle(null);
@@ -232,7 +230,7 @@ export default function Recit({
                       {ch.risque && (
                         <span className={RISQUE_CLASSE[ch.risque]}>
                           {ch.chance !== undefined && <PointsEncre chance={ch.chance} />}
-                          {precis && ch.chance !== undefined && ch.nature !== 'combat' ? `${ch.chance} % de réussite` : `Risque ${ch.risque}`}
+                          {ch.chance !== undefined && ch.nature !== 'combat' ? `${ch.chance} % de réussite` : `Risque ${ch.risque}`}
                           {ch.principal && ` · ${ATTRIBUT_LIBELLE[ch.principal]}`}
                         </span>
                       )}
@@ -734,7 +732,6 @@ function MetaAttaque({ at }: { at: { chakra: number; avantage?: 'fort' | 'faible
 function Combat({ etat, theme, anime, onManche }: { etat: GameState; theme: 'nuit' | 'washi'; anime: boolean; onManche: (id: string) => void }) {
   const v = vueCombat(etat);
   const p = etat.creation.presentation;
-  const precis = etat.creation.difficulte !== 'legende';
   if (!v) return null;
   return (
     <div className="recit">

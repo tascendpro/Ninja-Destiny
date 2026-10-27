@@ -27,6 +27,7 @@ import { porteeTechnique } from '../epreuves';
 import type { FaitsManche } from './selection';
 import { affrontementGenerique, identiteGeneree } from './generique';
 import { ANNONCES_BETE, COUPS_BETE } from '../../content/combat/generiques';
+import { MORTS_AU_COMBAT } from '../../content/combat/morts';
 import { NIVEAUX } from './types';
 
 /** Le combat d'un choix : sa fiche s'il en a une, sinon un combat tiré de son épreuve. Tous les combats passent par ici. */
@@ -346,6 +347,54 @@ function outcomePour(issue: Issue, ch: ChoiceDef): Outcome {
   return issue === 'critique' ? t.critique! : issue === 'succes' ? t.succes : issue === 'partiel' ? t.partiel! : t.echec;
 }
 
+/** Les articles qui se contractent derrière une préposition : « les coups du chien », pas « de le chien ». */
+function contracter(t: string): string {
+  return t.replace(/(^|[\s’'(])de le /g, '$1du ').replace(/(^|[\s’'(])de les /g, '$1des ').replace(/(^|\s)à le /g, '$1au ').replace(/(^|\s)à les /g, '$1aux ');
+}
+
+/**
+ * Comment l'adversaire t'a tué : l'Akatsuki à sa manière, une bête, le nombre ; sinon la technique qu'il lançait
+ * (son élément décide : brûlé·e, noyé·e, foudroyé·e…), ou à défaut l'une des siennes, sa lame, ses poings.
+ * Tirages de texte seulement : le RNG n'est pas consommé.
+ */
+function mortAuCombat(s: GameState, sc: EtatAffrontement, d: AdversaireDef): { texte: string; cause: string; precise: boolean } {
+  const h = (cle: string) => tirageTexte(s, `mort:${sc.evenementId}:${cle}`);
+  const techs = techniquesAdversaire(s, d);
+  let cle: string;
+  let tech: string | undefined;
+  if (MORTS_AU_COMBAT[d.id]) cle = d.id;
+  else if (d.type === 'bete') cle = 'bete';
+  else if (d.escouade) cle = 'escouade';
+  else if (sc.intention === 'majeure' && d.majeure) {
+    cle = 'majeure';
+    tech = d.majeure.nom;
+  } else {
+    const t =
+      sc.intention === 'technique'
+        ? techs.find((x) => x.id === sc.techniqueAdv)
+        : techs.length && h('technique') < 0.5
+          ? techs[Math.floor(h('laquelle') * techs.length)]
+          : undefined;
+    if (t) {
+      cle = t.element && MORTS_AU_COMBAT[t.element] ? t.element : 'technique';
+      tech = t.nom;
+    } else cle = ['samourai', 'mercenaire', 'bandit'].includes(d.type ?? '') || h('arme') < 0.5 ? 'lame' : 'taijutsu';
+  }
+  return raconterMort(s, cle, tech, sc.nomAdversaire, genreAdv(s, d), h('texte'));
+}
+
+/** Une scène de mort de la banque, accordée à l'adversaire et à toi ; sa cause pour l'épitaphe. */
+export function raconterMort(s: GameState, cle: string, tech: string | undefined, nom: string, genre: 'm' | 'f', tirage: number): { texte: string; cause: string; precise: boolean } {
+  const banque = MORTS_AU_COMBAT[cle] ?? MORTS_AU_COMBAT.lame;
+  const preparer = (x: string) => interpoler(contracter(accorderAdv(avecNom(x.replace(/\{tech\}/g, tech ?? ''), nom), genre)), s);
+  return {
+    texte: preparer(banque.textes[Math.floor(tirage * banque.textes.length)]),
+    cause: preparer(banque.cause),
+    // Une mort qui dit ce qui t'a tué (le feu, l'eau, l'Akatsuki) passe avant la cause générale de la scène.
+    precise: cle !== 'lame' && cle !== 'taijutsu' && cle !== 'escouade',
+  };
+}
+
 /** Conclusion : mort (contexte mortel, après avertissement), registre, relations, santé, expérience, bilan. */
 function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: FinCombat, ctx: Ctx): ConclusionAffrontement {
   const [rMort, rTexte, rRep] = [alea(s), alea(s), alea(s)];
@@ -411,8 +460,9 @@ function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: Fin
   // Ce que le combat coûte à la santé : léger dans une bagarre, réel en mission.
   const perte = 1 - sc.joueur.endurance / sc.joueur.enduranceMax;
   const facteur = s.creation.difficulte === 'recit' ? 0.6 : s.creation.difficulte === 'legende' ? 1.3 : 1;
-  if (mort) {
-    s.drapeaux['cause_mort'] = ch.test?.causeMort ? interpoler(ch.test.causeMort, s) : `tombé·e au combat (${interpoler(ev.titre, s).toLowerCase()})`;
+  const finale = mort ? mortAuCombat(s, sc, d) : undefined;
+  if (mort && finale) {
+    s.drapeaux['cause_mort'] = ch.test?.causeMort && !finale.precise ? interpoler(ch.test.causeMort, s) : finale.cause;
     s.drapeaux['mort_au_combat'] = true;
     ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -s.jauges.sante });
     s.jauges.sante = 0;
@@ -446,15 +496,16 @@ function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: Fin
   const banqueFin = (regle.letal ? recits[`fin:${fin}:letal`] : undefined) ?? recits[`fin:${fin}`] ?? [];
   const texteFin = conclusion?.texte || generique || mort ? '' : accorderAdv(avecNom(choisirVariante(banqueFin, rTexte), sc.nomAdversaire), genre);
   const catFin = gagneJoueur ? 'defaite_adv' : perdJoueur ? 'victoire_adv' : 'paix';
-  const rep = choisirReplique(s, sc, d.repliques, catFin, { issue: sc.journal[sc.journal.length - 1]?.issue }, rRep);
+  // Mort, on n'entend plus ses mots de vainqueur : la scène de mort parle pour {lui}.
+  const rep = mort ? undefined : choisirReplique(s, sc, d.repliques, catFin, { issue: sc.journal[sc.journal.length - 1]?.issue }, rRep);
   if (rep) noterReplique(s, sc, rep);
   const replique = rep ? interpoler(texteAdv(s, sc, d, rep.texte), s) : '';
   // Ce qui reste quand le combat s'arrête : le lieu, et ce qu'on y laisse.
   const terrainFin = APRES_COMBAT[terrainCourant(s)];
   const bancAmbiance = gagneJoueur ? terrainFin.victoire : perdJoueur ? terrainFin.defaite : terrainFin.neutre;
   const ambiance = mort ? '' : bancAmbiance[Math.floor(tirageTexte(s, `apres:${sc.evenementId}`) * bancAmbiance.length)];
-  const corps = mort
-    ? 'Tout va très vite. Un coup que tu n’as pas vu venir, puis le froid qui monte. Les voix s’éloignent. Tu penses à quelqu’un, tu ne sais plus qui. Puis plus rien.'
+  const corps = finale
+    ? finale.texte
     : resoudreTexte(conclusion?.texte ?? outcome.texte, s);
   // Un geste (une bête qui gronde) se raconte tel quel ; une parole se met entre guillemets.
   const repliqueTexte = !replique ? '' : replique.startsWith('~') ? replique.slice(1) : `« ${replique.replace(/^«\s*|\s*»$/g, '')} »`;

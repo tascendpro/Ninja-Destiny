@@ -27,7 +27,7 @@ import { R } from './registre';
 import { JOURS_AN, age, ageA, libelleDuree, libellePeriode } from './calendrier';
 import { Ctx, ajouterJournal, clamp, cloner, defPnj, nomDeFamille, nouveauCtx, resoudrePnj } from './etat';
 import { alea, aleaEntier, tirerPondere } from './rng';
-import { affrontementPour, jouerAffrontement, ouvrirAffrontement } from './combat/affrontement';
+import { affrontementPour, jouerAffrontement, ouvrirAffrontement, raconterMort } from './combat/affrontement';
 import { texteRepetition } from './combat/repetition';
 import { techniqueAuContact, texteImpact, texteImpactJoueur, texteSombre, texteTechniqueTouche, tirageTexte } from './combat/impacts';
 import { PORTEE_ESCOUADE, RATES_NOVICE } from '../content/combat/impacts';
@@ -916,8 +916,25 @@ function apresCombat(s: GameState, test: CheckDef, issue: Issue, capture: boolea
   return { suite, texte: '' };
 }
 
-function texteMort(prelude: string): string {
-  return `${prelude}Tout va très vite. Un coup que tu n’as pas vu venir, puis le froid qui monte. Les voix s’éloignent. Tu penses à quelqu’un, tu ne sais plus qui. Puis plus rien.`;
+/**
+ * La mort dans un combat à l'ancienne : pas de fiche d'adversaire, mais l'élément qu'il maîtrise et la forme du combat
+ * suffisent à dire comment. Fixe aussi la cause retenue par l'épitaphe.
+ */
+function mourirAuCombat(s: GameState, test: CheckDef, evId: string, titre: string, prelude: string): string {
+  const h = (cle: string) => tirageTexte(s, `mort:${evId}:${cle}`);
+  let cle = test.forme === 'escouade' ? 'escouade' : h('arme') < 0.5 ? 'lame' : 'taijutsu';
+  let tech: string | undefined;
+  if (test.forme !== 'escouade' && test.elementAdverse && h('technique') < 0.6) {
+    const pool = R.contenu.techniquesAdverses.filter((a) => !a.signature && a.element === test.elementAdverse);
+    const t = pool[Math.floor(h('laquelle') * pool.length)];
+    if (t) {
+      cle = test.elementAdverse;
+      tech = t.nom;
+    }
+  }
+  const m = raconterMort(s, cle, tech, test.forme === 'escouade' ? 'Les ennemis' : 'L’ennemi', 'm', h('texte'));
+  s.drapeaux['cause_mort'] = test.causeMort && !m.precise ? interpoler(test.causeMort, s) : m.precise ? m.cause : `tombé·e au combat (${titre.toLowerCase()})`;
+  return `${prelude}${m.texte}`;
 }
 
 function choisirMut(s: GameState, choixId: string): void {
@@ -969,8 +986,7 @@ function choisirMut(s: GameState, choixId: string): void {
     issue = r.issue;
     if (r.mort) {
       // Mort au combat : la scène s'arrête là, ses autres conséquences n'ont plus lieu.
-      s.drapeaux['cause_mort'] = test.causeMort ? interpoler(test.causeMort, s) : `tombé·e au combat (${interpoler(ev.titre, s).toLowerCase()})`;
-      texte = texteMort(prelude);
+      texte = mourirAuCombat(s, test, ev.id, interpoler(ev.titre, s), prelude);
     } else {
       appliquerEffets(s, r.outcome.effets, ctx);
       texte = prelude + resoudreTexte(r.outcome.texte, s);
@@ -1456,8 +1472,7 @@ function conclureManches(s: GameState, ev: EventDef, ch: ChoiceDef, base: CheckD
   let texte: string;
   let suite = ch.suite;
   if (res.mort) {
-    s.drapeaux['cause_mort'] = base.causeMort ? interpoler(base.causeMort, s) : `tombé·e au combat (${interpoler(ev.titre, s).toLowerCase()})`;
-    texte = `${recit}\n\n${texteMort('')}`;
+    texte = `${recit}\n\n${mourirAuCombat(s, base, ev.id, interpoler(ev.titre, s), '')}`;
   } else {
     appliquerEffets(s, res.outcome.effets, fin);
     texte = `${recit}\n\n${resoudreTexte(res.outcome.texte, s)}`;

@@ -34,12 +34,12 @@ function Piste({ valeur, max = 100, classe = 'c-neutre' }: { valeur: number; max
   );
 }
 
-function Jauge({ nom, valeur, max = 100, classe, detail, masquer = false }: { nom: string; valeur: number; max?: number; classe?: string; detail?: string; masquer?: boolean }) {
+function Jauge({ nom, valeur, max = 100, classe, detail }: { nom: string; valeur: number; max?: number; classe?: string; detail?: string }) {
   return (
     <div className="jauge">
       <span>{nom}</span>
       <span className="val">
-        {masquer ? '' : Math.round(valeur)}
+        {Math.round(valeur)}
         {detail && <small>{detail}</small>}
       </span>
       <Piste valeur={valeur} max={max} classe={classe} />
@@ -109,7 +109,6 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
   const c = etat.creation;
   const p = c.presentation;
   const note = noteFinale(etat);
-  const masquer = c.difficulte === 'legende';
   const db = databook(etat);
   const arme = etat.armeEquipee ? R.armes[etat.armeEquipee] : undefined;
   const j = etat.jauges;
@@ -184,10 +183,6 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
             <dt>Objectif</dt>
             <dd>{R.objectifs[c.objectif].nom}</dd>
           </div>
-          <div>
-            <dt>Difficulté</dt>
-            <dd>{c.difficulte === 'recit' ? 'Récit' : c.difficulte === 'shinobi' ? 'Shinobi' : 'Légende'}</dd>
-          </div>
         </dl>
         {biju && <p className="sous-titre" style={{ marginTop: 12 }}>Scellé en toi : {biju.nom}.</p>}
       </section>
@@ -236,32 +231,14 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
                   <i key={n} className={l.note >= n ? 'plein' : l.note >= n - 0.5 ? 'moitie' : ''} />
                 ))}
               </span>
-              <span className="note-db">{masquer ? '' : noteTexte(l.note)}</span>
+              <span className="note-db">{noteTexte(l.note)}</span>
             </li>
           ))}
         </ul>
         </Repli>
       </section>
 
-      {masquer ? (
-        <section className="panneau l7">
-          <h2>
-            Aptitudes <small>sur 100</small>
-          </h2>
-          <div className="grille-jauges">
-            {ATTRIBUTS.map((a: AttributId) => (
-              <Jauge key={a} nom={ATTRIBUT_LIBELLE[a]} valeur={etat.attributs[a]} detail={qualificatif(etat.attributs[a])} masquer={masquer} />
-            ))}
-          </div>
-          {etat.pointsStat > 0 && (
-            <button type="button" className="btn-principal points-ouvrir" onClick={onOuvrirPoints}>
-              Répartir {etat.pointsStat} {etat.pointsStat > 1 ? 'points' : 'point'}
-            </button>
-          )}
-        </section>
-      ) : (
-        <Repartition etat={etat} onOuvrir={onOuvrirPoints} />
-      )}
+      <Repartition etat={etat} onOuvrir={onOuvrirPoints} />
 
       <section className="panneau l7">
         <Repli
@@ -269,12 +246,10 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
           resume={
             <>
               <h2>Place dans le monde</h2>
-              {!masquer && (
-                <p className="resume-ligne">
-                  Réputation {Math.round(etat.social.reputation)} · Loyauté {Math.round(etat.social.loyaute)}
-                  {etat.social.suspicion >= 30 && <b className="risque-eleve"> · Suspicion {Math.round(etat.social.suspicion)}</b>}
-                </p>
-              )}
+              <p className="resume-ligne">
+                Réputation {Math.round(etat.social.reputation)} · Loyauté {Math.round(etat.social.loyaute)}
+                {etat.social.suspicion >= 30 && <b className="risque-eleve"> · Suspicion {Math.round(etat.social.suspicion)}</b>}
+              </p>
             </>
           }
         >
@@ -286,7 +261,6 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
                 key={k}
                 nom={SOCIAL_LIBELLE[k]}
                 valeur={etat.social[k]}
-                masquer={masquer}
                 classe={k === 'suspicion' ? (etat.social[k] >= 55 ? 'c-danger' : 'c-alerte') : 'c-or'}
               />
             ))}
@@ -719,7 +693,6 @@ function lienResume(r: GameState['relations'][string]): { mot: string; axe: (typ
 function Relations({ etat }: { etat: GameState }) {
   const ids = Object.keys(etat.relations).filter((id) => etat.pnj[id]?.rencontre || etat.relations[id].souvenirs.length > 0);
   if (!ids.length) return <p className="vide">Personne ne te connaît encore vraiment.</p>;
-  const masquer = etat.creation.difficulte === 'legende';
   return (
     <div className="grille-blocs">
       {ids.map((id) => {
@@ -741,7 +714,7 @@ function Relations({ etat }: { etat: GameState }) {
                     <h3>{d.nom}</h3>
                     <span className={`lien-mot${negatif ? ' negatif' : ''}${r.rompue ? ' rompu' : ''}`}>
                       {accorder(lien.mot, pd)}
-                      {lien.axe && !masquer ? ` · ${AXE_LIBELLE[lien.axe]} ${r[lien.axe]}` : ''}
+                      {lien.axe ? ` · ${AXE_LIBELLE[lien.axe]} ${r[lien.axe]}` : ''}
                     </span>
                     {st && st.etat !== 'vivant' && <span className="etiquette rouge">{accorder(ETAT_PNJ[st.etat], pd)}</span>}
                   </div>
@@ -753,7 +726,7 @@ function Relations({ etat }: { etat: GameState }) {
               {AXES_RELATION.filter((ax) => r[ax] > 0).map((ax) => (
                 <div className="ligne" key={ax}>
                   <span>{AXE_LIBELLE[ax].charAt(0).toUpperCase() + AXE_LIBELLE[ax].slice(1)}</span>
-                  <span className="valeur">{masquer ? '' : r[ax]}</span>
+                  <span className="valeur">{r[ax]}</span>
                   <Piste valeur={r[ax]} classe={ax === 'hostilite' || ax === 'rivalite' || ax === 'peur' ? 'c-danger' : 'c-neutre'} />
                 </div>
               ))}
