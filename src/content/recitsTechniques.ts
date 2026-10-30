@@ -354,6 +354,7 @@ export const AFFRONTEMENTS: Record<string, Affrontement> = {
   'kv_deserteurs/combattre': E,
   'jk_ennemi/combattre': D,
   'ex_lames_duel/combattre': D,
+  'dl_rival_duel/tout': D,
   'akc_paille/itachi': D,
   'akc_paille/kisame': D,
   'akc_desert/sasori': D,

@@ -690,7 +690,7 @@ function lienResume(r: GameState['relations'][string]): { mot: string; axe: (typ
   return { mot: mots[axe][fort ? 1 : 0], axe, valeur };
 }
 
-function Relations({ etat }: { etat: GameState }) {
+export function Relations({ etat }: { etat: GameState }) {
   const ids = Object.keys(etat.relations).filter((id) => etat.pnj[id]?.rencontre || etat.relations[id].souvenirs.length > 0);
   if (!ids.length) return <p className="vide">Personne ne te connaît encore vraiment.</p>;
   return (

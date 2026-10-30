@@ -18,6 +18,12 @@ const AFFRONTEMENTS_RACINE: ContenuRacine['affrontements'] = {
     temoins: ['examinateurs'],
     interdit: ['ninjutsu', 'pouvoir'],
   },
+  // Des années après l'Académie : régler l'histoire, juste toi et lui.
+  'dl_rival_duel/tout': {
+    adversaire: 'rival_academie',
+    contexte: 'duel',
+    raison: 'Régler une histoire commencée à l’Académie, sans témoins.',
+  },
   'ap_rival_defi/combattre': {
     adversaire: 'rival_academie',
     contexte: 'provocation',

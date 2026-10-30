@@ -19,6 +19,7 @@ import type { ActionCombat } from '../engine/combat/types';
 import { cleScene, remonter } from './defilement';
 import { ATTRIBUT_LIBELLE, ETAT_PNJ, KANJI_SAISON, vueChangements } from './libelles';
 import { defPnj, nomComplet } from '../engine/etat';
+import { Relations } from './Tableau';
 import type { AttributId } from '../engine/types';
 
 /** Le lieu et la saison sont déjà dans la barre du haut : la scène commence directement par son titre. */
@@ -336,15 +337,17 @@ export default function Recit({
 
 // ── Temps libre ────────────────────────────────────────────────
 
-type CategorieTL = 'missions' | 'route' | 'entrainement' | 'techniques' | 'liens' | 'vie';
+type CategorieTL = 'missions' | 'route' | 'entrainement' | 'techniques' | 'liens' | 'gens' | 'vie';
 
-const CATEGORIES: { id: CategorieTL; nom: string; kanji: string; filtre: (a: Activite) => boolean }[] = [
-  { id: 'missions', nom: 'Missions', kanji: '任', filtre: (a) => a.categorie === 'mission' },
-  { id: 'route', nom: 'Route', kanji: '道', filtre: (a) => a.categorie === 'route' },
-  { id: 'entrainement', nom: 'Disciplines', kanji: '練', filtre: (a) => a.categorie === 'entrainement' },
-  { id: 'techniques', nom: 'Techniques', kanji: '術', filtre: (a) => a.categorie === 'technique' },
-  { id: 'liens', nom: 'Liens', kanji: '絆', filtre: (a) => a.categorie === 'social' || a.categorie === 'famille' },
-  { id: 'vie', nom: 'Vie', kanji: '生', filtre: (a) => ['repos', 'etude', 'travail', 'metier'].includes(a.categorie) },
+// Le temps libre en cases : chacune dit ce qu'elle apporte avant qu'on l'ouvre.
+const CATEGORIES: { id: CategorieTL; nom: string; kanji: string; resume: string; filtre: (a: Activite) => boolean }[] = [
+  { id: 'missions', nom: 'Missions', kanji: '任', resume: 'Ryō, réputation, risques', filtre: (a) => a.categorie === 'mission' },
+  { id: 'route', nom: 'Route', kanji: '道', resume: 'Vivre hors du village', filtre: (a) => a.categorie === 'route' },
+  { id: 'entrainement', nom: 'S’entraîner', kanji: '練', resume: 'Disciplines, natures, armes', filtre: (a) => a.categorie === 'entrainement' },
+  { id: 'techniques', nom: 'Techniques', kanji: '術', resume: 'Apprendre, perfectionner', filtre: (a) => a.categorie === 'technique' },
+  { id: 'liens', nom: 'Liens', kanji: '絆', resume: 'Passer du temps avec tes proches', filtre: (a) => a.categorie === 'social' || a.categorie === 'famille' },
+  { id: 'gens', nom: 'Les gens', kanji: '人', resume: 'Ce qu’ils pensent de toi', filtre: () => false },
+  { id: 'vie', nom: 'Se reposer', kanji: '生', resume: 'Repos, étude, travail', filtre: (a) => ['repos', 'etude', 'travail', 'metier'].includes(a.categorie) },
 ];
 const KANJI_CATEGORIE = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.kanji])) as Record<CategorieTL, string>;
 
@@ -444,10 +447,12 @@ function TempsLibre({
   const p = etat.creation.presentation;
   const lieu = lieuCourant(etat, '$village');
   const parCategorie = useMemo(() => Object.fromEntries(CATEGORIES.map((c) => [c.id, acts.filter(c.filtre)])) as Record<CategorieTL, Activite[]>, [acts]);
-  const visibles = CATEGORIES.filter((c) => parCategorie[c.id].length > 0);
+  // « Les gens » n'a pas d'activité : la case s'ouvre dès qu'on connaît quelqu'un.
+  const connus = Object.keys(etat.relations).some((id) => etat.pnj[id]?.rencontre || etat.relations[id].souvenirs.length > 0);
+  const visibles = CATEGORIES.filter((c) => parCategorie[c.id].length > 0 || (c.id === 'gens' && connus));
   const defaut = visibles.find((c) => parCategorie[c.id].some((a) => a.disponible))?.id ?? visibles[0]?.id ?? 'vie';
   const [choisie, setChoisie] = useState<CategorieTL | null>(null);
-  const cat = choisie && parCategorie[choisie]?.length ? choisie : defaut;
+  const cat = choisie && (parCategorie[choisie]?.length || (choisie === 'gens' && connus)) ? choisie : defaut;
 
   // Programme d'entraînement : une technique et une discipline, à combiner sur la même période.
   const [programme, setProgramme] = useState<{ sort?: string; discipline?: string }>({});
@@ -525,14 +530,20 @@ function TempsLibre({
                     {c.kanji}
                   </span>
                   <span className="tl-nom">{c.nom}</span>
-                  <span className="compte">{parCategorie[c.id].filter((a) => a.disponible).length}</span>
+                  <span className="tl-resume">{c.resume}</span>
+                  {c.id !== 'gens' && <span className="compte">{parCategorie[c.id].filter((a) => a.disponible).length}</span>}
                 </button>
               ))}
             </div>
             {double && (cat === 'techniques' || cat === 'entrainement') && !valides.sort && !valides.discipline && (
               <p className="programme-aide">Coche une discipline et une technique : les deux progressent pendant la même période.</p>
             )}
-            {cat === 'entrainement' ? (
+            {cat === 'gens' ? (
+              <div className="sous-groupe tl-gens">
+                <p className="tl-aide">Ce que chacun pense de toi, et ce dont il se souvient. Pour passer du temps avec eux, ouvre « Liens ».</p>
+                <Relations etat={etat} />
+              </div>
+            ) : cat === 'entrainement' ? (
               SOUS_GROUPES_ENTRAINEMENT.map((g) => {
                 const l = principales.filter(g.filtre);
                 if (!l.length) return null;
@@ -566,7 +577,7 @@ function TempsLibre({
                 ))}
               </ul>
             )}
-            {principales.length === 0 && <p className="tl-vide">Rien à faire ici pour l’instant.</p>}
+            {principales.length === 0 && cat !== 'gens' && <p className="tl-vide">Rien à faire ici pour l’instant.</p>}
             {double && (valides.sort || valides.discipline) && (
               <div className="programme actif" role="region" aria-label="Programme d’entraînement">
                 <span className="programme-choix">
@@ -637,14 +648,14 @@ function CarteHumeur({ etat }: { etat: GameState }) {
     .map((r) => etat.roles[r])
     .filter((id): id is string => !!id && (etat.pnj[id]?.etat === 'vivant' || etat.pnj[id]?.etat === 'blesse'));
   const qui = proches.length ? defPnj(etat, proches[graineJour(etat.jour, 13) % proches.length]) : undefined;
-  const scenes = ['t’attend au terrain d’entraînement.', 'cherche quelqu’un pour s’entraîner.', 'est rentré de mission, fatigué, et a demandé de tes nouvelles.', 'mange seul au comptoir de ramen.'];
+  const scenes = ['t’attend au terrain d’entraînement.', 'cherche quelqu’un pour s’entraîner.', 'est rentré·e de mission, fatigué·e, et a demandé de tes nouvelles.', 'mange seul·e au comptoir de ramen.'];
   const scene = scenes[graineJour(etat.jour, 29) % scenes.length];
   return (
     <div className="carte-humeur">
       <p className="humeur-phrase">{phrase}</p>
       {qui && (
         <p className="humeur-pnj">
-          <b>{qui.nom}</b> {scene}
+          <b>{qui.nom}</b> {accorder(scene, qui.genre === 'f' ? 'feminin' : 'masculin')}
         </p>
       )}
       <p className="humeur-duree">Une seule décision : le temps passera jusqu’au prochain moment important, {periodeMax(etat) >= 360 ? 'un an' : 'six mois'} au plus.</p>
