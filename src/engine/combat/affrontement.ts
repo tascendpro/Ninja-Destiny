@@ -145,8 +145,54 @@ export function ouvrirAffrontement(s: GameState, ev: EventDef, ch: ChoiceDef): v
   ouvrirManche(s, sc, d);
 }
 
+/**
+ * Un affrontement hors scène (campagne à deux) : l'état complet d'un combat, sans conclusion de scène.
+ * Le combat à deux le mène lui-même, manche par manche ; l'écran de combat l'affiche comme les autres.
+ */
+export function creerAffrontement(
+  s: GameState,
+  o: { evenementId: string; adversaireId: string; contexte: EtatAffrontement['contexte']; plafond: number; nomAdversaire?: string; enduranceAdv?: number },
+): EtatAffrontement {
+  const d = adversaireDef(o.adversaireId);
+  const st = statsAdversaire(s, d);
+  const endJ = enduranceJoueur(s);
+  const endA = o.enduranceAdv ?? st.endurance;
+  return {
+    type: 'affrontement',
+    evenementId: o.evenementId,
+    choixId: 'campagne',
+    contexte: o.contexte,
+    adversaireId: d.id,
+    registreId: registreDe(s, d),
+    nomAdversaire: o.nomAdversaire ?? nomAdversaire(s, d),
+    niveauAdv: niveauAdversaire(s, d),
+    niveauJoueur: niveauJoueur(s),
+    temperament: d.temperament,
+    manche: 1,
+    plafond: o.plafond,
+    plafondVisible: true,
+    joueur: { endurance: endJ, enduranceMax: endJ, garde: 'ouverte', sonne: 0, vide: 0 },
+    adv: { endurance: endA, enduranceMax: endA, garde: 'ouverte', sonne: 0, vide: 0, chakra: st.chakra, substitutions: st.substitutions },
+    elan: 0,
+    intention: 'attaque',
+    annonce: { texte: '', fiabilite: 'vague' },
+    lecture: { niveau: false, nature: false, faiblesse: false, intentions: {}, techniquesVues: [], habitudes: [] },
+    vuesCeCombat: {},
+    actionsJoueur: [],
+    journal: [],
+    repliquesUtilisees: {},
+    gardesConsecutives: 0,
+    ouverture: 0,
+    touchesSubiesAdv: 0,
+    techniquesUtilisees: [],
+    bilan: { reussites: {}, echecs: {} },
+    terrain: terrainInitial(s),
+    sceaux: [],
+  };
+}
+
 /** Ouverture d'une manche : intention adverse, technique, fiabilité, texte de l'annonce (quatre tirages, toujours). */
-function ouvrirManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef): void {
+export function ouvrirManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef): void {
   const [rInt, rTech, rFiab, rTexte] = [alea(s), alea(s), alea(s), alea(s)];
   sc.temperament = temperamentCourant(sc, d);
   sc.intention = tirerIntention(s, sc, d, rInt);
@@ -257,7 +303,7 @@ function nomAction(a: ActionCombat): string {
 }
 
 /** Les trois blocs du récit (exécution, réponse, impact), la phrase-cause et la réplique. */
-function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a: ActionCombat, res: ResultatManche, annonce: string, rTexte: number, rRep: number): EntreeAffrontement {
+export function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a: ActionCombat, res: ResultatManche, annonce: string, rTexte: number, rRep: number): EntreeAffrontement {
   const recits = R.contenu.racine.recits;
   const tech = R.maitrises[a.choix];
   const genre = genreAdv(s, d);
@@ -356,7 +402,7 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
     technique: `intention=${sc.intention} exec=${res.execution} inflige=${res.inflige} subi=${res.subi} J=${sc.joueur.endurance}/${sc.joueur.enduranceMax} A=${sc.adv.endurance}/${sc.adv.enduranceMax} elan=${sc.elan}`,
   };
 }
-type EntreeAffrontement = EtatAffrontement['journal'][number];
+export type EntreeAffrontement = EtatAffrontement['journal'][number];
 
 /** L'issue du CheckDef d'origine qui correspond à une fin d'affrontement. */
 function issuePour(fin: FinCombat, ch: ChoiceDef, rapide: boolean): Issue {

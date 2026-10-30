@@ -5,6 +5,7 @@
   "description": "Ninja Destiny — jeu narratif de carrière shinobi (moteur d'événements, maîtrise, armes, métiers).",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "vitest run tests/campagneTextes.test.ts tests/campagneContenu.test.ts",
     "build": "next build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

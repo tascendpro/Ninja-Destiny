@@ -1,0 +1,12 @@
+# Le serveur de la campagne à deux (non déployé). Voir serveur/worker.ts.
+name = "ninja-destiny-duo"
+main = "worker.ts"
+compatibility_date = "2026-09-01"
+
+[[durable_objects.bindings]]
+name = "PARTIES"
+class_name = "PartieDuo"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PartieDuo"]

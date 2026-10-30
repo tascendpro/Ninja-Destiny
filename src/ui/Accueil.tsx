@@ -5,6 +5,7 @@ import { ACCUEIL } from './medias';
 import type { Sauvegarde } from '../engine/sauvegarde';
 import { R } from '../engine/registre';
 import { age } from '../engine/calendrier';
+import type { Campagne } from '../engine/campagne/types';
 
 const RANGS: Record<string, string> = { eleve: 'Élève', genin: 'Genin', chunin: 'Chūnin', jonin: 'Jōnin', kage: 'Kage' };
 /** Pétales d'érable qui tombent : position, durée et délai fixes (aucun hasard), coupés si les animations sont réduites. */
@@ -24,6 +25,9 @@ export default function Accueil({
   heritage,
   onEncyclopedie,
   onReglages,
+  onDuo,
+  campagne,
+  onReprendreDuo,
 }: {
   sauvegardeAuto?: Sauvegarde;
   aDesSauvegardes: boolean;
@@ -36,6 +40,9 @@ export default function Accueil({
   heritage?: string;
   onEncyclopedie: () => void;
   onReglages: () => void;
+  onDuo: () => void;
+  campagne?: Campagne;
+  onReprendreDuo: () => void;
 }) {
   const enCours = sauvegardeAuto && sauvegardeAuto.etat.scene.type !== 'fin' ? sauvegardeAuto : undefined;
   return (
@@ -81,6 +88,26 @@ export default function Accueil({
           )}
           <button className={enCours ? 'btn-secondaire' : 'btn-principal'} onClick={onNouvelle}>
             Commencer mon destin
+          </button>
+          {campagne && (
+            <button className="reprise duo" onClick={onReprendreDuo}>
+              <span className="reprise-sceau" aria-hidden="true">
+                絆
+              </span>
+              <span className="reprise-texte">
+                <strong>
+                  Reprendre la campagne de {campagne.creations[0].prenom} et {campagne.creations[1].prenom}
+                </strong>
+                <small>À deux sur ce téléphone</small>
+              </span>
+              <span className="reprise-fleche" aria-hidden="true">
+                →
+              </span>
+            </button>
+          )}
+          <button className="btn-secondaire" onClick={onDuo}>
+            <span className="btn-kanji" aria-hidden="true">絆</span>
+            À deux sur ce téléphone
           </button>
           <div className="accueil-secondaires">
             {aDesSauvegardes && (

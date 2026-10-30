@@ -42,10 +42,15 @@
   --rail: 92px;
   --entete-h: 64px;
   --colonne: 42rem;
+  /* Les deux joueurs d'une campagne : vermillon pour le premier, indigo pour le second. */
+  --joueur-0: #e05a4f;
+  --joueur-1: #7b8cf0;
   color-scheme: dark;
 }
 
 :root[data-ambiance='washi'] {
+  --joueur-0: #a81f2e;
+  --joueur-1: #34449a;
   --encre: #eee5d1;
   --encre-2: #e6dcc5;
   --ardoise: #f7f0e1;
@@ -3459,6 +3464,8 @@ p.entree.inconnue {
   --accent: var(--or);
 }
 :root[data-ambiance='washi'] {
+  --joueur-0: #a81f2e;
+  --joueur-1: #34449a;
   --texte-2: #5a4f42;
   --n-katon: #b5361c;
   --n-fuuton: #2b7a5b;
@@ -5978,3 +5985,339 @@ body::before {
 .tl-gens .grille-blocs {
   margin-top: 0;
 }
+
+
+/* ── Campagne à deux ── */
+.creation-joueur {
+  margin: 0 0 6px;
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--or);
+  font-weight: 700;
+}
+.duo-coherence {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--vermillon-clair);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vermillon) 8%, var(--ardoise));
+  display: grid;
+  gap: 8px;
+}
+.duo-coherence p {
+  margin: 0;
+}
+.duo-origine {
+  margin-top: 10px;
+  color: var(--jade);
+  font-size: var(--t-s, 0.9rem);
+}
+.passage {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 24px 16px;
+  text-align: center;
+  background: var(--encre);
+}
+.passage h1 {
+  font-family: var(--mincho);
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  margin: 0;
+}
+.passage p {
+  max-width: 34ch;
+  margin: 0;
+  color: var(--brume);
+}
+.passage .passage-message {
+  color: var(--or);
+}
+.passage-sceau {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  font-family: var(--pinceau);
+  font-size: 2.4rem;
+  color: var(--texte-bouton, #fff);
+  background: var(--vermillon);
+}
+.passage .btn-principal {
+  min-width: 220px;
+  min-height: 48px;
+}
+.scene-commune .commune-etiquette {
+  margin: 0 0 4px;
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--or);
+}
+.scene-commune .narration {
+  font-family: var(--mincho);
+  font-size: var(--t-l);
+  line-height: 1.6;
+}
+.commune-secret {
+  margin: 14px 0 8px;
+  font-size: var(--t-xs);
+  color: var(--brume);
+  font-style: italic;
+}
+.commune-choix {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.commune-choix li {
+  padding: 8px 12px;
+  border-left: 3px solid var(--or);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--or) 8%, transparent);
+  font-size: var(--t-s, 0.9rem);
+}
+.commune-choix b {
+  margin-right: 6px;
+}
+.duo-pastille {
+  border: 1px solid var(--trait);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: color-mix(in srgb, var(--or) 12%, var(--ardoise));
+  color: var(--papier);
+  font-weight: 700;
+  font-size: var(--t-xs);
+}
+.vue-lien {
+  display: grid;
+  gap: 14px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.vue-lien .panneau h2 {
+  margin-top: 0;
+}
+.lien-mots,
+.lien-promesses,
+.lien-souvenirs {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lien-mots li {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+}
+.lien-note {
+  margin: 10px 0 0;
+  font-size: var(--t-xs);
+  color: var(--brume);
+}
+.lien-souvenirs li {
+  font-style: italic;
+  padding-left: 10px;
+  border-left: 3px solid var(--trait);
+}
+.lien-souvenirs .ton-chaud { border-color: var(--or); }
+.lien-souvenirs .ton-fier { border-color: var(--jade); }
+.lien-souvenirs .ton-amer,
+.lien-souvenirs .ton-honteux { border-color: var(--vermillon-clair); }
+.lien-souvenirs .ton-tragique { border-color: var(--brume); }
+.promesse-rompue {
+  text-decoration: line-through;
+  color: var(--brume);
+}
+.reprise.duo {
+  --c: var(--or);
+}
+
+.scene-commune .narration {
+  margin: 0 0 14px;
+}
+.scene-commune .btn-principal {
+  margin-top: 8px;
+}
+
+
+/* ── Campagne à deux : nouvelles, propositions, combat à deux, lien ── */
+.nouvelles {
+  margin: 12px auto;
+  max-width: 760px;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--or) 45%, var(--trait));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--or) 8%, var(--ardoise));
+}
+.nouvelles h2 {
+  margin: 0 0 6px;
+  font-size: var(--t-m);
+  font-family: var(--mincho);
+}
+.nouvelles ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+.proposition-boutons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bandeau-duo {
+  margin: 10px auto;
+  max-width: 760px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--trait);
+  background: var(--ardoise-2, var(--ardoise));
+  display: grid;
+  gap: 8px;
+  font-size: var(--t-s, 0.92rem);
+}
+.duo-signe-recu b {
+  color: var(--or);
+}
+.duo-alerte {
+  margin: 0;
+  color: var(--vermillon-clair);
+  font-weight: 600;
+}
+.duo-signe select,
+.lien-ligne select {
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--trait);
+  background: var(--ardoise);
+  color: var(--papier);
+  padding: 4px 8px;
+  max-width: 100%;
+}
+.duo-techniques,
+.lien-boutons,
+.lien-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.lien-ombre summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+}
+.btn-secondaire.danger {
+  border-color: var(--vermillon-clair);
+  color: var(--vermillon-clair);
+}
+.scene-privee .commune-etiquette {
+  color: var(--vermillon-clair);
+}
+.combat-derniere {
+  font-size: var(--t-s, 0.92rem);
+  opacity: 0.85;
+}
+.choix-mort {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+  text-align: left;
+}
+
+/* ── Campagne à deux : les couleurs des joueurs, les cartes, le monde, la fin ── */
+.joueur-0 { --couleur-joueur: var(--joueur-0); }
+.joueur-1 { --couleur-joueur: var(--joueur-1); }
+.passage.joueur-0 .passage-sceau,
+.passage.joueur-1 .passage-sceau { background: var(--couleur-joueur); }
+.passage.joueur-0 h1,
+.passage.joueur-1 h1 { color: var(--couleur-joueur); }
+.bandeau-duo.joueur-0,
+.bandeau-duo.joueur-1 { border-left: 4px solid var(--couleur-joueur); }
+.duo-partenaire {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: var(--t-s);
+  color: var(--brume);
+}
+.pastille {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--couleur-joueur);
+  flex: none;
+}
+.cartes-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.carte-duo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--trait);
+  border-top: 4px solid var(--couleur-joueur);
+  border-radius: var(--rayon-m);
+  background: var(--ardoise);
+}
+.carte-duo strong {
+  font-family: var(--mincho);
+  font-size: var(--t-l);
+  color: var(--couleur-joueur);
+  overflow-wrap: anywhere;
+}
+.carte-duo small { color: var(--brume); font-weight: 400; }
+.carte-duo span { font-size: var(--t-s); }
+.carte-duo .carte-detail { color: var(--brume); font-size: var(--t-xs); overflow-wrap: anywhere; }
+.carte-duo.carte-morte { opacity: 0.6; }
+.lien-titres { margin: 0 0 8px; padding-left: 18px; }
+.lien-titres li { margin: 4px 0; }
+.lien-titres strong { color: var(--or); }
+.lien-voix { margin: 6px 0; font-style: italic; color: var(--brume); }
+.lien-chronique { margin: 8px 0 0; padding-left: 18px; }
+.lien-chronique li { margin: 4px 0; font-size: var(--t-s); }
+.lien-secret { color: var(--vermillon-clair); font-weight: 600; }
+.fin-duo {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  max-width: var(--colonne);
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+.fin-duo .titre-scene { text-align: center; }
+.fin-voix { display: grid; gap: 12px; width: 100%; }
+.fin-voix blockquote {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 4px solid var(--couleur-joueur);
+  border-radius: var(--rayon-s);
+  background: var(--ardoise);
+}
+.fin-voix blockquote strong { color: var(--couleur-joueur); font-family: var(--mincho); }
+.fin-voix blockquote p { margin: 6px 0 0; }
+.fin-duo .panneau { width: 100%; }
+.fin-note { font-size: var(--t-l); }
+.fin-note strong { color: var(--or); }
+@media (min-width: 720px) {
+  .fin-voix { grid-template-columns: 1fr 1fr; }
+}
+.fin-duo .passage-sceau { margin-bottom: 6px; }
+.fin-duo .titre-scene { margin: 0; line-height: 1.2; }

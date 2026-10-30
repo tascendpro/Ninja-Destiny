@@ -24,7 +24,20 @@ const INTROS = [
 
 const pourcent = (x: number) => `${Math.round(x * 100)} %`;
 
-export default function Creation({ onCommencer, onRetour, heritage }: { onCommencer: (c: CreationT) => void; onRetour: () => void; heritage?: string }) {
+export default function Creation({
+  onCommencer,
+  onRetour,
+  heritage,
+  joueur,
+  libelleFin = 'Entrer dans l’histoire',
+}: {
+  onCommencer: (c: CreationT) => void;
+  onRetour: () => void;
+  heritage?: string;
+  /** Campagne à deux : qui crée son personnage (« Joueur 1 »). */
+  joueur?: string;
+  libelleFin?: string;
+}) {
   const [etape, setEtape] = useState(0);
   const [c, setC] = useState<CreationT>({
     prenom: '',
@@ -104,6 +117,7 @@ export default function Creation({ onCommencer, onRetour, heritage }: { onCommen
 
   return (
     <main className="creation">
+      {joueur && <p className="creation-joueur">{joueur}</p>}
       <div className="etapes" aria-hidden="true">
         {ETAPES.map((e, i) => (
           <i key={e} className={i <= etape ? 'fait' : ''} />
@@ -465,7 +479,7 @@ export default function Creation({ onCommencer, onRetour, heritage }: { onCommen
           </button>
         ) : (
           <button className="btn-principal" disabled={!valide[6]} onClick={() => onCommencer(c)}>
-            Entrer dans l’histoire
+            {libelleFin}
           </button>
         )}
       </div>
