@@ -227,6 +227,8 @@ export interface EntreeManche {
   /** Endurance que tu lui as fait perdre, et celle que tu as perdue, cette manche. */
   inflige?: number;
   subi?: number;
+  /** L'enchaînement de natures joué cette manche, pour son résumé. */
+  synergie?: { nom: string; niveau: string; de: string; vers: string };
   /** Journal technique interne, pour le débogage (§0.3.18). */
   technique: string;
 }
@@ -298,6 +300,16 @@ export interface EtatAffrontement {
   techniquesUtilisees: string[];
   /** Pour le bilan : ce qui a marché, ce qui a raté, et pourquoi. */
   bilan: { reussites: Record<string, number>; echecs: Record<string, string[]> };
+  /** Ce que les techniques ont laissé sur le terrain (état → manches restantes ; 99 : imposé par le lieu). */
+  terrain?: Partial<Record<import('../../content/combat/synergies').EtatTerrain, number>>;
+  /** La nature de chacune de tes dernières actions (null : sans nature) : la chaîne des enchaînements. */
+  sceaux?: (ElementId | null)[];
+  /** Les enchaînements déjà joués dans ce combat (clé « suiton>raiton ») : l'adversaire finit par les lire. */
+  chainesVues?: Record<string, number>;
+  /** L'enchaînement de la manche précédente : une troisième nature dans la foulée le rend exceptionnel. */
+  derniereSynergie?: string;
+  /** L'adversaire n'y voit plus (poussière, vapeur) : sa prochaine attaque part moins bien. */
+  advAveugle?: number;
 }
 
 export interface ActionCombat {

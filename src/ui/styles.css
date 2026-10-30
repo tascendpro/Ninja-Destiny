@@ -5796,3 +5796,185 @@ body::before {
   font-style: italic;
   color: var(--papier-2);
 }
+
+
+/* ── Terrain et chaîne de natures ── */
+.aff-terrain {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--trait);
+  border-radius: 12px;
+  background: var(--ardoise-2, var(--ardoise));
+}
+.aff-terrain .aff-etiquette {
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brume);
+  margin-right: 4px;
+}
+.aff-sceaux {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.aff-sceau-groupe {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.aff-sceau {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-family: var(--pinceau);
+  font-size: 1rem;
+  color: var(--nat, var(--or));
+  border: 1.5px solid var(--nat, var(--or));
+  background: color-mix(in srgb, var(--nat, var(--or)) 14%, transparent);
+}
+.aff-sceau.vide {
+  color: var(--brume);
+  border-style: dashed;
+  border-color: var(--trait);
+  background: none;
+}
+.aff-fleche {
+  color: var(--brume);
+  font-size: var(--t-xs);
+}
+.aff-etats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.aff-etats li {
+  font-size: var(--t-xs);
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--trait);
+  color: var(--papier-2, var(--encre));
+}
+.aff-etats li span {
+  font-family: var(--pinceau);
+  color: var(--or);
+}
+.aff-etats small {
+  color: var(--brume);
+}
+.aff-enchainements summary {
+  cursor: pointer;
+  font-size: var(--t-s, 0.9rem);
+  font-weight: 600;
+  color: var(--or);
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.aff-compte {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: var(--t-xs);
+  background: color-mix(in srgb, var(--or) 18%, transparent);
+}
+.aff-enchainements ul {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.aff-enchainements li {
+  padding: 8px 10px;
+  border-left: 3px solid var(--nat, var(--or));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--nat, var(--or)) 8%, transparent);
+  font-size: var(--t-s, 0.9rem);
+}
+.aff-enchainements li span {
+  display: block;
+  margin-top: 2px;
+  color: var(--brume);
+  font-size: var(--t-xs);
+}
+.aff-synergie {
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: var(--t-s, 0.9rem);
+  background: color-mix(in srgb, var(--or) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--or) 35%, transparent);
+}
+.aff-synergie b {
+  color: var(--or);
+  margin-right: 4px;
+}
+.aff-synergie small {
+  color: var(--brume);
+}
+.aff-marque.m-synergie-possible,
+.aff-marque.m-terrain-favorable {
+  color: var(--or);
+}
+.aff-marque.m-peut-interrompre {
+  color: var(--jade);
+}
+
+/* ── Temps libre en cases : deux colonnes au pouce, une grille aérée sur PC ── */
+.temps-libre[data-cat='gens'] { --cat: #6fa8c9; }
+.tl-categories {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: visible;
+  gap: 8px;
+}
+@media (min-width: 900px) {
+  .tl-categories {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.tl-categories button {
+  justify-items: start;
+  text-align: left;
+  min-height: 74px;
+  padding: 10px 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+}
+.tl-categories .tl-kanji {
+  grid-row: 1 / span 2;
+  font-size: 1.6rem;
+}
+.tl-categories .tl-nom {
+  font-size: var(--t-s, 0.92rem);
+  font-weight: 700;
+  color: var(--papier);
+}
+.tl-categories .tl-resume {
+  font-size: 0.72rem;
+  line-height: 1.25;
+  color: var(--brume);
+}
+.tl-aide {
+  margin: 0 0 10px;
+  font-size: var(--t-xs);
+  color: var(--brume);
+}
+.tl-gens .grille-blocs {
+  margin-top: 0;
+}

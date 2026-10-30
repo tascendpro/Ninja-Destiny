@@ -26,6 +26,8 @@ import { ErreurCombat, FAMILLES } from './types';
 import { CONTEXTES, FAMILLES_ENFANT, GABARITS, bonusRang, indexNiveau, maxFamilles } from './contextes';
 import { adversaireDef, statsAdversaire, techniquesAdversaire } from './adversaire';
 import { duoUtilisable } from '../duo';
+import { marquerTerrain, natureAction, synergiePour } from './terrain';
+import type { Synergie } from './terrain';
 
 // ── Le catalogue des actions ─────────────────────────────────
 
@@ -124,11 +126,23 @@ export function techniquesFamille(s: GameState, famille: 'taijutsu' | 'ninjutsu'
       // Une technique qui n'existe que transformé·e ne sort que sous cette transformation.
       if (t.exigeTransformation && !(sc?.transformation && t.exigeTransformation.includes(sc.transformation))) return false;
       if (t.categorie === 'transformation') return false;
+      if (t.tactique?.defense) return false;
       if (!duoUtilisable(s, id)) return false;
       if (t.limite?.usages !== undefined && (Number(s.drapeaux[`usages_${id}`]) || 0) >= t.limite.usages) return false;
       if (famille === 'arme') return t.categorie === 'armes' && !!armeEnMain(s);
       if (t.categorie === 'armes') return false;
       return famille === 'taijutsu' ? t.categorie === 'taijutsu' : t.categorie !== 'taijutsu';
+    })
+    .sort();
+}
+
+/** Les techniques qu'on lance pour encaisser : murs de terre, murs de vent, forteresses. */
+export function techniquesDefensives(s: GameState): string[] {
+  return Object.keys(s.maitrises)
+    .filter((id) => {
+      const t = R.maitrises[id]?.technique;
+      const ms = s.maitrises[id];
+      return !!t?.tactique?.defense && !!ms && ms.tier >= 1 && !ms.bloquee;
     })
     .sort();
 }
@@ -182,7 +196,8 @@ export function chanceExecution(s: GameState, a: ActionCombat): number {
     const sc = s.scene.type === 'affrontement' ? s.scene : undefined;
     const pression = !!sc && (sc.joueur.endurance / sc.joueur.enduranceMax < 0.35 || CONTEXTES[sc.contexte].letal);
     const malusNovice = pression ? (tier <= 1 ? 0.1 : tier === 2 ? 0.05 : 0) : 0;
-    return clamp(0.3 + 0.15 * tier + (controle - 50) / 200 - malusRang - malusNovice - 0.002 * fatigue - malusBlessures(s) - malusChakra(s), 0.1, 0.98);
+    const rapide = def.technique?.tactique?.effets?.includes('rapide') ? 0.08 : 0;
+    return clamp(0.3 + 0.15 * tier + (controle - 50) / 200 + rapide - malusRang - malusNovice - 0.002 * fatigue - malusBlessures(s) - malusChakra(s), 0.1, 0.98);
   }
   return 1;
 }
@@ -303,6 +318,16 @@ export function familles(s: GameState, sc: EtatAffrontement): VueFamille[] {
         if (f === 'observation' && sc.joueur.sonne > 0) Object.assign(v, bloque('Sonné·e : tu ne vois plus clair.'));
         actions.push(v);
       }
+      if (f === 'defense')
+        for (const id of techniquesDefensives(s)) {
+          const def = R.maitrises[id];
+          const cout = coutChakra(s, sc, id);
+          const part = Math.round((def.technique!.tactique!.defense ?? 0) * 100);
+          const v: VueAction = { id, nom: def.nom, detail: `Arrête environ ${part} % d’un coup · rang ${def.rang ?? '?'}`, chakra: cout, nature: def.element, marques: [], disponible: true };
+          if (sc.joueur.vide > 0) Object.assign(v, bloque('Vidé·e : plus une goutte de chakra à façonner cette manche.'));
+          else if (s.jauges.chakra < cout) Object.assign(v, bloque(`Chakra insuffisant (${cout} requis).`));
+          actions.push(v);
+        }
     }
     if (actions.length) res.push({ id: f, ...NOM_FAMILLE[f], actions });
   }
@@ -313,25 +338,16 @@ function arrondi5(p: number): number {
   return Math.round((p * 100) / 5) * 5;
 }
 
-/** Deux natures qui se répondent, l'une après l'autre (feu puis vent, eau puis foudre…) : celles d'une combinaison connue. */
-export function enchainement(precedente: string | undefined, tech: string): [ElementId, ElementId] | undefined {
-  if (!precedente) return undefined;
-  const els = (id: string) => R.maitrises[id]?.technique?.elements ?? (R.maitrises[id]?.element ? [R.maitrises[id].element!] : []);
-  for (const x of els(precedente))
-    for (const y of els(tech)) {
-      if (x === y) continue;
-      if (R.contenu.maitrises.some((m) => m.technique?.categorie === 'combinaison' && m.technique.elements?.length === 2 && m.technique.elements.includes(x) && m.technique.elements.includes(y))) return [x, y];
-    }
-  return undefined;
-}
-export const BONUS_ENCHAINEMENT = 12;
 /** Le palier à partir duquel une transformation tient pendant qu'on lance d'autres techniques. */
 export const PALIER_TRANSFO_TENUE = 3;
 
 /** Les marques utiles à la décision : inédite, éventée, peut tout finir, enchaînement (§22.2). */
 function marquer(s: GameState, sc: EtatAffrontement, id: string, v: VueAction): void {
   const vu = vuesAction(s, sc, id);
-  if (R.maitrises[id] && enchainement(sc.techniquesUtilisees.at(-1), id)) v.marques.push('enchaînement');
+  const syn = R.maitrises[id] ? synergiePour(s, sc, natureAction(id)) : undefined;
+  if (syn && syn.niveau !== 'compromis') v.marques.push(syn.parTerrain ? 'terrain favorable' : 'synergie possible');
+  const tac = R.maitrises[id]?.technique?.tactique?.effets ?? [];
+  if (tac.includes('interrompt') && sc.intention === 'preparer' && sc.annonce.fiabilite === 'fiable') v.marques.push('peut interrompre');
   if (R.maitrises[id] && vu.combat === 0 && vu.passe === 0) v.marques.push('inédite');
   if (vu.passe > 0 || vu.combat >= 2) v.marques.push('éventée');
   if (sc.lecture.faiblesse && sc.elan >= 3) v.marques.push('peut tout finir');
@@ -379,6 +395,8 @@ export interface ResultatManche {
   dejaVue: boolean;
   repetition: boolean;
   decisif: boolean;
+  /** L'enchaînement de natures qui a porté cette manche. */
+  synergie?: Synergie;
 }
 
 export interface Tirages {
@@ -467,7 +485,8 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
   let gardeJoueur = sc.joueur.garde;
   // L'adversaire exécute-t-il ce qu'il a annoncé ? (tirage 3)
   const execAdvP = sc.intention === 'majeure' ? 0.8 : sc.intention === 'technique' ? 0.6 + 0.04 * indexNiveau(sc.niveauAdv) : 0.75 + 0.03 * indexNiveau(sc.niveauAdv);
-  const advReussit = !advOffensif || r.execAdv < execAdvP;
+  // Aveuglé par la poussière ou la vapeur, il exécute moins bien ce qu'il a préparé.
+  const advReussit = !advOffensif || r.execAdv < execAdvP - ((sc.advAveugle ?? 0) > 0 ? 0.15 : 0);
   const pAdv = puissanceAdverse(s, sc, d);
   const coupAdverse = (mult: number) => {
     if (!advOffensif || !advReussit) return 0;
@@ -525,7 +544,16 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     const bonusVues = Math.min(0.45, 0.15 * vues.combat) + Math.min(0.3, 0.1 * vues.passe);
     let pPred = 0.05 + bonusVues + (st.perception - VITESSE_NUM[vitesseAction(a)]) / 150 + (repetition ? 0.15 : 0) + (sc.intention === 'defense' ? 0.15 : 0);
     if (s.registresCombat[sc.registreId]?.contreMesures.includes(`action:${cle}`)) pPred += 0.15;
+    // L'enchaînement : la nature d'avant (ou le terrain) prépare celle-ci. Un enchaînement déjà vu se lit d'avance.
+    const nature = estTech ? natureAction(cle) : undefined;
+    const syn = synergiePour(s, sc, nature);
+    const tac = estTech ? (R.maitrises[cle].technique?.tactique?.effets ?? []) : [];
+    if (syn) pPred += syn.lue ? 0.1 : -syn.precision;
+    if (tac.includes('precis')) pPred -= 0.1;
+    if (tac.includes('rapide')) pPred -= 0.05;
     pPred = clamp(pPred, 0, 0.75);
+    // L'eau est répandue, le feu est parti, même s'il esquive : la technique laisse sa trace.
+    if (nature) marquerTerrain(sc, nature, undefined, R.maitrises[cle].technique?.tactique?.terrain);
     if (parfaite || res.inedite) pPred = 0;
     // Une technique répétée au-delà de la troisième fois appelle un contre préparé (§11.2).
     if (r.reponse < pPred && sc.intention !== 'preparer' && sc.adv.sonne <= 0) {
@@ -541,9 +569,15 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
       return finir(s, sc, res);
     }
     // C. Impact. Une nature qui nourrit la précédente (le vent attise le feu) frappe plus fort : l'enchaînement.
-    const ench = estTech ? enchainement(sc.techniquesUtilisees.at(-2), cle) : undefined;
-    if (ench) res.impact += `Enchaînement ! Ton ${R.elements[ench[0]]?.nom} nourrit ton ${R.elements[ench[1]]?.nom}. `;
-    let puissance = puissanceJoueur(s, a) + (elanDepense === 1 ? 10 : 0) + sc.ouverture + (res.inedite ? 12 : 0) + (ench ? BONUS_ENCHAINEMENT : 0);
+    if (syn) {
+      res.synergie = syn;
+      marquerTerrain(sc, undefined, syn);
+      sc.chainesVues = { ...(sc.chainesVues ?? {}), [syn.cle]: (sc.chainesVues?.[syn.cle] ?? 0) + 1 };
+      s.drapeaux['enchainements'] = (Number(s.drapeaux['enchainements']) || 0) + 1;
+    }
+    const interromp = tac.includes('interrompt') && (sc.intention === 'preparer' || sc.intention === 'majeure');
+    const ouvertureAvant = sc.ouverture;
+    let puissance = puissanceJoueur(s, a) + (elanDepense === 1 ? 10 : 0) + sc.ouverture + (res.inedite ? 12 : 0) + (syn?.puissance ?? 0) + (interromp ? 10 : 0);
     sc.ouverture = 0;
     let mult = 1;
     const def = R.maitrises[cle];
@@ -557,12 +591,16 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     if (res.execution === 'instable') mult *= 0.7;
     // Contre une escouade : une technique de zone les prend tous ; un coup ciblé n'en touche qu'un.
     if (d.escouade) {
-      const portee = R.maitrises[cle] ? porteeTechnique(cle) : 'cible';
+      const portee = syn?.effet === 'zone' ? 'large' : R.maitrises[cle] ? porteeTechnique(cle) : 'cible';
       mult *= portee === 'large' ? 1.35 : portee === 'zone' ? 1.2 : 0.8;
     }
     const gardeAdv = sc.intention === 'defense' ? 'garde' : sc.adv.garde;
-    if (gardeAdv === 'garde') mult *= 0.7;
-    if (gardeAdv === 'desequilibre') mult *= 1.25;
+    // Une technique qui perce (ou un enchaînement qui contourne) passe la garde.
+    const perce = tac.includes('perce') || syn?.effet === 'perce';
+    if (gardeAdv === 'garde' && !perce) mult *= 0.7;
+    if (gardeAdv === 'desequilibre') mult *= tac.includes('achevement') ? 1.5 : 1.25;
+    // Une technique qui exige une ouverture perd de sa force face à un adversaire bien campé.
+    if (tac.includes('ouverture') && ouvertureAvant <= 0 && gardeAdv !== 'desequilibre' && sc.adv.sonne <= 0) mult *= 0.7;
     mult = Math.min(1.8, mult);
     puissance *= mult;
     const degatsBruts = Math.max(1, (puissance - st.defense * 0.5) * K_DEGATS) * variation;
@@ -620,8 +658,16 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     if (res.inflige > 0) {
       sc.elan = Math.min(3, sc.elan + 1 + (sc.joueur.garde === 'ouverte' && gardeAdv === 'desequilibre' ? 1 : 0));
       sc.touchesSubiesAdv += 1;
-      if ((a.famille === 'taijutsu' && TAIJUTSU[cle]?.effet === 'desequilibre') || (a.famille === 'arme' && ARME[cle]?.effet === 'desequilibre')) sc.adv.garde = 'desequilibre';
+      if ((a.famille === 'taijutsu' && TAIJUTSU[cle]?.effet === 'desequilibre') || (a.famille === 'arme' && ARME[cle]?.effet === 'desequilibre') || tac.includes('desequilibre') || syn?.effet === 'desequilibre')
+        sc.adv.garde = 'desequilibre';
       else sc.adv.garde = 'ouverte';
+      // Ce que l'enchaînement fait de plus que frapper : paralyser, aveugler.
+      if (syn?.effet === 'sonne') sc.adv.sonne = Math.max(sc.adv.sonne, 1);
+      if (syn?.effet === 'aveugle') sc.advAveugle = 2;
+      if (interromp && sc.intention === 'preparer') {
+        sc.intention = 'defense';
+        res.impact += 'Ta technique le coupe en plein milieu de ses signes : sa préparation s’effondre. ';
+      }
       sc.bilan.reussites[cle] = (sc.bilan.reussites[cle] ?? 0) + 1;
       if (sc.intention === 'preparer' && res.inflige >= sc.adv.enduranceMax * 0.2) {
         sc.intention = 'defense';
@@ -645,6 +691,27 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
       return finir(s, sc, res);
     }
     sc.gardesConsecutives = 0;
+    // Une technique défensive : elle arrête une part du coup selon son rang et ta maîtrise, et laisse sa trace.
+    const tdef = R.maitrises[cle]?.technique;
+    if (tdef?.tactique?.defense) {
+      s.jauges.chakra = Math.max(0, s.jauges.chakra - coutChakra(s, sc, cle));
+      sc.vuesCeCombat[cle] = (sc.vuesCeCombat[cle] ?? 0) + 1;
+      sc.techniquesUtilisees.push(cle);
+      const tier = s.maitrises[cle]?.tier ?? 1;
+      const arret = clamp(tdef.tactique.defense + 0.04 * (tier - 1), 0.2, 0.9);
+      res.subi = coupAdverse(1 - arret);
+      marquerTerrain(sc, natureAction(cle), undefined, tdef.tactique.terrain);
+      res.reussi = !(advOffensif && advReussit) || arret >= 0.5;
+      if (advOffensif && advReussit) sc.ouverture = 12;
+      res.cause = !advOffensif
+        ? `${R.maitrises[cle].nom} : {il} n’a pas attaqué. Ton abri reste debout pour rien.`
+        : !advReussit
+          ? `${R.maitrises[cle].nom} : {il} a manqué son coup ; ton abri n’a même pas servi.`
+          : `${R.maitrises[cle].nom} : ton abri a arrêté environ ${Math.round(arret * 100)} % du coup, et sa garde reste ouverte pour la suite.`;
+      res.repliqueCategorie = 'parade';
+      sc.joueur.garde = 'garde';
+      return finir(s, sc, res);
+    }
     if (a.choix === 'esquive' || a.choix === 'permutation') {
       const perm = a.choix === 'permutation';
       if (perm) s.jauges.chakra = Math.max(0, s.jauges.chakra - 4);
@@ -828,6 +895,7 @@ function finir(s: GameState, sc: EtatAffrontement, res: ResultatManche): Resulta
   if (sc.adv.sonne > 0 && res.inflige === 0) sc.adv.sonne -= 1;
   if (sc.joueur.sonne > 0 && res.issue !== 'annulee') sc.joueur.sonne -= 1;
   if (sc.joueur.vide > 0) sc.joueur.vide -= 1;
+  if ((sc.advAveugle ?? 0) > 0) sc.advAveugle! -= 1;
   // Il voulait fuir, et ton coup ne l'a pas arrêté.
   if (sc.intention === 'fuir' && sc.adv.endurance > 0 && !res.fin && res.inflige < sc.adv.enduranceMax * 0.2) res.fin = 'fuite_adverse';
   if (sc.intention !== 'preparer' && sc.adv.garde === 'garde') sc.adv.garde = 'ouverte';

@@ -556,6 +556,20 @@ export interface TechniqueDef {
   elements?: ElementId[];
   /** Pouvoir propre à certains yeux seulement (ex. « mgk:amaterasu », tiré à l'éveil du Mangekyō). */
   drapeau?: string;
+  /** Ce qui la distingue au combat : son rôle tactique, et la trace qu'elle laisse sur le terrain. */
+  tactique?: TactiqueTechnique;
+}
+
+/**
+ * Le rôle d'une technique dans l'Affrontement :
+ * rapide (sort plus souvent, se lit moins), precis (se lit moins), perce (passe une garde), desequilibre (lui ôte ses appuis),
+ * interrompt (brise une préparation), achevement (plus forte sur un adversaire sans appuis), ouverture (exige une ouverture,
+ * sinon elle perd de sa force), defense (se lance pour encaisser : la part du coup qu'elle arrête).
+ */
+export interface TactiqueTechnique {
+  effets?: ('rapide' | 'precis' | 'perce' | 'desequilibre' | 'interrompt' | 'achevement' | 'ouverture')[];
+  defense?: number;
+  terrain?: { etat: import('../content/combat/synergies').EtatTerrain; manches: number };
 }
 
 export interface MasteryState {

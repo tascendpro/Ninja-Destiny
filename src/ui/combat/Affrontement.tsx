@@ -10,7 +10,8 @@ import type { GameState } from '../../engine/types';
 import { accorder } from '../../engine/texte';
 import { vueAffrontement } from '../../engine/combat/affrontement';
 import type { ActionCombat, DepenseElan, Famille } from '../../engine/combat/types';
-import GroupesNature from './GroupesNature';
+import GroupesNature, { KANJI_GROUPE } from './GroupesNature';
+import { R } from '../../engine/registre';
 import Portrait from '../Portrait';
 import { classeMulti, styleNatures } from '../natures';
 import { naturesMaitrise } from '../../engine/tempsLibre';
@@ -177,7 +178,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
             </span>
             <div className="aff-carte-corps">
               <span className="aff-carte-nom">
-                {v.adversaire.nom} <small>{v.adversaire.niveau}</small>
+                {v.adversaire.nom} {v.adversaire.niveau && <small>{v.adversaire.niveau}</small>}
               </span>
               <span className="aff-jauge" role="meter" aria-label={`Endurance de ${v.adversaire.nom}`} aria-valuenow={v.adversaire.pct} aria-valuemin={0} aria-valuemax={100}>
                 <i className="aff-adv" style={{ width: `${v.adversaire.pct}%` }} />
@@ -239,6 +240,9 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
             )}
           </div>
         </div>
+
+        {/* 3 bis. Le terrain et la chaîne de natures : ce que tes techniques ont préparé */}
+        <TerrainEtChaine v={v} />
 
         {/* 4. La commande : familles en onglets, puis les actions en cartes */}
         <section className="aff-commande" aria-label="Ton action pour cette manche">
@@ -319,6 +323,67 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
 }
 
 type Entree = NonNullable<ReturnType<typeof vueAffrontement>>['journal'][number];
+type Vue = NonNullable<ReturnType<typeof vueAffrontement>>;
+
+const nomNature = (n: string) => (n === 'terrain' ? 'Terrain' : (R.elements[n]?.nom ?? n));
+
+/**
+ * Le terrain et la chaîne : tes trois dernières natures en sceaux, ce que le terrain garde, et les enchaînements
+ * qui s'offrent maintenant. Rien n'y dit l'issue : seulement ce que la prochaine technique trouvera en place.
+ */
+function TerrainEtChaine({ v }: { v: Vue }) {
+  const sceaux = v.sceaux.filter((x, i, l) => x || l.slice(i + 1).some(Boolean));
+  if (!v.terrain.length && !sceaux.some(Boolean) && !v.enchainements.length) return null;
+  return (
+    <div className="aff-terrain">
+      {sceaux.some(Boolean) && (
+        <div className="aff-sceaux" aria-label="Ta chaîne de natures">
+          <span className="aff-etiquette">Chaîne</span>
+          {sceaux.map((n, i) => (
+            <span key={i} className="aff-sceau-groupe">
+              {i > 0 && <span className="aff-fleche" aria-hidden="true">→</span>}
+              {n ? (
+                <span className="aff-sceau" style={styleNatures([n])} title={nomNature(n)}>
+                  {KANJI_GROUPE[n] ?? '術'}
+                </span>
+              ) : (
+                <span className="aff-sceau vide" title="Action sans nature">·</span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+      {v.terrain.length > 0 && (
+        <ul className="aff-etats" aria-label="État du terrain">
+          {v.terrain.map((t) => (
+            <li key={t.id} title={t.detail}>
+              <span aria-hidden="true">{t.kanji}</span> {t.nom}
+              {t.manches !== undefined && <small> · {t.manches} manche{t.manches > 1 ? 's' : ''}</small>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {v.enchainements.length > 0 && (
+        <details className="aff-enchainements">
+          <summary>
+            Enchaînements possibles <span className="aff-compte">{v.enchainements.length}</span>
+          </summary>
+          <ul>
+            {v.enchainements.map((e) => (
+              <li key={`${e.de}>${e.vers}`} style={styleNatures([e.vers])}>
+                <strong>
+                  {nomNature(e.de)} → {nomNature(e.vers)}
+                </strong>{' '}
+                · {e.nom} <small>({e.niveau}{e.lue ? ', déjà lu' : ''})</small>
+                <span>{e.resume}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
 
 /** « que Itachi » → « qu’Itachi », « de Itachi » → « d’Itachi ». */
 function elide(mot: 'que' | 'de', suite: string): string {
@@ -326,7 +391,7 @@ function elide(mot: 'que' | 'de', suite: string): string {
 }
 /** « Le chien » au milieu d'une phrase devient « le chien » ; un nom propre ne change pas. */
 function minusculeArticle(nom: string): string {
-  return /^(Le|La|Les|L’)\s?/.test(nom) ? nom.charAt(0).toLowerCase() + nom.slice(1) : nom;
+  return /^(?:(?:Le|La|Les|Ton|Ta|Tes|Un|Une)\s|L’)/.test(nom) ? nom.charAt(0).toLowerCase() + nom.slice(1) : nom;
 }
 
 function Replique({ nom, texte }: { nom: string; texte: string }) {
@@ -353,6 +418,11 @@ function BlocManche({ j, nom, p }: { j: Entree; nom: string; p: GameState['creat
         {accorder(j.execution, p)} {j.reponse && accorder(j.reponse, p)}
       </p>
       <p className="aff-recit-manche impact">{accorder(j.impact, p)}</p>
+      {j.synergie && (
+        <p className="aff-synergie">
+          <b>Enchaînement</b> {nomNature(j.synergie.de)} → {nomNature(j.synergie.vers)} · {j.synergie.nom} <small>({j.synergie.niveau})</small>
+        </p>
+      )}
       {j.lecture && <p className={`aff-cause issue-${j.issue ?? 'autre'}`}>{accorder(j.lecture, p)}</p>}
       {j.repliques.map((r, k) => (
         <Replique key={k} nom={nom} texte={accorder(r, p)} />

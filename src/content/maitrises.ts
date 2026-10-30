@@ -1,5 +1,6 @@
 import type { ElementId, MasteryDef, PalierDef, RangTechnique, TechniqueDef, VillageId } from '../engine/types';
 import { POSTURES } from './transformations';
+import { TACTIQUES_EXISTANTES, TECHNIQUES_NATURES } from './techniquesNatures';
 
 const P = (...noms: [string, string][]): PalierDef[] => noms.map(([nom, effet]) => ({ nom, effet }));
 
@@ -1090,7 +1091,10 @@ export const MAITRISES: MasteryDef[] = [
   ...TECHNIQUES_CLANS,
   ...TECHNIQUES_BIJU,
   ...TECHNIQUES_TRANSFORMATIONS,
+  ...TECHNIQUES_NATURES.map((m) => ({ ...m, paliers: PALIERS_TECHNIQUE })),
 ].map((m) => {
+  // Les techniques d'avant reçoivent leur rôle tactique (interrompre, déséquilibrer, percer…).
+  if (TACTIQUES_EXISTANTES[m.id] && m.technique) m = { ...m, technique: { ...m.technique, tactique: TACTIQUES_EXISTANTES[m.id] } };
   // Les transformations reçoivent leur posture ; la Bijūdama n'existe que sous une forme de la bête.
   const posture = POSTURES[m.id];
   if (posture && m.technique) return { ...m, technique: { ...m.technique, posture } };

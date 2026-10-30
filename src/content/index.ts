@@ -35,6 +35,7 @@ import { AKATSUKI_CHASSE } from './evenements/akatsukiChasse';
 import { TECHNIQUES_AKATSUKI } from './combat/akatsuki';
 import { VILLAGES_VIVANTS } from './evenements/villages';
 import { VOIX_CLANS } from './evenements/voixClans';
+import { CONVERSATIONS } from './evenements/conversations';
 import { RACINE } from './combat';
 import { MISSIONS_GENIN, EVENEMENTS_MISSIONS_GENIN } from './evenements/missionsGenin';
 import { SECRETS } from './evenements/secrets';
@@ -50,6 +51,7 @@ import { CHAPITRE5_VOIE } from './evenements/chapitre5_voie';
 import { DESTINS } from './evenements/destins';
 import { MARGES } from './evenements/marges';
 import { AFFRONTEMENTS, RECITS_TECHNIQUES, TECHNIQUES_ADVERSES, TIRS_AMIS } from './recitsTechniques';
+import { RECITS_NATURES } from './techniquesNatures';
 import { CONSEQUENCES } from './evenements/consequences';
 import { LEGENDES } from './evenements/legendes';
 import { ADULTE, MISSIONS_ADULTES } from './evenements/adulte';
@@ -59,10 +61,10 @@ import { BINGO } from './bingo';
 import { CATALOGUE } from './catalogue';
 import { DECORS_EVENEMENTS, DECORS_LIEUX, prioriserDecors } from './decors';
 
-const EVENEMENTS = [...ORIGINES, ...EVENEMENTS_CLANS, ...ACADEMIE, ...GENIN, ...EVENEMENTS_MISSIONS, ...YUNAGI, ...ALEATOIRES, ...ENFANCE, ...ADOLESCENCE, ...JEUNESSE, ...MATURITE, ...HORS_LA_LOI_EVENEMENTS, ...VIOLENCE, ...REMORDS, ...VISAGES, ...ARCS_CLANS_1, ...ARCS_CLANS_2, ...ARCS_CLANS_3, ...APPRENTISSAGE, ...DUOS, ...JINCHURIKI_EVENEMENTS, ...EPREUVE_LAMES, ...EXIL, ...AKATSUKI_CHASSE, ...EVENEMENTS_MISSIONS_GENIN, ...VILLAGES_VIVANTS, ...VOIX_CLANS, ...SECRETS, ...EVENEMENTS_BIJU, ...ERRANCE, ...CHAPITRE2, ...CHAPITRE3, ...CHAPITRE4, ...ALEATOIRES_ADULTES, ...CHAPITRE5_VOIE, ...CHAPITRE5, ...DESTINS, ...MARGES, ...CONSEQUENCES, ...LEGENDES, ...ADULTE, ...RENCONTRES, ...BETE];
+const EVENEMENTS = [...ORIGINES, ...EVENEMENTS_CLANS, ...ACADEMIE, ...GENIN, ...EVENEMENTS_MISSIONS, ...YUNAGI, ...ALEATOIRES, ...ENFANCE, ...ADOLESCENCE, ...JEUNESSE, ...MATURITE, ...HORS_LA_LOI_EVENEMENTS, ...VIOLENCE, ...REMORDS, ...VISAGES, ...ARCS_CLANS_1, ...ARCS_CLANS_2, ...ARCS_CLANS_3, ...APPRENTISSAGE, ...DUOS, ...JINCHURIKI_EVENEMENTS, ...EPREUVE_LAMES, ...EXIL, ...AKATSUKI_CHASSE, ...EVENEMENTS_MISSIONS_GENIN, ...VILLAGES_VIVANTS, ...VOIX_CLANS, ...CONVERSATIONS, ...SECRETS, ...EVENEMENTS_BIJU, ...ERRANCE, ...CHAPITRE2, ...CHAPITRE3, ...CHAPITRE4, ...ALEATOIRES_ADULTES, ...CHAPITRE5_VOIE, ...CHAPITRE5, ...DESTINS, ...MARGES, ...CONSEQUENCES, ...LEGENDES, ...ADULTE, ...RENCONTRES, ...BETE];
 
 export const CONTENU: Contenu = {
-  version: '2.17.0',
+  version: '2.19.0',
   racine: RACINE,
   chapitresPublies: [1, 2, 3, 4, 5, 6],
   monde: MONDE,
@@ -87,7 +89,7 @@ export const CONTENU: Contenu = {
   roles: ROLES,
   noms: NOMS,
   armesHeritage: ARMES_HERITAGE,
-  recitsTechniques: RECITS_TECHNIQUES,
+  recitsTechniques: { ...RECITS_TECHNIQUES, ...RECITS_NATURES },
   affrontements: AFFRONTEMENTS,
   tirsAmis: TIRS_AMIS,
   techniquesAdverses: [...TECHNIQUES_ADVERSES, ...TECHNIQUES_AKATSUKI],

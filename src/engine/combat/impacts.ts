@@ -7,6 +7,7 @@ import { resoudreLieu } from '../selection';
 import { CHUTES, CHUTES_JOUEUR, IMPACTS, IMPACTS_JOUEUR, TERRAIN_DE_SCENE, TEXTES_GROUPE, TEXTES_TECHNIQUES } from '../../content/combat/impacts';
 import type { Terrain, TexteTechnique } from '../../content/combat/impacts';
 import { TEXTES_TECHNIQUES_CLANS } from '../../content/combat/impactsClans';
+import { TEXTES_NATURES } from '../../content/techniquesNatures';
 
 export type Distance = 'loin' | 'proche';
 export type Force = 'leger' | 'lourd';
@@ -51,7 +52,7 @@ function groupeTextes(techId: string): string {
 }
 
 function lignes(techId: string, champ: keyof TexteTechnique): string[] {
-  return TEXTES_TECHNIQUES[techId]?.[champ] ?? TEXTES_TECHNIQUES_CLANS[techId]?.[champ] ?? TEXTES_GROUPE[groupeTextes(techId)]?.[champ] ?? TEXTES_GROUPE.ninjutsu[champ] ?? [];
+  return TEXTES_TECHNIQUES[techId]?.[champ] ?? TEXTES_TECHNIQUES_CLANS[techId]?.[champ] ?? TEXTES_NATURES[techId]?.[champ] ?? TEXTES_GROUPE[groupeTextes(techId)]?.[champ] ?? TEXTES_GROUPE.ninjutsu[champ] ?? [];
 }
 
 /** Ce que fait la technique quand elle touche, de loin ou au corps à corps. */

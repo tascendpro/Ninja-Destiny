@@ -1,7 +1,7 @@
 // L'Affrontement Racine : ouverture, boucle de manche, conclusion, vue pour l'interface.
 // Un seul moteur : même état, même hasard, même rejeu que le reste du jeu (§0.3.3).
 
-import type { Changement, ChoiceDef, EventDef, GameState, Issue, Outcome } from '../types';
+import type { Changement, ChoiceDef, ElementId, EventDef, GameState, Issue, Outcome } from '../types';
 import { R } from '../registre';
 import { alea } from '../rng';
 import { age } from '../calendrier';
@@ -28,6 +28,8 @@ import type { FaitsManche } from './selection';
 import { affrontementGenerique, identiteGeneree } from './generique';
 import { ANNONCES_BETE, COUPS_BETE } from '../../content/combat/generiques';
 import { MORTS_AU_COMBAT } from '../../content/combat/morts';
+import { enchainementsPossibles, marquerTerrain, natureAction, terrainInitial, vieillirTerrain, vueTerrain } from './terrain';
+import { LIBELLE_SYNERGIE } from './terrain';
 import { NIVEAUX } from './types';
 
 /** Le combat d'un choix : sa fiche s'il en a une, sinon un combat tiré de son épreuve. Tous les combats passent par ici. */
@@ -49,6 +51,7 @@ export function accorderAdv(texte: string, genre: 'm' | 'f'): string {
     .replace(/\{il\}/g, f ? 'elle' : 'il')
     .replace(/\{Lui\}/g, f ? 'Elle' : 'Lui')
     .replace(/\{lui\}/g, f ? 'elle' : 'lui')
+    .replace(/\{le\}/g, f ? 'la' : 'le')
     .replace(/\{e\}/g, f ? 'e' : '');
 }
 
@@ -73,7 +76,7 @@ export function avecNom(t: string, nom: string): string {
   return t.replace(/\{nom\}/g, (_m, i: number) => {
     const avant = t.slice(0, i).trimEnd();
     const debut = avant === '' || /[.!?…:«\n]$/.test(avant);
-    return !debut && /^(Le|La|Les|L’)\s?/.test(nom) ? nom.charAt(0).toLowerCase() + nom.slice(1) : nom;
+    return !debut && /^(?:(?:Le|La|Les|Ton|Ta|Tes|Un|Une)\s|L’)/.test(nom) ? nom.charAt(0).toLowerCase() + nom.slice(1) : nom;
   });
 }
 
@@ -130,6 +133,8 @@ export function ouvrirAffrontement(s: GameState, ev: EventDef, ch: ChoiceDef): v
     touchesSubiesAdv: 0,
     techniquesUtilisees: [],
     bilan: { reussites: {}, echecs: {} },
+    terrain: terrainInitial(s),
+    sceaux: [],
   };
   s.scene = sc;
   // Une réplique d'entrée, ou de revanche si vous vous êtes déjà affrontés.
@@ -207,6 +212,16 @@ export function jouerAffrontement(s: GameState, a: ActionCombat, ctx: Ctx): Conc
   const entree = composerManche(s, sc, d, a, res, annonce, r.texte, r.replique);
   sc.journal.push(entree);
   sc.actionsJoueur.push(a.choix);
+  // La chaîne : la nature de ce que tu viens de lancer (rien si elle a raté ou n'en a pas).
+  const nature = res.execution !== 'ratee' ? natureAction(a.choix) : undefined;
+  sc.sceaux = [...(sc.sceaux ?? []), nature ?? null].slice(-3);
+  sc.derniereSynergie = res.synergie?.cle;
+  vieillirTerrain(sc);
+  // Sa technique aussi laisse sa trace, si elle t'a atteint : son eau sert ta foudre.
+  if (res.subi > 0 && sc.intention === 'technique' && sc.techniqueAdv) {
+    const el = techniquesAdversaire(s, d).find((t) => t.id === sc.techniqueAdv)?.element;
+    if (el) marquerTerrain(sc, el, undefined);
+  }
   // Une esquive ou une permutation réussie à la dernière manche ouvre sa garde : on ne finit pas sur une défense,
   // il reste une manche pour contre-attaquer (une seule fois par combat).
   const defenseReussie = a.famille === 'defense' && a.choix !== 'garde' && res.reussi;
@@ -260,6 +275,15 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
     if (rep && res.execution !== 'ratee') execution = accorderAdv(rep.recit, genre);
   } else execution = `${nomAction(a)}.`;
   let impact = res.impact;
+  // L'enchaînement se raconte entre l'exécution et l'impact : ce que la nature d'avant a préparé, puis ce qu'il en advient.
+  const syn = res.synergie;
+  if (syn && res.issue !== 'predite') {
+    const banque = syn.def.recits;
+    impact += `${contracter(accorderAdv(avecNom(banque[Math.floor(tirageTexte(s, `synergie:${syn.cle}:${sc.manche}`) * banque.length)], sc.nomAdversaire), genre))} `;
+    if (syn.lieu) impact += `${syn.lieu} `;
+  }
+  // Une technique défensive se raconte par elle-même : le mur qui monte, le vent qui tourne.
+  if (a.famille === 'defense' && tech) impact += `${accorderAdv(texteTechniqueTouche(s, a.choix, 'loin', `${sc.manche}`), genre)} `;
   // Taijutsu : on est au contact. Sinon, la distance de la manche d'avant.
   const distance = a.famille === 'taijutsu' || a.famille === 'arme' ? 'proche' : (sc.distance ?? 'loin');
   const porte = res.issue === 'touche' || res.issue === 'surprise' || res.issue === 'decisive';
@@ -328,6 +352,7 @@ function composerManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a:
     issue: res.issue,
     inflige: res.inflige,
     subi: res.subi,
+    synergie: syn && res.issue !== 'predite' ? { nom: syn.def.nom, niveau: LIBELLE_SYNERGIE[syn.niveau], de: syn.parTerrain ? 'terrain' : syn.cle.split('>')[0], vers: syn.cle.split('>')[1] } : undefined,
     technique: `intention=${sc.intention} exec=${res.execution} inflige=${res.inflige} subi=${res.subi} J=${sc.joueur.endurance}/${sc.joueur.enduranceMax} A=${sc.adv.endurance}/${sc.adv.enduranceMax} elan=${sc.elan}`,
   };
 }
@@ -349,7 +374,9 @@ function outcomePour(issue: Issue, ch: ChoiceDef): Outcome {
 
 /** Les articles qui se contractent derrière une préposition : « les coups du chien », pas « de le chien ». */
 function contracter(t: string): string {
-  return t.replace(/(^|[\s’'(])de le /g, '$1du ').replace(/(^|[\s’'(])de les /g, '$1des ').replace(/(^|\s)à le /g, '$1au ').replace(/(^|\s)à les /g, '$1aux ');
+  return t
+    .replace(/(^|[\s(])de ([AEIOUYÉÈÊÂÎÔ])/g, '$1d’$2')
+    .replace(/(^|[\s’'(])de le /g, '$1du ').replace(/(^|[\s’'(])de les /g, '$1des ').replace(/(^|\s)à le /g, '$1au ').replace(/(^|\s)à les /g, '$1aux ');
 }
 
 /**
@@ -570,6 +597,12 @@ export interface VueAffrontement {
   familles: VueFamille[];
   journal: EntreeAffrontement[];
   lecture: string[];
+  /** Le terrain : ce que les techniques y ont laissé. */
+  terrain: ReturnType<typeof vueTerrain>;
+  /** Tes dernières natures, dans l'ordre (null : action sans nature). */
+  sceaux: (ElementId | null)[];
+  /** Les enchaînements qui s'offrent maintenant. */
+  enchainements: ReturnType<typeof enchainementsPossibles>;
 }
 
 export function vueAffrontement(s: GameState): VueAffrontement | undefined {
@@ -578,7 +611,8 @@ export function vueAffrontement(s: GameState): VueAffrontement | undefined {
   const d = adversaireDef(sc.adversaireId);
   const genre = genreAdv(s, d);
   const i = indexNiveau(sc.niveauAdv);
-  const niveau = !sc.lecture.niveau ? '?' : s.attributs.perception >= 60 ? LIBELLE_NIVEAU[sc.niveauAdv] : `${LIBELLE_NIVEAU[NIVEAUX[Math.max(0, i - 1)]]} à ${LIBELLE_NIVEAU[sc.niveauAdv]}`;
+  // Tant qu'on ne l'a pas jaugé, on ne dit rien de son niveau (pas de « ? » à côté de son nom).
+  const niveau = !sc.lecture.niveau ? '' : s.attributs.perception >= 60 ? LIBELLE_NIVEAU[sc.niveauAdv] : `${LIBELLE_NIVEAU[NIVEAUX[Math.max(0, i - 1)]]} à ${LIBELLE_NIVEAU[sc.niveauAdv]}`;
   const lecture: string[] = [];
   if (sc.lecture.niveau) lecture.push(`Niveau estimé : ${niveau}.`);
   if (sc.lecture.nature && d.nature) lecture.push(`Nature : ${R.elements[d.nature]?.nom ?? d.nature}.`);
@@ -599,5 +633,12 @@ export function vueAffrontement(s: GameState): VueAffrontement | undefined {
     familles: fam,
     journal: sc.journal,
     lecture,
+    terrain: vueTerrain(sc),
+    sceaux: sc.sceaux ?? [],
+    enchainements: enchainementsPossibles(
+      s,
+      sc,
+      fam.flatMap((f) => (f.id === 'ninjutsu' || f.id === 'defense' ? f.actions.filter((x) => x.disponible && x.nature).map((x) => x.nature!) : [])),
+    ),
   };
 }

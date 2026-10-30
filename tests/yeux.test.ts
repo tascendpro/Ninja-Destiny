@@ -79,11 +79,11 @@ describe('Combats : enchaînements et sacoche', () => {
       if (s.scene.type !== 'affrontement' || s.scene.journal.at(-1)?.issue === 'ratee') continue;
       const feu = vueAffrontement(s)!.familles.find((f) => f.id === 'ninjutsu')?.actions.find((a) => a.id === 'katon_braises');
       if (!feu?.disponible) continue;
-      expect(feu.marques).toContain('enchaînement');
+      expect(feu.marques).toContain('synergie possible');
       s = combattre(s, { famille: 'ninjutsu', choix: 'katon_braises' });
       const e = s.scene.type === 'affrontement' ? s.scene.journal.at(-1) : undefined;
-      if (!e || e.issue === 'ratee') continue;
-      expect(e.impact).toContain('Enchaînement');
+      if (!e || e.issue === 'ratee' || e.issue === 'predite') continue;
+      expect(e.synergie?.nom).toBe('Flammes attisées');
       vu = true;
     }
     expect(vu).toBe(true);
