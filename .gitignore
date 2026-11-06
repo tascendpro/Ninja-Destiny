@@ -5,3 +5,4 @@ dist-standalone
 next-env.d.ts
 *.tsbuildinfo
 .claude
+.mcp.json

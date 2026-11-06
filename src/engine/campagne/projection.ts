@@ -1,5 +1,5 @@
 // Ce qu'un joueur a le droit de voir de la campagne : sa propre vie, la carte publique de l'autre, ce qu'il sait,
-// ce qu'il ressent, et le journal public plus ses propres actions. Le serveur n'envoie que ceci à chaque appareil.
+// ce qu'il ressent, et le journal public plus ses propres actions. L'écran de chacun ne montre que ceci.
 // Jamais : ce que l'autre ressent, ses scènes privées, les faits qu'il est seul à connaître, son choix de combat
 // avant la résolution, l'état du fil de trahison (sauf pour le traître lui-même).
 

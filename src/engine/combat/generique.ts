@@ -69,7 +69,8 @@ export function adversaireGenerique(id: string): AdversaireDef {
     genre: connu?.genre ?? genreDefaut,
     type,
     niveau: niveauDepuisDifficulte(t.difficulte),
-    temperament: bete ? 'feroce' : t.letal ? 'feroce' : escouade ? 'prudent' : 'fier',
+    // La personnalité suit ce qu'il est (§3.3) : le samouraï a son code, le mercenaire a vu trop de guerres, le bandit aime faire peur.
+    temperament: bete ? 'feroce' : type === 'samourai' ? 'honorable' : type === 'mercenaire' ? 'veteran' : type === 'bandit' && !escouade ? 'sadique' : t.letal ? 'feroce' : escouade ? 'prudent' : 'fier',
     bascule: t.letal || bete ? undefined : { vers: 'prudent', quand: 'sous_40' },
     nature: bete ? undefined : t.elementAdverse,
     habitudes: [],

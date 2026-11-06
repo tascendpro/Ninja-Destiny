@@ -6321,3 +6321,124 @@ body::before {
 }
 .fin-duo .passage-sceau { margin-bottom: 6px; }
 .fin-duo .titre-scene { margin: 0; line-height: 1.2; }
+
+/* ── Combat vivant : états, visage, allié, événement ── */
+.aff-pastille.etat {
+  color: var(--vermillon-clair);
+  border-color: color-mix(in srgb, var(--vermillon-clair) 45%, transparent);
+}
+.aff-pastille.visage {
+  color: var(--or);
+  border-color: color-mix(in srgb, var(--or) 45%, transparent);
+  font-style: italic;
+}
+.aff-pastille.allie {
+  color: var(--jade);
+  border-color: color-mix(in srgb, var(--jade) 45%, transparent);
+}
+.aff-famille.situation {
+  border-color: var(--or);
+  box-shadow: 0 0 0 1px var(--or) inset;
+}
+.aff-famille.situation .aff-famille-kanji {
+  color: var(--or);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .aff-famille.situation:not(.active) {
+    animation: situation-pulse 1.6s ease-in-out infinite;
+  }
+}
+@keyframes situation-pulse {
+  50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--or) 35%, transparent); }
+}
+.aff-evenement {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--or);
+  border-radius: var(--rayon-s);
+  background: color-mix(in srgb, var(--or) 10%, transparent);
+}
+
+/* ── Escouades : qui viser ── */
+.aff-escouade {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.aff-escouade-titre {
+  grid-column: 1 / -1;
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brume);
+}
+.aff-membre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px 8px;
+  text-align: left;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon-m);
+  background: var(--ardoise);
+  color: var(--papier);
+  cursor: pointer;
+}
+.aff-membre.visee {
+  border-color: var(--vermillon-clair);
+  box-shadow: 0 0 0 1px var(--vermillon-clair) inset;
+}
+.aff-membre.hors {
+  opacity: 0.45;
+  cursor: default;
+}
+.aff-membre-kanji {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-family: var(--mincho);
+  background: color-mix(in srgb, var(--vermillon) 18%, transparent);
+  color: var(--vermillon-clair);
+}
+.aff-membre.r-chef .aff-membre-kanji {
+  background: color-mix(in srgb, var(--or) 22%, transparent);
+  color: var(--or);
+}
+.aff-membre.r-soigneur .aff-membre-kanji {
+  background: color-mix(in srgb, var(--jade) 22%, transparent);
+  color: var(--jade);
+}
+.aff-membre-corps {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.aff-membre-nom {
+  font-size: var(--t-s);
+  font-weight: 600;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.aff-membre-etat {
+  font-size: var(--t-xs);
+  color: var(--brume);
+}
+.aff-membre-jauge {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--trait-doux);
+  overflow: hidden;
+}
+.aff-membre-jauge i {
+  display: block;
+  height: 100%;
+  background: var(--vermillon-clair);
+}

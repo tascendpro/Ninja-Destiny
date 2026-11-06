@@ -372,7 +372,7 @@ export function visibilite(x: ActionCampagne): 'publique' | IdJoueur {
   return x.j;
 }
 
-/** Vérifie qu'une action est permise maintenant, sans rien modifier. Le serveur fait exactement la même chose. */
+/** Vérifie qu'une action est permise maintenant, sans rien modifier. Le rejeu d'une sauvegarde fait exactement la même chose. */
 export function valider(c: Campagne, x: ActionCampagne): void {
   const j = x.j;
   const s = c.joueurs[j];
@@ -398,7 +398,7 @@ export function valider(c: Campagne, x: ActionCampagne): void {
   }
 }
 
-/** Le réducteur : applique une action validée. Le direct, le rejeu et le serveur passent tous par ici, dans le même ordre. */
+/** Le réducteur : applique une action validée. Le jeu et le rejeu d'une sauvegarde passent tous les deux par ici, dans le même ordre. */
 function appliquerMut(c: Campagne, x: ActionCampagne): void {
   const j = x.j;
   const { seq: _seq, vis: _vis, jour: _jour, ...brute } = x;

@@ -10,6 +10,23 @@ import { PROFIL } from './akatsuki';
 const et = (...f: ((c: Campagne) => boolean)[]) => (c: Campagne) => f.every((x) => x(c));
 const chroniquer = (c: Campagne, texte: string) => c.chronique.push({ jour: Math.max(c.joueurs[0].jour, c.joueurs[1].jour), texte });
 
+// ── L'ombre et la lumière : qui est qui ──
+/** Le rôle de chacun, une fois choisi : un drapeau dans chaque vie, que les deux connaissent. */
+function roles(c: Campagne, ombreId: IdJoueur): void {
+  c.joueurs[ombreId].drapeaux['campagne_ombre'] = true;
+  c.joueurs[autre(ombreId)].drapeaux['campagne_lumiere'] = true;
+  fait(c, { id: 'ombre_lumiere', texte: `${c.creations[ombreId].prenom} est l’ombre, ${c.creations[autre(ombreId)].prenom} est la lumière.`, connus: [0, 1, 'kage'], preuves: 0 });
+}
+const ombre = (c: Campagne): IdJoueur | undefined => ([0, 1] as IdJoueur[]).find((j) => c.joueurs[j].drapeaux['campagne_ombre']);
+const lumiere = (c: Campagne): IdJoueur | undefined => ([0, 1] as IdJoueur[]).find((j) => c.joueurs[j].drapeaux['campagne_lumiere']);
+/** Tout se sait entre les deux : le journaliste, l'ordre, le refus. */
+function toutSavoir(c: Campagne): void {
+  for (const id of ['ombre_sang', 'ombre_laisse', 'ordre_signe', 'ordre_refuse']) {
+    const f = c.faits.find((x) => x.id === id);
+    if (f) for (const j of [0, 1] as IdJoueur[]) if (!f.connus.includes(j)) f.connus.push(j);
+  }
+}
+
 export const SCENES_ARCS: SceneCommuneDef[] = [
   // ── 1. Le rapport caché ──
   scene('mc_rc_1', 'Le rapport caché', [13, 15], 'Une mission d’équipe. Un genin d’une autre équipe, Sōta, meurt au fond d’un ravin. Vous avez vu le chef de mission, le jōnin Takeda, le pousser. Le soir, Takeda dicte le rapport : « Une chute. » Il vous regarde. Il attend.', [
@@ -264,37 +281,111 @@ export const SCENES_ARCS: SceneCommuneDef[] = [
   ], { si: vu('mc_pc_3') }),
 
   // ── 8. L'ombre et la lumière ──
-  scene('mc_ol_1', 'Le héros et l’ombre', [18, 24], 'Le {kage} a besoin d’un héros : un visage pour les affiches, pour les enfants, pour la guerre qui vient. Et il a besoin de quelqu’un pour faire, dans l’ombre, ce qu’un héros ne peut pas faire. Il vous a choisis tous les deux. Il ne dit pas encore qui sera quoi.', [
+  // Le Kage fait de l'un un héros, de l'autre son ombre. La lumière reçoit les médailles de l'ombre ; l'ombre tue pour
+  // protéger la lumière ; on demande un jour à la lumière de sacrifier l'ombre. Six actes, jusqu'à la statue.
+  scene('mc_ol_1', 'Le héros et l’ombre', [18, 23], 'Le {kage} vous reçoit tous les deux, la nuit, sans témoin. « La guerre vient. Le village a besoin d’un héros : un visage pour les affiches, pour les enfants, pour ceux qui partiront au front. Et il me faut quelqu’un pour faire, dans l’ombre, ce qu’un héros ne peut pas faire. L’un de vous sera aimé de tous. L’autre ne sera connu de personne. Choisissez. »', [
     ['lumiere', 'Demander la lumière', 'agir'],
     ['ombre', 'Demander l’ombre', 'proteger'],
     ['refuser', 'Refuser les deux', 'partir'],
   ], [
-    ['ombre+lumiere', '{un} prend l’ombre, {deux} la lumière. Sur les affiches, il y aura le visage de {deux}. Sous les affiches, il y aura {un}.', { l: { dependance: 6, loyaute: 4 }, s: ['Le héros et l’ombre.', 5, 'tragique'], apres: (c, un) => fait(c, { id: 'ombre_lumiere', texte: `${c.creations[un].prenom} est l’ombre, ${c.creations[autre(un)].prenom} est la lumière.`, connus: [0, 1, 'kage'], preuves: 0 }) }],
-    ['ombre+ombre', 'Vous demandez tous les deux l’ombre. Le {kage} sourit, et choisit à votre place.', { l: { loyaute: 6 }, apres: (c) => fait(c, { id: 'ombre_lumiere', texte: `${c.creations[0].prenom} est l’ombre, ${c.creations[1].prenom} est la lumière.`, connus: [0, 1, 'kage'], preuves: 0 }) }],
-    ['lumiere+lumiere', 'Vous voulez tous les deux la lumière. Le {kage} choisit. Celui qui reste dans l’ombre ne l’a pas voulu.', { l: { jalousie: 8, rivalite: 6 }, apres: (c) => fait(c, { id: 'ombre_lumiere', texte: `${c.creations[1].prenom} est l’ombre, ${c.creations[0].prenom} est la lumière.`, connus: [0, 1, 'kage'], preuves: 0 }) }],
-    ['defaut', 'Le {kage} vous laisse partir. Il trouvera quelqu’un d’autre. Mais il se souviendra de vous.', { l: { confiance: 2 } }],
+    ['ombre+lumiere', '{un} prend l’ombre, {deux} la lumière, sans un regard. Le {kage} hoche la tête : c’est exactement ce qu’il avait prévu. Sur les affiches, il y aura le visage de {deux}. Sous les affiches, il y aura {un}.', { l: { dependance: 6, loyaute: 4 }, s: ['La nuit où le {kage} a fait de vous le héros et l’ombre.', 5, 'tragique'], apres: (c, un) => roles(c, un) }],
+    ['ombre+ombre', 'Vous demandez tous les deux l’ombre. Le {kage} rit doucement. « Voilà pourquoi ça marchera. » Il choisit à votre place. {j2} sera l’ombre. {j1} sourira sur les affiches, en sachant ce que ça coûte.', { l: { loyaute: 8, confiance: 4 }, s: ['Le jour où vous avez tous les deux demandé l’ombre.', 5, 'chaud'], apres: (c) => roles(c, 1) }],
+    ['lumiere+lumiere', 'Vous voulez tous les deux la lumière. Le {kage} vous regarde longtemps, puis désigne {j1}. {j2} sera l’ombre, et ne l’a pas voulu. Ça, aussi, le {kage} l’avait prévu : une ombre jalouse travaille plus dur.', { l: { jalousie: 10, rivalite: 6 }, s: ['Le jour où le {kage} a choisi la lumière à votre place.', 5, 'amer'], apres: (c) => roles(c, 1) }],
+    ['refuser+refuser', 'Vous refusez ensemble. Le {kage} ne s’en offusque pas. « Alors je trouverai deux autres enfants. » C’est pire, et vous le savez.', { l: { respect: 6, confiance: 4 } }],
+    ['lumiere+refuser', '{un} veut la lumière. {deux} refuse tout. Le {kage} ne discute pas : « Alors tu seras l’ombre. On ne refuse pas une guerre. » {deux} sort sans un mot. {un} n’ose pas {le:deux} rattraper.', { deux: { ressentiment: 8 }, un: { dette: 4 }, s: ['Le rôle imposé par le {kage}.', 5, 'amer'], apres: (c, un) => roles(c, autre(un)) }],
+    ['ombre+refuser', '{un} demande l’ombre. {deux} refuse tout. Le {kage} sourit : « Le village aime ceux qui ne voulaient pas. Tu seras le héros. » {deux} portera un visage qu’il n’a pas choisi ; {un} portera le reste.', { deux: { ressentiment: 4 }, un: { loyaute: 4 }, s: ['Le héros malgré lui, et l’ombre volontaire.', 5, 'tragique'], apres: (c, un) => roles(c, un) }],
+    ['defaut', 'Vous ne vous accordez pas. Le {kage} vous renvoie : un héros et une ombre doivent être d’accord, ou ne sont rien. Il trouvera ailleurs.', { l: { mefiance: 3 } }],
   ], { si: et(memeVillage, arc('ombre', 0.5)) }),
-  privee('mc_ol_2', 'Ce que fait l’ombre', [22, 30], (c) => {
-    const f = c.faits.find((x) => x.id === 'ombre_lumiere');
-    return f ? (f.texte.startsWith(c.creations[0].prenom) ? 0 : 1) : undefined;
-  }, 'Un journaliste de la capitale a découvert quelque chose sur {autre} : une mission ancienne, un village brûlé. S’il publie, le héros tombe. Tu as son adresse. Tu as la nuit.', [
+
+  scene('mc_ol_2', 'La médaille', [21, 26], (c) => `La victoire du col a sauvé le village. Toute la place est réunie : le {kage} accroche une médaille d’or sur la poitrine de ${c.creations[lumiere(c) ?? 0].prenom}. Ce col, c’est ${c.creations[ombre(c) ?? 1].prenom} qui l’a tenu, seul, pendant trois nuits. Personne ne le sait. Personne ne doit le savoir.`, [
+    ['porter', 'Porter la médaille, et sourire', 'observer'],
+  ], [
+    ['nommer+applaudir', '{un} lève la main : « Cette médaille n’est pas à moi. » Le silence tombe sur la place. Le {kage} sourit d’un sourire de pierre et reprend la parole : « Le héros est modeste. » La foule applaudit plus fort. {deux}, au fond, ne sait pas s’il doit pleurer ou s’enfuir.', { un: { loyaute: 6 }, deux: { dette: 8, peur_de_perdre: 6 }, s: ['« Cette médaille n’est pas à moi. »', 5, 'fier'], apres: (c) => fait(c, { id: 'ol_medaille_dite', texte: 'Le héros a dit, devant tout le village, que la médaille n’était pas à lui. Le Kage s’en souviendra.', connus: [0, 1, 'kage'], preuves: 1 }) }],
+    ['nommer+*', '{un} dit devant tous que la victoire n’est pas la sienne. {deux} est déjà parti. Le {kage} transforme la phrase en modestie. Le soir, {un} trouve la porte de {deux} fermée.', { un: { peur_de_perdre: 6 }, deux: { ressentiment: 3, dette: 4 } }],
+    ['donner+regard', 'Le soir, dans une ruelle, {un} glisse la médaille dans la main de {deux}. {deux} la regarde, la retourne, et la lui rend. « Garde-la. C’est toi qu’ils doivent aimer. Moi, j’ai ça. » Et {deux} serre sa main un instant de trop.', { l: { confiance: 8, loyaute: 6 }, a: 4, s: ['La médaille glissée dans la main, et rendue.', 5, 'chaud'] }],
+    ['porter+partir', '{un} sourit sur l’estrade. {deux} part avant la fin. Il y a, ce soir-là, quelque chose de cassé que ni l’un ni l’autre ne nomme.', { deux: { ressentiment: 8, jalousie: 6 }, un: { peur_de_perdre: 4 }, s: ['La médaille, et la place vide au fond de la foule.', 4, 'amer'] }],
+    ['porter+applaudir', '{un} sourit. {deux} applaudit avec la foule. Vous jouez chacun votre rôle à la perfection. C’est ça, le pire.', { l: { dependance: 6 }, s: ['La médaille du col, et les applaudissements.', 4, 'tragique'] }],
+    ['defaut', 'La cérémonie passe. Le soir, chacun rentre chez soi. La médaille dort dans un tiroir. Elle pèse plus lourd que l’or.', { l: { dependance: 4 } }],
+  ], {
+    si: (c) => vu('mc_ol_1')(c) && ombre(c) !== undefined,
+    choixPour: (c, j) => (ombre(c) === j
+      ? [
+        { id: 'applaudir', texte: 'Applaudir, au fond de la foule', famille: 'observer' },
+        { id: 'partir', texte: 'Partir avant la fin', famille: 'partir' },
+        { id: 'regard', texte: 'Attendre {autre} ce soir, dans la ruelle', famille: 'proteger' },
+      ]
+      : [
+        { id: 'porter', texte: 'Porter la médaille, et sourire', famille: 'observer' },
+        { id: 'nommer', texte: 'Dire, devant tous, que la victoire n’est pas la tienne', famille: 'parler' },
+        { id: 'donner', texte: 'Glisser la médaille à {autre}, ce soir', famille: 'proteger' },
+      ]),
+    textePour: (c, j) => (ombre(c) === j ? 'Tu as encore les mains bandées du col. Tu les caches dans tes manches.' : 'Le métal est froid sur ta poitrine. Tu cherches {autre} des yeux, au fond de la foule.'),
+  }),
+
+  privee('mc_ol_3', 'Ce que fait l’ombre', [22, 30], (c) => ombre(c), 'Un journaliste de la capitale a découvert quelque chose sur {autre} : une mission ancienne, un village brûlé sur ordre, un nom dans un rapport. S’il publie, le héros tombe, et la guerre se perd avec lui. Tu as son adresse. Tu as la nuit.', [
     ['tuer', 'Le faire taire, pour de bon', 'agir'],
     ['acheter', 'L’acheter', 'parler'],
     ['laisser', 'Le laisser publier : {autre} doit répondre de ses actes', 'partir'],
   ], [
-    ['tuer', 'Le journaliste ne publiera pas. Personne ne saura pourquoi. Le visage de {autre} reste sur les affiches. Le tien n’y sera jamais.', { apres: (c) => { const j = c.faits.find((x) => x.id === 'ombre_lumiere')!.texte.startsWith(c.creations[0].prenom) ? 0 : 1; fait(c, { id: 'ombre_sang', texte: 'Tu as tué un journaliste pour protéger la réputation de l’autre.', connus: [j as IdJoueur], preuves: 2, cible: autre(j as IdJoueur) }); c.joueurs[j].social.reputationOmbre = Math.min(100, c.joueurs[j].social.reputationOmbre + 15); } }],
-    ['acheter', 'Il prend l’argent, beaucoup d’argent. Il pourra revenir. Ils reviennent toujours.', { apres: (c) => { const j = c.faits.find((x) => x.id === 'ombre_lumiere')!.texte.startsWith(c.creations[0].prenom) ? 0 : 1; fait(c, { id: 'ombre_sang', texte: 'Tu as acheté le silence d’un journaliste pour protéger l’autre.', connus: [j as IdJoueur], preuves: 1, cible: autre(j as IdJoueur) }); } }],
-    ['laisser', 'L’article paraît. Le héros tombe des affiches. On ne saura jamais que tu aurais pu l’empêcher.', { apres: (c) => { const j = c.faits.find((x) => x.id === 'ombre_lumiere')!.texte.startsWith(c.creations[0].prenom) ? 0 : 1; fait(c, { id: 'ombre_laisse', texte: 'Tu aurais pu empêcher l’article qui a fait tomber l’autre.', connus: [j as IdJoueur], preuves: 0, cible: autre(j as IdJoueur) }); noter(c, autre(j as IdJoueur), 'Un article de la capitale raconte une mission ancienne. Ton visage disparaît des affiches.'); } }],
-  ], { si: vu('mc_ol_1') }),
-  scene('mc_ol_3', 'Le héros apprend', [28, 36], (c) => (connait(c, 'ombre_sang', 0) || connait(c, 'ombre_sang', 1) ? 'Une lettre anonyme arrive chez le héros : le nom d’un journaliste, une date, et une phrase. « Demande à ton ombre ce qu’elle a fait cette nuit-là. »' : 'Le héros et l’ombre se retrouvent, des années après, sur un toit. « Est-ce que ça valait le coup ? » demande l’un.'), [
+    ['tuer', 'Le journaliste ne publiera pas. Personne ne saura pourquoi. Le visage de {autre} reste sur les affiches. Le tien n’y sera jamais. Tu te laves les mains trois fois, cette nuit-là.', { apres: (c) => { const j = ombre(c)!; fait(c, { id: 'ombre_sang', texte: 'Tu as tué un journaliste pour protéger la réputation de l’autre.', texteCible: `${c.creations[j].prenom} a tué un journaliste pour que ton nom reste propre.`, connus: [j], preuves: 2, cible: autre(j) }); c.joueurs[j].social.reputationOmbre = Math.min(100, c.joueurs[j].social.reputationOmbre + 15); } }],
+    ['acheter', 'Il prend l’argent, beaucoup d’argent. Toutes tes économies. Il pourra revenir. Ils reviennent toujours.', { apres: (c) => { const j = ombre(c)!; fait(c, { id: 'ombre_sang', texte: 'Tu as acheté le silence d’un journaliste pour protéger l’autre.', texteCible: `${c.creations[j].prenom} a vidé ses économies pour acheter le silence d’un journaliste, et sauver ton nom.`, connus: [j], preuves: 1, cible: autre(j) }); c.joueurs[j].jauges.ryo = Math.max(0, c.joueurs[j].jauges.ryo - 150); } }],
+    ['laisser', 'L’article paraît. Le héros tombe des affiches. Le {kage} trouve un autre visage. On ne saura jamais que tu aurais pu l’empêcher.', { apres: (c) => { const j = ombre(c)!; fait(c, { id: 'ombre_laisse', texte: 'Tu aurais pu empêcher l’article qui a fait tomber l’autre.', texteCible: `${c.creations[j].prenom} aurait pu empêcher l’article. Il ne l’a pas fait.`, connus: [j], preuves: 0, cible: autre(j) }); noter(c, autre(j), 'Un article de la capitale raconte une mission ancienne, un village brûlé. Ton visage disparaît des affiches. Les enfants ne te saluent plus.'); const l = c.joueurs[autre(j)]; l.social.reputation = Math.max(-100, l.social.reputation - 15); } }],
+  ], { si: (c) => vu('mc_ol_1')(c) && ombre(c) !== undefined }),
+
+  privee('mc_ol_4', 'L’ordre', [24, 32], (c) => lumiere(c), 'Le {kage} te tend une feuille et un pinceau. « Ton ombre en sait trop. Sur le village, sur moi, sur toi. Une mission au nord, sans retour prévu. Il me faut la signature du héros : c’est toi qui commandes l’opération, officiellement. » Il attend. Il a toujours su attendre.', [
+    ['signer', 'Signer', 'agir'],
+    ['refuser', 'Refuser, et rendre ta médaille', 'partir'],
+    ['prevenir', 'Signer, puis prévenir {autre} cette nuit', 'proteger'],
+  ], [
+    ['signer', 'Ton nom, en bas de la feuille. L’encre sèche vite. Le {kage} roule l’ordre et le range. « Le village te remercie. » Tu rentres chez toi par le chemin le plus long.', { apres: (c) => { const j = lumiere(c)!; fait(c, { id: 'ordre_signe', texte: 'Tu as signé l’ordre qui envoyait l’autre au nord, sans retour.', texteCible: `${c.creations[j].prenom} a signé l’ordre qui t’envoyait mourir au nord.`, connus: [j, 'kage'], preuves: 2, cible: autre(j) }); noter(c, autre(j), 'Un ordre de mission au nord, signé de la main du héros. Une escorte réduite, pas de relève prévue. Tu pars à l’aube.'); } }],
+    ['refuser', 'Tu poses la médaille sur le bureau, à côté du pinceau. Le {kage} ne dit rien. Le lendemain, ton visage est toujours sur les affiches. Mais tu n’es plus invité nulle part.', { apres: (c) => { const j = lumiere(c)!; fait(c, { id: 'ordre_refuse', texte: 'Le Kage t’a demandé de sacrifier l’autre. Tu as refusé, et rendu ta médaille.', texteCible: `Le Kage a demandé à ${c.creations[j].prenom} de t’envoyer mourir. ${c.creations[j].prenom} a refusé, et rendu sa médaille.`, connus: [j, 'kage'], preuves: 1, cible: autre(j) }); const s = c.joueurs[j]; s.social.loyaute = Math.max(-100, s.social.loyaute - 10); } }],
+    ['prevenir', 'Tu signes. La nuit même, tu frappes chez {autre}, et tu dis tout, d’une traite. {autre} écoute, ne dit rien, puis : « Je partirai quand même. Mais je reviendrai. Et tu sauras pourquoi. »', { apres: (c) => { const j = lumiere(c)!; fait(c, { id: 'ordre_signe', texte: 'Tu as signé l’ordre qui envoyait l’autre au nord, et tu l’as prévenu.', texteCible: `${c.creations[j].prenom} a signé l’ordre qui t’envoyait au nord, puis est venu te prévenir, la nuit même.`, connus: [0, 1, 'kage'], preuves: 2 }); souvenir(c, 'ol_prevenu', 'La nuit où le héros est venu prévenir son ombre.', 5, 'tragique'); } }],
+  ], { si: (c) => vu('mc_ol_2')(c) && lumiere(c) !== undefined }),
+
+  scene('mc_ol_5', 'Le toit', [28, 36], (c) => (connait(c, 'ordre_signe', 'kage')
+    ? `${c.creations[ombre(c) ?? 1].prenom} est revenu du nord. Seul, sur trois. Maigre, brûlé par le froid, vivant. Il vous a fallu des semaines pour vous retrouver, et c’est sur le toit de l’Académie, comme à quinze ans. « Est-ce que ça valait le coup ? » demande l’un.`
+    : 'Des années ont passé. Le héros et l’ombre se retrouvent sur le toit de l’Académie, comme à quinze ans. La guerre est finie. Les affiches, déchirées. « Est-ce que ça valait le coup ? » demande l’un.'), [
     ['demander', 'Demander la vérité', 'parler'],
     ['savoir', 'Ne pas vouloir savoir', 'observer'],
     ['avouer', 'Tout avouer avant qu’on demande', 'proteger'],
   ], [
-    ['avouer+demander', 'La vérité tombe, entière. Le héros écoute jusqu’au bout. Puis il dit : « Tu aurais dû me laisser tomber. » Et, plus bas : « Merci. » Les deux sont vrais.', { l: { confiance: 6, dette: 8 }, s: ['« Tu aurais dû me laisser tomber. » « Merci. »', 5, 'tragique'], apres: (c) => { for (const id of ['ombre_sang', 'ombre_laisse']) { const f = c.faits.find((x) => x.id === id); if (f) { for (const j of [0, 1] as IdJoueur[]) if (!f.connus.includes(j)) f.connus.push(j); } } } }],
-    ['savoir+savoir', 'Personne ne demande, personne ne dit. Vous restez sur le toit jusqu’à l’aube. Le silence est un choix, lui aussi.', { l: { dependance: 6, peur_de_perdre: 4 } }],
+    ['avouer+avouer', 'Vous parlez en même temps, puis vous vous taisez, puis vous recommencez. Le journaliste. L’ordre au nord. Les nuits. À la fin, il ne reste rien de caché entre vous, et il fait jour.', { l: { confiance: 10, loyaute: 6 }, s: ['Le toit de l’Académie, où vous vous êtes tout dit.', 5, 'chaud'], apres: (c) => toutSavoir(c) }],
+    ['avouer+demander', 'La vérité tombe, entière. {deux} écoute jusqu’au bout. Puis : « Tu aurais dû me laisser tomber. » Et, plus bas : « Merci. » Les deux sont vrais.', { l: { confiance: 6, dette: 8 }, s: ['« Tu aurais dû me laisser tomber. » « Merci. »', 5, 'tragique'], apres: (c) => toutSavoir(c) }],
+    ['demander+savoir', '{un} demande. {deux} ne veut pas répondre, puis ne peut pas. Le silence dure jusqu’à ce que {un} se lève et parte. Il y a des vérités qu’on garde pour protéger l’autre, et d’autres pour se protéger soi.', { un: { mefiance: 8 }, deux: { peur_de_perdre: 6 } }],
+    ['savoir+savoir', 'Personne ne demande, personne ne dit. Vous restez sur le toit jusqu’à l’aube, épaule contre épaule. Le silence est un choix, lui aussi.', { l: { dependance: 6, peur_de_perdre: 4 }, s: ['L’aube sur le toit, sans un mot.', 4, 'tragique'] }],
     ['defaut', 'La vérité sort à moitié. L’autre moitié restera là, entre vous, pour toujours.', { l: { mefiance: 6 } }],
-  ], { si: vu('mc_ol_1') }),
+  ], {
+    si: (c) => vu('mc_ol_1')(c) && ombre(c) !== undefined,
+    textePour: (c, j) => {
+      const secrets = c.faits.filter((f) => ['ombre_sang', 'ombre_laisse', 'ordre_signe', 'ordre_refuse'].includes(f.id) && f.connus.includes(j) && !f.connus.includes(autre(j)));
+      return secrets.length ? 'Tu sais ce que tu as fait. {autre} ne le sait pas, ou fait semblant.' : '';
+    },
+  }),
+
+  scene('mc_ol_6', 'La statue', [32, 45], (c) => `Le village a décidé d’élever une statue au héros de la guerre, sur la grand-place. ${c.creations[lumiere(c) ?? 0].prenom} en bronze, trois fois plus grand que nature. Le jour de l’inauguration, le {kage} — vieux, maintenant — vous fait asseoir tous les deux au premier rang. Il sait ce qu’il fait. Il l’a toujours su.`, [
+    ['statue', 'Accepter la statue', 'observer'],
+  ], [
+    ['verite+reveler', 'Vous montez sur l’estrade ensemble. {un} parle du col, du journaliste, de l’ordre ; {deux} montre ses mains. La place se tait. Le {kage} ferme les yeux. Le lendemain, on grave un second nom sous la statue, plus grand que le premier.', { l: { confiance: 8, respect: 8 }, s: ['Le jour où vous avez tout dit, sous la statue.', 5, 'fier'], fx: [{ stat: 'social.loyaute', delta: -8 }], apres: (c) => { toutSavoir(c); chroniquer(c, 'On raconte que le héros de la guerre a révélé, le jour de sa statue, qu’il n’avait jamais été seul. Il y a deux noms sur le socle.'); if (connait(c, 'ordre_signe', 'kage') || connait(c, 'ombre_sang', 'kage')) c.combatEnAttente = 'combat_traite'; } }],
+    ['partager+rester', '{un} exige que les deux noms soient gravés. {deux} refuse d’en dire plus. Il y aura deux noms sur le socle, et personne ne saura pourquoi le second. C’est assez. C’est exactement assez.', { l: { loyaute: 8 }, s: ['Les deux noms sur le socle.', 5, 'chaud'], apres: (c) => chroniquer(c, 'Sous la statue du héros, il y a un second nom. Personne au village ne sait qui c’est.') }],
+    ['verite+*', '{un} dit tout, seul, devant la foule. {deux} n’est pas monté. Le village ne sait plus qui croire ; le {kage} parle de fatigue, de guerre, de souvenirs confus. La statue reste. {un} ne la regarde plus.', { un: { ressentiment: 4 }, deux: { dette: 6 }, apres: (c) => chroniquer(c, 'Le héros de la guerre a dit, le jour de sa statue, des choses que personne n’a comprises.') }],
+    ['*+reveler', '{deux} monte sur l’estrade, sans prévenir, et parle. {un} reste assis, la médaille dans le poing. Personne ne le croit tout à fait. Mais le soir, quelqu’un dépose des fleurs devant la porte de {deux}.', { deux: { respect: 4 }, un: { peur_de_perdre: 6 }, apres: (c) => { if (connait(c, 'ordre_signe', 'kage') || connait(c, 'ombre_sang', 'kage')) c.combatEnAttente = 'combat_traite'; } }],
+    ['statue+partir', 'Le bronze est dévoilé sous les applaudissements. Quand {un} se retourne, le siège de {deux} est vide. On ne le revoit pas au village. Des années plus tard, une lettre arrive, sans adresse : « Elle te ressemble. »', { un: { peur_de_perdre: 10 }, deux: { ressentiment: 6 }, s: ['Le siège vide, le jour de la statue.', 5, 'amer'], apres: (c) => chroniquer(c, 'Le jour de l’inauguration de la statue, quelqu’un a quitté le village pour toujours.') }],
+    ['statue+rester', 'La statue est dévoilée. Vous applaudissez tous les deux. Le soir, assis au pied du bronze, l’ombre dit : « Elle a mon courage et ton visage. C’est juste. » Vous restez là jusqu’à ce que les lanternes s’éteignent.', { l: { dependance: 6, confiance: 6 }, s: ['Au pied de la statue : « Ton visage, mon courage. »', 5, 'tragique'] }],
+    ['defaut', 'La statue est dévoilée. Vous la regardez tous les deux, longtemps. Elle ne ressemble à aucun de vous.', { l: { dependance: 3 } }],
+  ], {
+    si: (c) => vu('mc_ol_2')(c) && ombre(c) !== undefined,
+    choixPour: (c, j) => (ombre(c) === j
+      ? [
+        { id: 'rester', texte: 'Rester dans l’ombre, jusqu’au bout', famille: 'proteger' },
+        { id: 'reveler', texte: 'Sortir de l’ombre, enfin', famille: 'agir' },
+        { id: 'partir', texte: 'Partir, sans un mot', famille: 'partir' },
+      ]
+      : [
+        { id: 'statue', texte: 'Accepter la statue', famille: 'observer' },
+        { id: 'verite', texte: 'Dire la vérité au village : tout', famille: 'parler' },
+        { id: 'partager', texte: 'Exiger que les deux noms soient gravés', famille: 'proteger' },
+      ]),
+  }),
 ];
 
 // ── L'Akatsuki de votre temps ────────────────────────────────

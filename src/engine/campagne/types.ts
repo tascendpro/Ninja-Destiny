@@ -1,5 +1,5 @@
 // La campagne à deux : deux vies complètes (le format solo, inchangé), un lien entre elles, et ce qu'elles ont en commun.
-// Le moteur ne sait pas s'il tourne sur un téléphone partagé ou en ligne : il reçoit des actions ordonnées et rend un état.
+// Le moteur reçoit des actions ordonnées (deux joueurs sur un même téléphone, chacun à son tour) et rend un état.
 
 import type { Action, Creation, Effect, GameState } from '../types';
 import type { ActionCombat, EtatAffrontement } from '../combat/types';

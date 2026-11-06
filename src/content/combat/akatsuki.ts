@@ -24,7 +24,7 @@ export const TECHNIQUES_AKATSUKI: TechniqueAdverse[] = [
   T('ak_itachi_katon', 'Katon : Grande boule de feu', 22, 'katon', 'Une sphère de feu, parfaite, sans un geste de trop. Même son feu a quelque chose de triste.', 'La boule de feu roule sur vous tous, et le clone qui l’a lancée éclate en corbeaux.'),
   // Kisame
   T('ak_kisame_requins', 'Suiton : Mille requins', 30, 'suiton', 'L’eau se lève et se découpe en requins, des dizaines, qui fondent sur toi de toutes les directions.', 'Une marée de requins traverse vos rangs ; ceux qui tombent à l’eau ne remontent pas.'),
-  T('ak_kisame_prison', 'Suiton : Prison de la mer', 32, 'suiton', 'Une sphère d’eau immense se referme autour de toi. Dedans, {il} nage comme un requin, et ton chakra fuit par ta peau.', 'Il noie tout le terrain dans une prison d’eau ; il est le seul à y respirer.'),
+  { ...T('ak_kisame_prison', 'Suiton : Prison de la mer', 32, 'suiton', 'Une sphère d’eau immense se referme autour de toi. Dedans, {il} nage comme un requin, et ton chakra fuit par ta peau.', 'Il noie tout le terrain dans une prison d’eau ; il est le seul à y respirer.'), etat: { id: 'immobilise', tours: 2 } },
   T('ak_kisame_samehada', 'Samehada', 28, undefined, 'Son épée bandée t’effleure à peine. Les écailles te râpent le bras, et ton chakra s’en va avec la peau.', 'Samehada passe d’un corps à l’autre, et chacun sent son chakra lui être arraché.'),
   // Sasori
   T('ak_sasori_kazekage', 'Le Troisième Kazekage', 32, undefined, 'La marionnette ouvre la bouche et le sable de fer en sort, comme une tempête noire qui prend la forme de mille aiguilles.', 'Le sable de fer s’abat sur vous tous, en pointes, en murs, en vagues.'),
@@ -93,7 +93,7 @@ export const ADVERSAIRES_AKATSUKI: AdversaireDef[] = [
     nom: 'Kisame Hoshigaki',
     genre: 'm',
     niveau: 'kage',
-    temperament: 'joueur',
+    temperament: 'sadique',
     nature: 'suiton',
     stats: { endurance: 240, chakra: 260 },
     techniques: ['ak_kisame_requins', 'ak_kisame_prison', 'ak_kisame_samehada'],
@@ -157,7 +157,7 @@ export const ADVERSAIRES_AKATSUKI: AdversaireDef[] = [
     nom: 'Deidara',
     genre: 'm',
     niveau: 'elite',
-    temperament: 'feroce',
+    temperament: 'fier',
     techniques: ['ak_deidara_c1', 'ak_deidara_c2', 'ak_deidara_hiboux'],
     majeure: { nom: 'C3', puissance: 40, annonce: 'Il mâche longtemps, très longtemps, et façonne une statue d’argile grande comme un homme. Il sourit : « L’art, c’est une explosion. » Il va lâcher ça au-dessus de toi.' },
     habitudes: [
@@ -188,7 +188,7 @@ export const ADVERSAIRES_AKATSUKI: AdversaireDef[] = [
     nom: 'Hidan',
     genre: 'm',
     niveau: 'elite',
-    temperament: 'feroce',
+    temperament: 'fanatique',
     stats: { endurance: 220 },
     techniques: ['ak_hidan_faux', 'ak_hidan_lance'],
     majeure: { nom: 'Le rituel de Jashin', puissance: 42, annonce: 'Il lèche ton sang sur sa faux, et sa peau devient noire, striée d’os blancs. Il trace un cercle sur le sol avec son pied. Tout ce qu’il se fera, désormais, c’est toi qui le sentiras.' },

@@ -40,6 +40,8 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
   const [famille, setFamille] = useState<Famille | null>(null);
   const [choix, setChoix] = useState<string | null>(null);
   const [elan, setElan] = useState<DepenseElan | undefined>(undefined);
+  // Contre une escouade : qui viser. Par défaut, le premier qui barre le chemin.
+  const [cible, setCible] = useState<string | undefined>(undefined);
   const haut = useRef<HTMLDivElement>(null);
   const nbEntrees = v?.journal.length ?? 0;
 
@@ -50,9 +52,12 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
     if (nbEntrees > 1) haut.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }, [nbEntrees]);
 
+  const membres = v?.adversaire.membres;
+  const cibleValide = membres?.find((m) => m.id === cible && !m.horsCombat)?.id ?? membres?.find((m) => !m.horsCombat)?.id;
   const confirmer = (id = choix) => {
     if (!famille || !id) return;
-    onCombat({ famille, choix: id, ...(elan ? { elan } : {}) });
+    const viser = membres && (famille === 'taijutsu' || famille === 'ninjutsu' || famille === 'arme') ? cibleValide : undefined;
+    onCombat({ famille, choix: id, ...(elan ? { elan } : {}), ...(viser ? { cible: viser } : {}) });
   };
 
   // Raccourcis PC (§22.5) : 1-9 ouvrent une famille, Échap ferme, Entrée lance. Inactifs dans un champ de saisie.
@@ -141,7 +146,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
             </span>
             <div className="aff-carte-corps">
               <span className="aff-carte-nom">{etat.creation.prenom}</span>
-              <span className="aff-jauge" role="meter" aria-label="Ton endurance" aria-valuenow={pctJ} aria-valuemin={0} aria-valuemax={100}>
+              <span className="aff-jauge" role="meter" aria-label="Tes PV" aria-valuenow={pctJ} aria-valuemin={0} aria-valuemax={100}>
                 <i className="aff-endurance" style={{ width: `${pctJ}%` }} />
               </span>
               <span className="aff-jauge fine" role="meter" aria-label="Ton chakra" aria-valuenow={v.joueur.chakra} aria-valuemin={0} aria-valuemax={v.joueur.chakraMax}>
@@ -158,6 +163,11 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
                 )}
                 {gJ && <span className={`aff-pastille ${gJ.classe}`}>{accorder(gJ.mot, p)}</span>}
                 {v.joueur.sonne && <span className="aff-pastille sonne">{accorder('sonné·e', p)}</span>}
+                {v.joueur.etats.map((e) => (
+                  <span key={e} className="aff-pastille etat">
+                    {accorder(e, p)}
+                  </span>
+                ))}
                 <span className="aff-elan" aria-label={`Élan : ${v.joueur.elan} sur 3`}>
                   {[0, 1, 2].map((i) => (
                     <i key={i} className={i < v.joueur.elan ? 'plein' : ''} aria-hidden="true" />
@@ -180,7 +190,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
               <span className="aff-carte-nom">
                 {v.adversaire.nom} {v.adversaire.niveau && <small>{v.adversaire.niveau}</small>}
               </span>
-              <span className="aff-jauge" role="meter" aria-label={`Endurance de ${v.adversaire.nom}`} aria-valuenow={v.adversaire.pct} aria-valuemin={0} aria-valuemax={100}>
+              <span className="aff-jauge" role="meter" aria-label={`PV de ${v.adversaire.nom}`} aria-valuenow={v.adversaire.pct} aria-valuemin={0} aria-valuemax={100}>
                 <i className="aff-adv" style={{ width: `${v.adversaire.pct}%` }} />
               </span>
               <span className="aff-pastilles">
@@ -192,6 +202,13 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
                 )}
                 {gA && <span className={`aff-pastille ${gA.classe}`}>{accorder(gA.mot, 'masculin')}</span>}
                 {v.adversaire.sonne && <span className="aff-pastille sonne">souffle coupé</span>}
+                {v.adversaire.etats.map((e) => (
+                  <span key={e} className="aff-pastille etat">
+                    {accorder(e, 'masculin')}
+                  </span>
+                ))}
+                {v.adversaire.visage && <span className="aff-pastille visage">{v.adversaire.visage}</span>}
+                {v.adversaire.allie && <span className="aff-pastille allie">{v.adversaire.allie} avec toi</span>}
               </span>
             </div>
           </div>
@@ -226,7 +243,14 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
           </span>
           <div>
             <span className="aff-etiquette">{v.annonce.mortelle ? 'Danger' : 'Ce que tu lis'}</span>
-            <p>{accorder(v.annonce.texte, p)}</p>
+            {/* L'annonce, puis l'événement de la manche s'il y en a un (§5), dans son propre paragraphe. */}
+            {accorder(v.annonce.texte, p)
+              .split('\n\n')
+              .map((t, i) => (
+                <p key={i} className={i > 0 ? 'aff-evenement' : undefined}>
+                  {t}
+                </p>
+              ))}
             {v.annonce.fiabilite !== 'fiable' && <small>Lecture incertaine : ce n’est peut-être pas ce {elide('que', minusculeArticle(v.adversaire.nom))} prépare.</small>}
             {v.lecture.length > 0 && (
               <details className="aff-lecture">
@@ -252,7 +276,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
                 key={f.id}
                 type="button"
                 role="tab"
-                className={`aff-famille${famille === f.id ? ' active' : ''}`}
+                className={`aff-famille${famille === f.id ? ' active' : ''}${f.id === 'situation' ? ' situation' : ''}`}
                 aria-selected={famille === f.id}
                 aria-controls="aff-panneau"
                 onClick={() => {
@@ -270,6 +294,34 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
               </button>
             ))}
           </div>
+
+          {membres && (
+            <div className="aff-escouade" role="radiogroup" aria-label="Qui viser">
+              <span className="aff-escouade-titre">Viser</span>
+              {membres.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={cibleValide === m.id}
+                  disabled={m.horsCombat}
+                  className={`aff-membre r-${m.role}${cibleValide === m.id ? ' visee' : ''}${m.horsCombat ? ' hors' : ''}`}
+                  onClick={() => setCible(m.id)}
+                >
+                  <span className="aff-membre-kanji" aria-hidden="true">
+                    {m.kanji}
+                  </span>
+                  <span className="aff-membre-corps">
+                    <span className="aff-membre-nom">{m.nom}</span>
+                    <span className="aff-membre-etat">{m.parti ? 'enfui' : m.horsCombat ? 'à terre' : `${m.role} · ${m.pct} %`}</span>
+                    <span className="aff-membre-jauge" aria-hidden="true">
+                      <i style={{ width: `${m.horsCombat ? 0 : m.pct}%` }} />
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {fam ? (
             <div id="aff-panneau" className="aff-panneau" role="tabpanel" aria-label={`Actions : ${fam.nom}`}>
@@ -413,7 +465,7 @@ function BlocManche({ j, nom, p }: { j: Entree; nom: string; p: GameState['creat
         <h2>Manche {j.manche}</h2>
         {issue && <span className={`aff-issue ${issue.ton}`}>{issue.mot}</span>}
       </header>
-      {j.annonce && <p className="aff-annonce-passee">{accorder(j.annonce, p)}</p>}
+      {j.annonce && <p className="aff-annonce-passee">{accorder(j.annonce, p).replace(/\n\n/g, ' ')}</p>}
       <p className="aff-recit-manche">
         {accorder(j.execution, p)} {j.reponse && accorder(j.reponse, p)}
       </p>

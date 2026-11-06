@@ -35,21 +35,29 @@ export const CONTEXTES: Record<ContexteId, RegleContexte> = {
 };
 
 /**
- * Gabarits par niveau. Note d'équilibrage : les valeurs d'endurance du §8.2 sont multipliées par environ 1,6,
- * parce que l'endurance du joueur (§5.1) part de la santé (0-100) et dépasse largement celle du tableau.
- * L'attaque de base se place entre la frappe rapide et le coup puissant d'un joueur du même niveau.
- * Mesuré par simulation (tests/affrontement.test.ts) : un combat à niveau égal se gagne environ une fois sur deux.
+ * Gabarits par niveau. Les PV (champ « endurance ») suivent le tableau du §2.1 : enfant 30, élève 45, genin 70,
+ * chūnin 100, jōnin 140, élite 180, Kage 240, bijū 500. L'attaque de base se place entre la frappe rapide et le coup
+ * puissant d'un joueur du même niveau ; l'écart de rang (ecartDeRang) creuse ensuite les différences.
  */
 export const GABARITS: Record<NiveauAdv, StatsAdv> = {
-  enfant: { endurance: 40, chakra: 10, vitesse: 32, perception: 30, discretion: 25, force: 30, controle: 25, volonte: 25, substitutions: 0, defense: 12, attaque: 9 },
-  eleve: { endurance: 52, chakra: 25, vitesse: 40, perception: 40, discretion: 35, force: 36, controle: 35, volonte: 35, substitutions: 1, defense: 15, attaque: 11 },
+  enfant: { endurance: 30, chakra: 10, vitesse: 32, perception: 30, discretion: 25, force: 30, controle: 25, volonte: 25, substitutions: 0, defense: 12, attaque: 9 },
+  eleve: { endurance: 45, chakra: 25, vitesse: 40, perception: 40, discretion: 35, force: 36, controle: 35, volonte: 35, substitutions: 1, defense: 15, attaque: 11 },
   genin: { endurance: 70, chakra: 40, vitesse: 50, perception: 50, discretion: 45, force: 42, controle: 45, volonte: 45, substitutions: 2, defense: 19, attaque: 14 },
-  chunin: { endurance: 95, chakra: 60, vitesse: 60, perception: 60, discretion: 55, force: 50, controle: 55, volonte: 55, substitutions: 3, defense: 24, attaque: 18 },
-  jonin: { endurance: 125, chakra: 85, vitesse: 70, perception: 70, discretion: 65, force: 60, controle: 65, volonte: 65, substitutions: 4, defense: 30, attaque: 23 },
-  elite: { endurance: 155, chakra: 110, vitesse: 80, perception: 80, discretion: 75, force: 68, controle: 75, volonte: 75, substitutions: 4, defense: 36, attaque: 28 },
-  kage: { endurance: 200, chakra: 160, vitesse: 88, perception: 88, discretion: 85, force: 78, controle: 85, volonte: 85, substitutions: 5, defense: 44, attaque: 34 },
-  biju: { endurance: 280, chakra: 999, vitesse: 70, perception: 70, discretion: 40, force: 90, controle: 60, volonte: 90, substitutions: 0, defense: 50, attaque: 42 },
+  chunin: { endurance: 100, chakra: 60, vitesse: 60, perception: 60, discretion: 55, force: 50, controle: 55, volonte: 55, substitutions: 3, defense: 24, attaque: 18 },
+  jonin: { endurance: 140, chakra: 85, vitesse: 70, perception: 70, discretion: 65, force: 60, controle: 65, volonte: 65, substitutions: 4, defense: 30, attaque: 23 },
+  elite: { endurance: 180, chakra: 110, vitesse: 80, perception: 80, discretion: 75, force: 68, controle: 75, volonte: 75, substitutions: 4, defense: 36, attaque: 28 },
+  kage: { endurance: 240, chakra: 160, vitesse: 88, perception: 88, discretion: 85, force: 78, controle: 85, volonte: 85, substitutions: 5, defense: 44, attaque: 34 },
+  biju: { endurance: 500, chakra: 999, vitesse: 70, perception: 70, discretion: 40, force: 90, controle: 60, volonte: 90, substitutions: 0, defense: 50, attaque: 42 },
 };
+
+/**
+ * Plus l'écart de rang est grand, plus le fort frappe fort et le faible frappe faiblement (§2.1) :
+ * un jōnin contre un genin frappe ×1,36 ; un genin contre un jōnin, ×0,56 ; contre un Kage, ×0,35.
+ */
+export function ecartDeRang(attaquant: NiveauAdv, cible: NiveauAdv): number {
+  const d = NIVEAUX.indexOf(attaquant) - NIVEAUX.indexOf(cible);
+  return d >= 0 ? 1 + 0.18 * d : Math.max(0.35, 1 + 0.22 * d);
+}
 
 export const LIBELLE_NIVEAU: Record<NiveauAdv, string> = {
   enfant: 'enfant',

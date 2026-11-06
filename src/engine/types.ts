@@ -382,6 +382,8 @@ export interface TechniqueAdverse {
   escouade: string;
   /** Technique signature d'un adversaire nommé : jamais tirée pour un adversaire ordinaire. */
   signature?: boolean;
+  /** L'état qu'elle te laisse quand elle te touche (une prison d'eau t'immobilise). */
+  etat?: { id: import('./combat/etats').EtatId; tours: number };
 }
 
 // ── Bibliothèque des lieux (décors illustrés) ──
@@ -568,6 +570,8 @@ export interface TechniqueDef {
  */
 export interface TactiqueTechnique {
   effets?: ('rapide' | 'precis' | 'perce' | 'desequilibre' | 'interrompt' | 'achevement' | 'ouverture')[];
+  /** L'état qu'elle laisse quand elle porte (§2.3) : une entrave immobilise, le poing souple bloque le chakra. */
+  etat?: { id: import('./combat/etats').EtatId; tours: number };
   defense?: number;
   terrain?: { etat: import('../content/combat/synergies').EtatTerrain; manches: number };
 }

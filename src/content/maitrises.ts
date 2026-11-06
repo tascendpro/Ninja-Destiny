@@ -320,7 +320,7 @@ const TECHNIQUES: MasteryDef[] = [
   // Genjutsu
   T('gen_brume', 'Genjutsu : Brume de terreur', 'D', 'Une peur sans visage qui fait trembler les mains.', off('genjutsu', 7, 8, [{ maitrise: 'genjutsu', palierMin: 1 }])),
   T('gen_reflet', 'Genjutsu : Faux reflet', 'C', 'L’adversaire frappe ton reflet, jamais toi.', off('genjutsu', 11, 14, [{ maitrise: 'genjutsu', palierMin: 2 }])),
-  T('gen_etreinte', 'Genjutsu : Étreinte de l’arbre', 'B', 'Des branches imaginaires qui immobilisent, le temps d’un coup.', off('genjutsu', 17, 24, [{ maitrise: 'genjutsu', palierMin: 3 }])),
+  T('gen_etreinte', 'Genjutsu : Étreinte de l’arbre', 'B', 'Des branches imaginaires qui immobilisent, le temps d’un coup.', { ...off('genjutsu', 17, 24, [{ maitrise: 'genjutsu', palierMin: 3 }]), tactique: { etat: { id: 'immobilise', tours: 1 } } }),
 
   // Armes : aucune limite de chakra, seulement de maîtrise
   T('arme_pluie', 'Pluie de kunai', 'D', 'Lancer dix kunai comme on en lance un.', off('armes', 7, 0, [{ maitrise: 'famille_kunai', palierMin: 1 }], 'partout')),
@@ -451,7 +451,7 @@ const TECHNIQUES_YEUX: MasteryDef[] = [
   T('susanoo', 'Susanoo', 'A', 'Un géant de chakra qui te protège et frappe à ta place. Chaque usage te brûle de l’intérieur.', off('dojutsu', 32, 48, [{ maitrise: 'mangekyo', palierMin: 1 }, { maitrise: 'sharingan', palierMin: 3 }], 'partout', 12)),
   T('shinra_tensei', 'Shinra Tensei', 'A', 'Tout ce qui t’entoure est repoussé d’un seul coup, avec la force d’une montagne.', off('dojutsu', 30, 36, [{ maitrise: 'rinnegan', palierMin: 1 }], 'partout')),
   T('bansho_tenin', 'Banshō Ten’in', 'B', 'L’adversaire est arraché à sa garde et attiré vers toi.', off('dojutsu', 20, 22, [{ maitrise: 'rinnegan', palierMin: 1 }], 'partout')),
-  T('chibaku_tensei', 'Chibaku Tensei', 'S', 'Une sphère noire qui arrache la terre et en fait une prison de pierre suspendue dans le ciel.', off('dojutsu', 42, 60, [{ maitrise: 'rinnegan', palierMin: 3 }], 'partout', 10)),
+  T('chibaku_tensei', 'Chibaku Tensei', 'S', 'Une sphère noire qui arrache la terre et en fait une prison de pierre suspendue dans le ciel.', { ...off('dojutsu', 42, 60, [{ maitrise: 'rinnegan', palierMin: 3 }], 'partout', 10), tactique: { etat: { id: 'immobilise', tours: 2 } } }),
   T('rinne_amenotejikara', 'Rinne Sharingan : Amenotejikara', 'A', 'Échanger ta place avec n’importe quoi dans ton champ de vision, en un battement de cils.', off('dojutsu', 32, 34, [{ maitrise: 'rinnegan', palierMin: 1 }, { maitrise: 'mangekyo', palierMin: 1 }], 'partout', 6)),
   T('rinne_limbo', 'Rinne Sharingan : Limbo', 'S', 'Des ombres invisibles dans un monde que seul ton œil voit, et qui frappent dans celui-ci.', off('dojutsu', 40, 50, [{ maitrise: 'rinnegan', palierMin: 2 }, { maitrise: 'mangekyo', palierMin: 2 }], 'partout', 10)),
 ];
@@ -946,11 +946,13 @@ const TECHNIQUES_CLANS: MasteryDef[] = [
   // Hyūga
   T('hyuga_kusho', 'Hakke Kūshō (Paume du vide)', 'C', 'Une paume lancée dans le vide : l’onde de chakra frappe à plusieurs mètres.', off('taijutsu', 11, 6, [req('juken', 2)], 'partout'), C('hyuga')),
   T('hyuga_kaiten', 'Hakkeshō Kaiten (Tourbillon divin)', 'B', 'Expulser du chakra par tous les points du corps en tournant sur soi : une sphère qui repousse tout.', off('taijutsu', 16, 14, [req('juken', 3), req('byakugan', 2)], 'partout'), C('hyuga')),
-  T('hyuga_64', 'Hakke Rokujūyon Shō (Soixante-quatre coups)', 'B', 'Soixante-quatre frappes qui ferment, une à une, les points de chakra de l’adversaire.', off('taijutsu', 18, 16, [req('juken', 3), req('byakugan', 2)], 'partout'), C('hyuga')),
+  T('hyuga_64', 'Hakke Rokujūyon Shō (Soixante-quatre coups)', 'B', 'Soixante-quatre frappes qui ferment, une à une, les points de chakra de l’adversaire.', { ...off('taijutsu', 18, 16, [req('juken', 3), req('byakugan', 2)], 'partout'), tactique: { etat: { id: 'chakra_bloque', tours: 2 } } }, C('hyuga')),
   T('hyuga_128', 'Hakke Hyaku Nijūhachi Shō (Cent vingt-huit coups)', 'A', 'La version que seuls les maîtres du Jūken atteignent : cent vingt-huit points fermés.', off('taijutsu', 24, 22, [req('juken', 4), req('byakugan', 3)], 'partout'), C('hyuga')),
   // Nara
-  T('nara_kubi', 'Kage Kubi Shibari (Étranglement de l’ombre)', 'B', 'L’ombre liée remonte le long du corps adverse et se referme sur sa gorge.', off('ninjutsu', 15, 16, [req('kagemane', 2)], 'partout'), C('nara')),
-  T('nara_nui', 'Kage Nui (Couture de l’ombre)', 'A', 'Des aiguilles d’ombre solidifiée qui transpercent et cousent l’ennemi sur place.', off('ninjutsu', 21, 22, [req('kagemane', 3)], 'partout'), C('nara')),
+  // La liaison de l'ombre : elle ne blesse presque pas, elle immobilise. Les autres techniques de l'ombre en partent.
+  T('nara_liaison', 'Kage Mane (Liaison de l’ombre)', 'C', 'Ton ombre s’allonge sur le sol et rejoint la sienne : tant que tu tiens, ton adversaire fait ce que tu fais.', { ...off('ninjutsu', 3, 12, [req('kagemane', 1)], 'partout'), tactique: { etat: { id: 'immobilise', tours: 2 } } }, C('nara')),
+  T('nara_kubi', 'Kage Kubi Shibari (Étranglement de l’ombre)', 'B', 'L’ombre liée remonte le long du corps adverse et se referme sur sa gorge.', { ...off('ninjutsu', 15, 16, [req('kagemane', 2)], 'partout'), tactique: { etat: { id: 'immobilise', tours: 1 } } }, C('nara')),
+  T('nara_nui', 'Kage Nui (Couture de l’ombre)', 'A', 'Des aiguilles d’ombre solidifiée qui transpercent et cousent l’ennemi sur place.', { ...off('ninjutsu', 21, 22, [req('kagemane', 3)], 'partout'), tactique: { etat: { id: 'immobilise', tours: 2 } } }, C('nara')),
   // Yamanaka
   T('yamanaka_shinranshin', 'Shinranshin (Confusion de l’esprit)', 'B', 'Prendre le contrôle du corps adverse sans quitter le sien : il frappe ses alliés.', off('genjutsu', 15, 14, [req('shintenshin', 2)], 'partout'), C('yamanaka')),
   // Akimichi
@@ -980,7 +982,7 @@ const TECHNIQUES_CLANS: MasteryDef[] = [
   T('yuki_sensatsu', 'Sensatsu Suishō (Mille aiguilles de glace)', 'C', 'L’humidité de l’air gèle en mille aiguilles qui se referment sur la cible.', off('ninjutsu', 14, 14, [req('hyoton', 1)], 'partout'), C('yuki')),
   T('yuki_haryu', 'Haryū Mōko (Tigre de glace)', 'A', 'Un tigre de glace géant qui dévore tout sur son passage.', off('ninjutsu', 24, 28, [req('hyoton', 3)], 'partout'), C('yuki')),
   // Uzumaki
-  T('uzumaki_kongo', 'Kongō Fūsa (Chaînes adamantines)', 'A', 'Des chaînes de chakra qui sortent du dos et immobilisent même une bête à queues.', off('fuinjutsu', 22, 20, [req('chaines_chakra', 2)], 'partout'), C('uzumaki')),
+  T('uzumaki_kongo', 'Kongō Fūsa (Chaînes adamantines)', 'A', 'Des chaînes de chakra qui sortent du dos et immobilisent même une bête à queues.', { ...off('fuinjutsu', 22, 20, [req('chaines_chakra', 2)], 'partout'), tactique: { etat: { id: 'immobilise', tours: 2 } } }, C('uzumaki')),
   T(
     'shiki_fujin',
     'Shiki Fūjin (Sceau du dieu de la mort)',
@@ -1009,7 +1011,7 @@ const TECHNIQUES_CLANS: MasteryDef[] = [
   T('futton_gokamugen', 'Futton : Gōka Mugen (Vapeur infinie)', 'B', 'Création du jeu. Une vapeur bouillante qui avance comme un mur et cuit tout ce qu’elle enveloppe.', off('fusion', 20, 26, [req('futton', 2)], 'partout'), { kekkeiGenkai: true, copiable: false }),
   T('ranton_reiza', 'Ranton : Reizā Sākasu (Cirque de lasers)', 'B', 'Des dizaines de rayons d’orage qui se courbent et poursuivent leurs cibles.', off('fusion', 20, 26, [req('ranton', 2)], 'partout'), { kekkeiGenkai: true, copiable: false }),
   T('yoton_yokai', 'Yōton : Yōkai no Jutsu (Lave dissolvante)', 'B', 'Une boue de lave acide crachée qui dissout la roche et la chair.', off('fusion', 20, 26, [req('yoton', 2)], 'partout'), { kekkeiGenkai: true, copiable: false }),
-  T('jiton_kinsa', 'Jiton : Kinsa (Poussière d’or)', 'B', 'Le magnétisme appliqué à la poussière d’or : plus lourde que le sable de fer, elle écrase et emprisonne.', off('fusion', 20, 24, [req('jiton', 2)], 'partout'), { kekkeiGenkai: true, copiable: false }),
+  T('jiton_kinsa', 'Jiton : Kinsa (Poussière d’or)', 'B', 'Le magnétisme appliqué à la poussière d’or : plus lourde que le sable de fer, elle écrase et emprisonne.', { ...off('fusion', 20, 24, [req('jiton', 2)], 'partout'), tactique: { etat: { id: 'immobilise', tours: 1 } } }, { kekkeiGenkai: true, copiable: false }),
   T('shakuton_kajosatsu', 'Shakuton : Kajōsatsu (Dessèchement)', 'A', 'Des sphères de chaleur qui assèchent un corps en quelques secondes.', off('fusion', 24, 30, [req('shakuton', 3)], 'partout'), { kekkeiGenkai: true, copiable: false }),
   T(
     'bakuton_c0',

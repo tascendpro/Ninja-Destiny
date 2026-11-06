@@ -9,6 +9,8 @@ import type { AdversaireDef, EtatAffrontement, IntentionAdv, NiveauAdv, StatsAdv
 import { INTENTIONS, NIVEAUX } from './types';
 import { PREFIXE_GENERIQUE, adversaireGenerique, identiteGeneree } from './generique';
 import { GABARITS, indexNiveau, niveauJoueur } from './contextes';
+import { effetsMoral, moralDe } from './esprit';
+import { aEtat, modificateurs } from './etats';
 
 export function adversaireDef(id: string): AdversaireDef {
   if (id.startsWith(PREFIXE_GENERIQUE)) return adversaireGenerique(id);
@@ -67,6 +69,13 @@ const BASE: Record<Temperament, Record<IntentionAdv, number>> = {
   froid: { attaque: 25, technique: 30, defense: 15, observer: 20, parler: 2, fuir: 3, preparer: 10, majeure: 0 },
   desespere: { attaque: 40, technique: 25, defense: 5, observer: 0, parler: 10, fuir: 10, preparer: 10, majeure: 0 },
   fier: { attaque: 35, technique: 30, defense: 15, observer: 5, parler: 5, fuir: 0, preparer: 15, majeure: 0 },
+  // Le sadique s'acharne sur ce qui saigne ; l'honorable attend son heure ; le fanatique ne recule jamais ;
+  // le terrifié cherche la sortie ; le vétéran économise ses forces et parle avant de frapper.
+  sadique: { attaque: 40, technique: 25, defense: 5, observer: 5, parler: 15, fuir: 0, preparer: 10, majeure: 0 },
+  honorable: { attaque: 30, technique: 30, defense: 20, observer: 10, parler: 5, fuir: 0, preparer: 5, majeure: 0 },
+  fanatique: { attaque: 40, technique: 35, defense: 5, observer: 0, parler: 0, fuir: 0, preparer: 20, majeure: 0 },
+  terrifie: { attaque: 20, technique: 15, defense: 25, observer: 5, parler: 15, fuir: 20, preparer: 0, majeure: 0 },
+  veteran: { attaque: 25, technique: 25, defense: 20, observer: 15, parler: 10, fuir: 0, preparer: 5, majeure: 0 },
 };
 
 /** Le tempérament courant, après une éventuelle bascule. */
@@ -112,6 +121,24 @@ export function scoresIntentions(s: GameState, sc: EtatAffrontement, d: Adversai
   }
   // Provoqué, un fier ou un féroce charge.
   if (sc.provoque) sc0.attaque += 50;
+  // Son moral : la peur pousse à fuir ou à se rendre, la colère à charger (§4.3).
+  const m = moralDe(sc);
+  const em = effetsMoral(sc);
+  sc0.fuir += em.fuite;
+  sc0.parler += em.reddition;
+  if (m.colere > 60) {
+    sc0.attaque += 20;
+    sc0.observer = Math.max(0, sc0.observer - 10);
+  }
+  // Sa personnalité devant ce qui se passe (§3.3).
+  const pctJ = sc.joueur.endurance / sc.joueur.enduranceMax;
+  if (t === 'sadique' && pctJ < 0.4) sc0.attaque += 25;
+  if (t === 'honorable' && pctJ < 0.2) sc0.parler += 40;
+  if (t === 'veteran' && sc.manche <= 2) sc0.parler += 10;
+  if (t === 'fanatique') sc0.fuir = sc0.parler = 0;
+  // Ses états : chakra bloqué, plus de techniques ; immobilisé, il ne fuit pas.
+  if (modificateurs(sc.adv).sansChakra) sc0.technique = sc0.preparer = 0;
+  if (aEtat(sc.adv, 'immobilise')) sc0.fuir = 0;
   // La technique majeure ne se lance qu'après avoir été préparée (et donc annoncée).
   sc0.majeure = 0;
   for (const k of INTENTIONS) sc0[k] = Math.max(0, sc0[k]);

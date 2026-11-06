@@ -85,6 +85,7 @@ export const RECITS: ContenuRacine['recits'] = {
   // ── Les fins ──
   'fin:victoire': ['{nom} est à terre, et n’essaie plus de se relever.', 'C’est fini. {nom} reste au sol, le souffle court.', 'Le dernier coup porte. {nom} ne se relève pas tout de suite.'],
   'fin:defaite': ['Tu es à terre. Le ciel tourne au-dessus de toi.', 'Tes jambes ne te portent plus. Tu tombes à genoux.', 'Le dernier coup te met au sol. Tu n’arrives plus à te relever.'],
+  'fin:interrompu': ['Le combat s’arrête là, sans vainqueur ni vaincu.', 'Il n’y aura pas de fin à ce combat. Pas aujourd’hui.'],
   'fin:paix': ['Vous restez face à face, essoufflés. Personne ne frappe plus.', 'Les poings retombent. Le combat est fini, sans vainqueur.'],
   'fin:fuite': ['Tu cours, sans te retourner, jusqu’à ce que le bruit du combat disparaisse.'],
   'fin:fuite_adverse': ['{nom} recule d’un bond, puis d’un autre, et disparaît.', '{nom} a choisi de partir. Tu n’essaies pas de suivre.'],

@@ -5,11 +5,13 @@
 
 import type { Condition, Effect, ElementId, Texte } from '../types';
 
-export type Famille = 'taijutsu' | 'ninjutsu' | 'arme' | 'pouvoir' | 'defense' | 'objet' | 'observation' | 'parole' | 'fuite';
+export type Famille = 'situation' | 'taijutsu' | 'ninjutsu' | 'arme' | 'pouvoir' | 'defense' | 'objet' | 'observation' | 'parole' | 'fuite';
 /** Ordre d'affichage, et ordre de priorité quand l'âge limite le nombre de familles visibles. */
-export const FAMILLES: Famille[] = ['taijutsu', 'ninjutsu', 'arme', 'pouvoir', 'defense', 'objet', 'observation', 'parole', 'fuite'];
+export const FAMILLES: Famille[] = ['situation', 'taijutsu', 'ninjutsu', 'arme', 'pouvoir', 'defense', 'objet', 'observation', 'parole', 'fuite'];
 
-export type Temperament = 'prudent' | 'feroce' | 'joueur' | 'froid' | 'desespere' | 'fier';
+/** Les personnalités (§3.3) : « fier » est l'arrogant ; « desespere » celui qui n'a plus rien à perdre. */
+export type Temperament = 'prudent' | 'feroce' | 'joueur' | 'froid' | 'desespere' | 'fier' | 'sadique' | 'honorable' | 'fanatique' | 'terrifie' | 'veteran';
+export const TEMPERAMENTS: Temperament[] = ['prudent', 'feroce', 'joueur', 'froid', 'desespere', 'fier', 'sadique', 'honorable', 'fanatique', 'terrifie', 'veteran'];
 export type NiveauAdv = 'enfant' | 'eleve' | 'genin' | 'chunin' | 'jonin' | 'elite' | 'kage' | 'biju';
 export const NIVEAUX: NiveauAdv[] = ['enfant', 'eleve', 'genin', 'chunin', 'jonin', 'elite', 'kage', 'biju'];
 
@@ -27,7 +29,7 @@ export type Fiabilite = 'fiable' | 'vague' | 'trompeur';
 export type IssueOffensive = 'ratee' | 'predite' | 'annulee' | 'dominee' | 'ecrasee' | 'touche' | 'surprise' | 'decisive';
 
 /** Comment un affrontement se termine. */
-export type FinCombat = 'victoire' | 'defaite' | 'paix' | 'fuite' | 'fuite_adverse' | 'reddition_adverse' | 'departage_gagne' | 'departage_perdu' | 'departage_nul';
+export type FinCombat = 'victoire' | 'defaite' | 'paix' | 'fuite' | 'fuite_adverse' | 'reddition_adverse' | 'departage_gagne' | 'departage_perdu' | 'departage_nul' | 'interrompu';
 
 export type DepenseElan = 'puissance' | 'decisif';
 
@@ -89,7 +91,14 @@ export type CategorieReplique =
   | 'victoire_adv'
   | 'defaite_adv'
   | 'paix'
-  | 'fuite_joueur';
+  | 'fuite_joueur'
+  | 'comprise'
+  | 'erronee'
+  | 'menace'
+  | 'question'
+  | 'supplique'
+  | 'joueur_en_difficulte'
+  | 'evenement';
 
 /** Faits réels de la partie qu'une réplique peut exiger : le moteur sélectionne, il n'invente pas (§9). */
 export interface QuandReplique {
@@ -157,6 +166,8 @@ export interface AdversaireDef {
   genre?: 'm' | 'f';
   /** Plusieurs ennemis : une technique de zone les prend tous, une ciblée n'en touche qu'un. */
   escouade?: boolean;
+  /** Les membres d'une escouade, s'ils ne sont pas ceux par défaut (un chef, un soigneur, deux combattants). */
+  membres?: { nom: string; role: import('./escouade').RoleMembre; part: number }[];
   /** Ce qu'il est (bête, bandit, élève…) : sa voix, ses annonces, ses fins. Une bête ne parle pas et ne compose pas de signes. */
   type?: import('../../content/combat/generiques').TypeAdversaire;
   /** Ninja sans nom propre : son nom, son genre et son village sont tirés de la graine de la partie. */
@@ -205,12 +216,15 @@ export interface RegistreAdversaire {
 }
 
 export interface CombattantEtat {
+  /** Les PV de combat (le nom « endurance » est resté dans le code). */
   endurance: number;
   enduranceMax: number;
   garde: Garde;
   /** États temporaires : manches restantes. */
   sonne: number;
   vide: number;
+  /** États de combat (§2.3) : manches restantes. */
+  etats?: Partial<Record<import('./etats').EtatId, number>>;
 }
 
 /** Ce qu'une manche a donné : affiché en trois blocs, puis la phrase-cause (§7.5). */
@@ -268,7 +282,7 @@ export interface EtatAffrontement {
   plafond: number;
   plafondVisible: boolean;
   joueur: CombattantEtat;
-  adv: CombattantEtat & { chakra: number; substitutions: number };
+  adv: CombattantEtat & { chakra: number; substitutions: number; moral?: import('./esprit').Moral; membres?: import('./escouade').MembreEscouade[] };
   elan: number;
   intention: IntentionAdv;
   techniqueAdv?: string;
@@ -310,12 +324,24 @@ export interface EtatAffrontement {
   derniereSynergie?: string;
   /** L'adversaire n'y voit plus (poussière, vapeur) : sa prochaine attaque part moins bien. */
   advAveugle?: number;
+  /** Ce qu'il a compris de tes actions (§3.1) ; « erronee » : il croit savoir, à tort. */
+  comprises?: Record<string, 'comprise' | 'erronee'>;
+  /** L'événement en cours (§5) : il ouvre la famille « Situation » pour cette manche. */
+  evenement?: { id: string; manche: number };
+  /** Les événements déjà survenus dans ce combat (aucun ne revient). */
+  evenementsVus?: string[];
+  /** Un allié arrivé en renfort : il frappe à chaque manche. */
+  allie?: { nom: string; degats: number; manches: number };
+  /** Tu l'as questionné : sa motivation est connue. */
+  questionne?: boolean;
 }
 
 export interface ActionCombat {
   famille: Famille;
   choix: string;
   elan?: DepenseElan;
+  /** Contre une escouade : le membre visé (le chef, le soigneur…). */
+  cible?: string;
 }
 
 /** Le contenu du combat, enregistré dans le registre (R.contenu.racine). */

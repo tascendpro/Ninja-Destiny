@@ -12,7 +12,12 @@ import { applyCombatExperience } from '../maitrise';
 import { noterMerite } from '../progression';
 import { CHANCE_MORT } from '../epreuves';
 import type { ActionCombat, AdversaireDef, AffrontementDef, EtatAffrontement, FinCombat, IntentionAdv, RegistreAdversaire } from './types';
-import { CONTEXTES, LIBELLE_NIVEAU, bonusRang, fourchettePlafond, indexNiveau, niveauJoueur } from './contextes';
+import { CONTEXTES, GABARITS, LIBELLE_NIVEAU, bonusRang, fourchettePlafond, indexNiveau, niveauJoueur } from './contextes';
+import { declencherEvenement } from './evenements';
+import { KANJI_ROLE, composerEscouade, synchroniser } from './escouade';
+import { etatsVisibles } from './etats';
+import { visageDe } from './esprit';
+import { PENSEES_JOUEUR, REPLIQUES_PERSONNALITE } from '../../content/combat/personnalites';
 import { adversaireDef, niveauAdversaire, nomAdversaire, registreDe, statsAdversaire, techniquesAdversaire, temperamentCourant, tirerIntention } from './adversaire';
 import { TAIJUTSU, ACTIONS_FIXES, ARME, armeEnMain, familles, resoudre, validerAction } from './resolution';
 import { CONSOMMABLE } from '../consommables';
@@ -80,11 +85,14 @@ export function avecNom(t: string, nom: string): string {
   });
 }
 
-/** Endurance de départ du joueur (§5.1). */
+/**
+ * Les PV de départ du joueur (§2.1) : ceux de son rang, un peu plus s'il est fort, moins s'il arrive blessé ou mal
+ * en point. La santé (hors combat) n'est pas les PV : elle les entame seulement.
+ */
 export function enduranceJoueur(s: GameState): number {
   const n = niveauJoueur(s);
   const malus = s.blessures.reduce((a, b) => a + (b.gravite >= 3 ? 0.3 : b.gravite === 2 ? 0.15 : 0.05), 0);
-  return Math.max(10, Math.round((30 + 0.5 * s.jauges.sante + 0.2 * s.attributs.force + bonusRang(n)) * (1 - Math.min(0.5, malus))));
+  return Math.max(10, Math.round((GABARITS[n].endurance * (0.6 + 0.4 * (s.jauges.sante / 100)) + 0.2 * s.attributs.force + bonusRang(n)) * (1 - Math.min(0.5, malus))));
 }
 
 function nouveauRegistre(id: string): RegistreAdversaire {
@@ -119,7 +127,7 @@ export function ouvrirAffrontement(s: GameState, ev: EventDef, ch: ChoiceDef): v
     plafond,
     plafondVisible: CONTEXTES[af.contexte].plafondAnnonce,
     joueur: { endurance: endJ, enduranceMax: endJ, garde: 'ouverte', sonne: 0, vide: 0 },
-    adv: { endurance: st.endurance, enduranceMax: st.endurance, garde: 'ouverte', sonne: 0, vide: 0, chakra: st.chakra, substitutions: st.substitutions },
+    adv: { endurance: st.endurance, enduranceMax: st.endurance, garde: 'ouverte', sonne: 0, vide: 0, chakra: st.chakra, substitutions: st.substitutions, membres: d.escouade ? composerEscouade(d, st.endurance) : undefined },
     elan: 0,
     intention: 'attaque',
     annonce: { texte: '', fiabilite: 'vague' },
@@ -172,7 +180,7 @@ export function creerAffrontement(
     plafond: o.plafond,
     plafondVisible: true,
     joueur: { endurance: endJ, enduranceMax: endJ, garde: 'ouverte', sonne: 0, vide: 0 },
-    adv: { endurance: endA, enduranceMax: endA, garde: 'ouverte', sonne: 0, vide: 0, chakra: st.chakra, substitutions: st.substitutions },
+    adv: { endurance: endA, enduranceMax: endA, garde: 'ouverte', sonne: 0, vide: 0, chakra: st.chakra, substitutions: st.substitutions, membres: d.escouade ? composerEscouade(d, endA) : undefined },
     elan: 0,
     intention: 'attaque',
     annonce: { texte: '', fiabilite: 'vague' },
@@ -225,6 +233,9 @@ export function ouvrirManche(s: GameState, sc: EtatAffrontement, d: AdversaireDe
     sc.avertissementManche = sc.manche;
     texte += ' Son regard change : {il} ne cherche plus à te blesser. {Il} cherche à en finir.';
   }
+  // Un événement peut surgir (§5) : il s'ajoute à l'annonce et ouvre la famille « Situation ».
+  const evt = declencherEvenement(s, sc, d, alea(s));
+  if (evt) texte += `\n\n${evt}`;
   sc.annonce = { texte: texteAdv(s, sc, d, texte), fiabilite: fiab, mortelle };
 }
 
@@ -252,7 +263,7 @@ export function jouerAffrontement(s: GameState, a: ActionCombat, ctx: Ctx): Conc
   const sc = s.scene;
   const d = adversaireDef(sc.adversaireId);
   validerAction(s, sc, a);
-  const r = { exec: alea(s), reponse: alea(s), execAdv: alea(s), variation: alea(s), decisif: alea(s), texte: alea(s), replique: alea(s) };
+  const r = { exec: alea(s), reponse: alea(s), execAdv: alea(s), variation: alea(s), decisif: alea(s), texte: alea(s), replique: alea(s), etat: alea(s), analyse: alea(s) };
   const annonce = sc.annonce.texte;
   const res = resoudre(s, sc, d, a, r);
   const entree = composerManche(s, sc, d, a, res, annonce, r.texte, r.replique);
@@ -353,8 +364,8 @@ export function composerManche(s: GameState, sc: EtatAffrontement, d: Adversaire
     sc.distance = lourd ? 'loin' : distance;
   } else if (a.famille === 'defense' || a.famille === 'fuite') sc.distance = 'loin';
   else if (sc.intention === 'attaque' || a.famille === 'taijutsu' || a.famille === 'arme') sc.distance = 'proche';
-  if (res.inflige > 0) impact += avecNom(` (−${res.inflige} endurance pour {nom})`, sc.nomAdversaire);
-  if (res.subi > 0) impact += ` ${d.type === 'bete' ? choisirVariante(COUPS_BETE, rTexte) : vari('adv:touche')} ${texteImpactJoueur(s, res.subi >= sc.joueur.enduranceMax * 0.2 ? 'lourd' : 'leger', `${sc.manche}`)} (−${res.subi} endurance)`;
+  if (res.inflige > 0) impact += avecNom(` (−${res.inflige} PV pour {nom})`, sc.nomAdversaire);
+  if (res.subi > 0) impact += ` ${d.type === 'bete' ? choisirVariante(COUPS_BETE, rTexte) : vari('adv:touche')} ${texteImpactJoueur(s, res.subi >= sc.joueur.enduranceMax * 0.2 ? 'lourd' : 'leger', `${sc.manche}`)} (−${res.subi} PV)`;
   // Une réplique au plus par manche, selon ce qui vient de se passer.
   const faits: FaitsManche = { dejaVue: res.dejaVue, inedite: res.inedite, repetition: res.repetition, issue: res.issue };
   const pct = sc.adv.endurance / sc.adv.enduranceMax;
@@ -367,6 +378,8 @@ export function composerManche(s: GameState, sc: EtatAffrontement, d: Adversaire
     res.inflige > 0 && !sc.journal.some((j) => j.issue === 'touche' || j.issue === 'surprise') ? 'reussite_joueur' : undefined,
     pct < 0.25 && pct > 0 ? 'defaite_imminente' : undefined,
     sc.intention === 'preparer' ? 'preparation' : undefined,
+    sc.joueur.endurance / sc.joueur.enduranceMax < 0.3 ? 'joueur_en_difficulte' : undefined,
+    res.inflige > 0 ? 'blessure' : undefined,
   ].filter(Boolean) as string[];
   // Une technique relancée appelle d'abord une réaction de l'adversaire : la sienne s'il en a une, sinon une générique.
   if (deja >= 1) cats.splice(1, 0, 'repetition');
@@ -385,6 +398,23 @@ export function composerManche(s: GameState, sc: EtatAffrontement, d: Adversaire
         break;
       }
     }
+    // Sa personnalité parle quand il n'a pas de réplique à lui (§4.2). Une bête ne parle pas ; on ne répète rien.
+    const voix = d.type === 'bete' ? undefined : REPLIQUES_PERSONNALITE[sc.temperament]?.[c as keyof (typeof REPLIQUES_PERSONNALITE)['fier']];
+    const libres = (voix ?? []).map((t, i) => ({ t, k: `perso:${sc.temperament}:${c}:${i}` })).filter((x) => !sc.repliquesUtilisees[x.k]);
+    if (libres.length) {
+      const x = libres[Math.floor(rRep * libres.length)];
+      sc.repliquesUtilisees[x.k] = sc.manche;
+      repliques.push(formeReplique(accorderAdv(avecNom(x.t, sc.nomAdversaire), genre)));
+      break;
+    }
+  }
+  // Toi aussi, tu penses : une seule fois par combat, quand ça va mal.
+  if (!repliques.length && sc.joueur.endurance / sc.joueur.enduranceMax < 0.3 && !sc.repliquesUtilisees['pensee']) {
+    const banque = PENSEES_JOUEUR.joueur_en_difficulte ?? [];
+    if (banque.length) {
+      sc.repliquesUtilisees['pensee'] = sc.manche;
+      repliques.push(`~${banque[Math.floor(rRep * banque.length)]}`);
+    }
   }
   return {
     manche: sc.manche,
@@ -392,8 +422,8 @@ export function composerManche(s: GameState, sc: EtatAffrontement, d: Adversaire
     action: nomAction(a),
     execution,
     reponse: accorderAdv(`${techniqueAdverseRacontee(s, sc, d)}${res.reponse}`.trim(), genre),
-    impact: impact.trim(),
-    lecture: accorderAdv(res.cause, genre),
+    impact: accorderAdv(avecNom(impact.trim(), sc.nomAdversaire), genre),
+    lecture: accorderAdv(avecNom(res.cause, sc.nomAdversaire), genre),
     repliques,
     issue: res.issue,
     inflige: res.inflige,
@@ -404,12 +434,20 @@ export function composerManche(s: GameState, sc: EtatAffrontement, d: Adversaire
 }
 export type EntreeAffrontement = EtatAffrontement['journal'][number];
 
+/** Une réplique de la banque : entre guillemets, on les retire (l'écran les remet) ; un geste (« — ») se raconte. */
+function formeReplique(t: string): string {
+  if (t.startsWith('— ')) return `~${t.slice(2)}`;
+  const m = t.match(/^«\s*(.*?)\s*»(.*)$/);
+  if (!m) return t;
+  return m[2].trim() ? `~« ${m[1]} »${m[2]}` : m[1];
+}
+
 /** L'issue du CheckDef d'origine qui correspond à une fin d'affrontement. */
 function issuePour(fin: FinCombat, ch: ChoiceDef, rapide: boolean): Issue {
   const t = ch.test!;
   if (fin === 'victoire') return rapide && t.critique ? 'critique' : 'succes';
   if (fin === 'departage_gagne' || fin === 'reddition_adverse' || fin === 'fuite_adverse') return 'succes';
-  if (fin === 'paix' || fin === 'departage_perdu' || fin === 'departage_nul') return t.partiel ? 'partiel' : fin === 'departage_perdu' ? 'echec' : 'succes';
+  if (fin === 'paix' || fin === 'interrompu' || fin === 'departage_perdu' || fin === 'departage_nul') return t.partiel ? 'partiel' : fin === 'departage_perdu' ? 'echec' : 'succes';
   return 'echec';
 }
 
@@ -637,8 +675,8 @@ export interface VueAffrontement {
   contexte: { libelle: string; kanji: string };
   /** « Manche 2 » ; le plafond n'est montré que si un arbitre l'annonce. */
   manche: string;
-  adversaire: { nom: string; niveau: string; pct: number; garde: string; sonne: boolean };
-  joueur: { endurance: number; enduranceMax: number; chakra: number; chakraMax: number; elan: number; garde: string; sonne: boolean };
+  adversaire: { nom: string; niveau: string; pct: number; garde: string; sonne: boolean; etats: string[]; visage?: string; allie?: string; membres?: { id: string; nom: string; role: string; kanji: string; pct: number; horsCombat: boolean; parti: boolean }[] };
+  joueur: { endurance: number; enduranceMax: number; chakra: number; chakraMax: number; elan: number; garde: string; sonne: boolean; etats: string[] };
   annonce: { texte: string; fiabilite: string; mortelle: boolean };
   familles: VueFamille[];
   journal: EntreeAffrontement[];
@@ -673,8 +711,19 @@ export function vueAffrontement(s: GameState): VueAffrontement | undefined {
     titre: interpoler(R.evenements[sc.evenementId].titre, s),
     contexte: { libelle: CONTEXTES[sc.contexte].libelle, kanji: CONTEXTES[sc.contexte].kanji },
     manche: sc.plafondVisible ? `Manche ${sc.manche} sur ${sc.plafond}` : `Manche ${sc.manche}`,
-    adversaire: { nom: sc.nomAdversaire, niveau, pct: Math.round((sc.adv.endurance / sc.adv.enduranceMax) * 100), garde: sc.adv.garde, sonne: sc.adv.sonne > 0 },
-    joueur: { endurance: sc.joueur.endurance, enduranceMax: sc.joueur.enduranceMax, chakra: s.jauges.chakra, chakraMax: s.jauges.chakraMax, elan: sc.elan, garde: sc.joueur.garde, sonne: sc.joueur.sonne > 0 },
+    adversaire: {
+      nom: sc.nomAdversaire,
+      niveau,
+      pct: Math.round((sc.adv.endurance / sc.adv.enduranceMax) * 100),
+      garde: sc.adv.garde,
+      sonne: sc.adv.sonne > 0,
+      etats: etatsVisibles(sc.adv),
+      visage: d.type === 'bete' ? undefined : visageDe(sc),
+      allie: sc.allie?.nom,
+      // Les membres d'une escouade : on les voit, on choisit qui viser.
+      membres: sc.adv.membres?.map((m) => ({ id: m.id, nom: m.nom, role: m.role, kanji: KANJI_ROLE[m.role], pct: Math.round((m.pv / m.pvMax) * 100), horsCombat: m.pv <= 0 || !!m.parti, parti: !!m.parti })),
+    },
+    joueur: { endurance: sc.joueur.endurance, enduranceMax: sc.joueur.enduranceMax, chakra: s.jauges.chakra, chakraMax: s.jauges.chakraMax, elan: sc.elan, garde: sc.joueur.garde, sonne: sc.joueur.sonne > 0, etats: etatsVisibles(sc.joueur) },
     annonce: { texte: sc.annonce.texte, fiabilite: sc.annonce.fiabilite, mortelle: !!sc.annonce.mortelle },
     familles: fam,
     journal: sc.journal,

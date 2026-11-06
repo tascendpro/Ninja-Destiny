@@ -14,6 +14,7 @@ import { porteeTechnique } from '../epreuves';
 import type { ActionCombat, AdversaireDef, EtatAffrontement } from '../combat/types';
 import { adversaireDef, statsAdversaire } from '../combat/adversaire';
 import { accorderAdv, composerManche, creerAffrontement, enduranceJoueur, ouvrirManche } from '../combat/affrontement';
+import { frapperEscouade } from '../combat/escouade';
 import { ARME, TAIJUTSU, chanceExecution, defenseJoueur, puissanceJoueur, resoudre, validerAction } from '../combat/resolution';
 import { CONTEXTES, indexNiveau } from '../combat/contextes';
 import { natureAction, vieillirTerrain } from '../combat/terrain';
@@ -133,7 +134,7 @@ export function choisirCombatMut(c: Campagne, j: IdJoueur, a: ActionCombat, sign
   if (aChoisirCombat(c) === null) (cb.mode === 'equipe' ? resoudreEquipe : resoudreDuel)(c);
 }
 
-const tirages = (s: GameState) => ({ exec: alea(s), reponse: alea(s), execAdv: alea(s), variation: alea(s), decisif: alea(s), texte: alea(s), replique: alea(s) });
+const tirages = (s: GameState) => ({ exec: alea(s), reponse: alea(s), execAdv: alea(s), variation: alea(s), decisif: alea(s), texte: alea(s), replique: alea(s), etat: alea(s), analyse: alea(s) });
 
 /** L'initiative d'une action : le corps avant les signes, la défense avant tout, les grandes techniques en dernier. */
 function initiative(c: Campagne, j: IdJoueur, a: ActionCombat): number {
@@ -199,7 +200,9 @@ function resoudreEquipe(c: Campagne): void {
         // Les deux l'ont lancée ensemble : une seule fois, au nom des deux.
         if (j === ordre(c)[0]) {
           const degats = Math.round((34 + 10 * t.palier) * (0.85 + c.lien.accord / 300));
-          partage.adv.endurance = Math.max(0, partage.adv.endurance - degats);
+          // Contre une escouade, la technique de duo les prend tous.
+          if (partage.adv.membres) frapperEscouade(partage, degats, 'large');
+          else partage.adv.endurance = Math.max(0, partage.adv.endurance - degats);
           t.usages += 1;
           if (t.usages % 3 === 0 && t.palier < 5) t.palier += 1;
           const texte = texteCommun(c, `{j1} et {j2} composent les mêmes signes au même instant, sans un regard. ${t.nom} ! Les deux chakras se mêlent en un seul, et l’adversaire le prend de plein fouet. (−${degats} endurance)`, j, j);
