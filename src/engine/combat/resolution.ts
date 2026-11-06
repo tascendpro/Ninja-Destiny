@@ -29,6 +29,7 @@ import { EFFETS_ETAT, aEtat, etatDuCoup, modificateurs, poserEtat, vieillirEtats
 import { bougerMoral, capaciteAnalyse, effetsMoral, moralDe, observerAction } from './esprit';
 import { actionsSituation, ignorerSituation, resoudreSituation } from './evenements';
 import { cibleEffective, debout, facteurNombre, finDeMancheEscouade, frapperEscouade } from './escouade';
+import { bonusPhase, majeureDe, pareLaMajeure } from './boss';
 import { adversaireDef, statsAdversaire, techniquesAdversaire } from './adversaire';
 import { duoUtilisable } from '../duo';
 import { marquerTerrain, natureAction, synergiePour } from './terrain';
@@ -495,7 +496,9 @@ export function defenseJoueur(s: GameState, sc: EtatAffrontement): number {
 /** Puissance de l'action adverse. */
 function puissanceAdverse(s: GameState, sc: EtatAffrontement, d: AdversaireDef): number {
   const st = statsAdversaire(s, d);
-  if (sc.intention === 'majeure' && d.majeure) return d.majeure.puissance * 1.6 + st.attaque * 0.5;
+  const bp = bonusPhase(sc, d);
+  const maj = majeureDe(sc, d);
+  if (sc.intention === 'majeure' && maj) return maj.puissance * 1.6 + (st.attaque + bp.attaque) * 0.5;
   if (sc.intention === 'technique' && sc.techniqueAdv) {
     const t = techniquesAdversaire(s, d).find((x) => x.id === sc.techniqueAdv);
     if (t) return st.attaque * 0.6 + t.puissance * 1.6;
@@ -519,7 +522,13 @@ const K_DEGATS = 1.5;
  */
 export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a: ActionCombat, r: Tirages): ResultatManche {
   const st = statsAdversaire(s, d);
+  // Un boss en phase : plus fort, mieux défendu.
+  const bp = bonusPhase(sc, d);
+  st.attaque += bp.attaque;
+  st.defense += bp.defense;
   const advOffensif = OFFENSIVES.has(sc.intention);
+  // Le télégraphe lu : ta réponse pare sa grande technique (§8.1) ; il n'en reste presque rien, et sa garde s'ouvre.
+  const pare = pareLaMajeure(sc, d, a);
   const cle = a.choix;
   const vues = vuesAction(s, sc, cle);
   const repetition = sc.actionsJoueur[sc.actionsJoueur.length - 1] === cle;
@@ -528,6 +537,10 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
   const mJ = modificateurs(sc.joueur);
   const mA = modificateurs(sc.adv);
   const em = effetsMoral(sc);
+  if (pare) {
+    res.impact += `Tu avais lu le télégraphe : ${majeureDe(sc, d)!.nom} passe à côté de toi, ou s’écrase sur ta parade. `;
+    sc.ouverture += 15;
+  }
   const variation = 0.9 + r.variation * 0.2;
   const defJ = defenseJoueur(s, sc);
   // Le joueur a plus d'endurance que le gabarit de son niveau (§5.1) : ses coups reçus sont mis à l'échelle de sa réserve,
@@ -544,7 +557,7 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
   const rangJ = ecartDeRang(sc.niveauJoueur, sc.niveauAdv);
   const coupAdverse = (mult: number) => {
     if (!advOffensif || !advReussit) return 0;
-    const dmg = Math.max(1, (pAdv - defJ * 0.5) * K_DEGATS) * variation * mult * echelleJ * rangAdv * facteurNombre(sc);
+    const dmg = Math.max(1, (pAdv - defJ * 0.5) * K_DEGATS) * variation * mult * echelleJ * rangAdv * facteurNombre(sc) * (pare ? 0.2 : 1);
     return Math.round(dmg);
   };
 

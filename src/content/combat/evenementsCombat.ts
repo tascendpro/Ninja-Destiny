@@ -8,6 +8,7 @@ import type { Moral } from '../../engine/combat/esprit';
 import type { ContexteId, NiveauAdv } from '../../engine/combat/types';
 import type { EtatTerrain } from './synergies';
 import type { Terrain } from './impacts';
+import { EVENEMENTS_SUPPLEMENTAIRES } from './evenementsCombat2';
 
 export interface EffetSituation {
   texte: string;
@@ -29,6 +30,10 @@ export interface EffetSituation {
   renfortAdv?: number;
   moral?: Partial<Moral>;
   reputation?: number;
+  /** Il découvre (ou tu découvres) quelque chose : sa faiblesse est lue. */
+  faiblesse?: boolean;
+  /** Le terrain change pour de bon : l'instabilité ou le bruit montent. */
+  jauges?: Partial<import('../../engine/combat/jauges').JaugesTerrain>;
 }
 
 export interface ChoixSituationDef {
@@ -56,7 +61,21 @@ export interface EvenementCombatDef {
     joueurSousPct?: number;
     advSousPct?: number;
     pasBete?: boolean;
+    /** Les jauges du terrain (§5.1) : un effondrement exige de l'instabilité, une crue de l'eau, l'ANBU du bruit. */
+    jauges?: Partial<Record<'instabilite' | 'incendie' | 'crue' | 'bruit', number>>;
+    chapitreMin?: number;
+    niveauAdvMin?: NiveauAdv;
+    /** Le joueur a un clan (un parent du clan peut le reconnaître). */
+    clan?: boolean;
+    /** Contre une escouade seulement (un membre isolé, un otage). */
+    escouade?: boolean;
+    /** Dans un lieu habité (rues, marché, port). */
+    habite?: boolean;
+    /** L'adversaire a cette personnalité. */
+    temperaments?: import('../../engine/combat/types').Temperament[];
   };
+  /** Plus c'est logique, plus c'est probable (0 à 1) ; 0,5 si absent. Sous 0,15, l'événement n'a pas lieu. */
+  pertinence?: (x: { j: import('../../engine/combat/jauges').JaugesTerrain; pctJ: number; pctA: number; manche: number }) => number;
   /** Ce qui arrive, ajouté à l'annonce de la manche. */
   texte: string;
   choix: ChoixSituationDef[];
@@ -70,7 +89,8 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'jonin_arrete',
     type: 'intervention',
     poids: 8,
-    si: { contextes: ['bagarre', 'provocation', 'duel'], niveauJoueurMax: 'chunin', mancheMin: 2 },
+    si: { contextes: ['bagarre', 'provocation', 'duel'], niveauJoueurMax: 'chunin', mancheMin: 2, jauges: { bruit: 30 } },
+    pertinence: ({ j }) => j.bruit / 80,
     texte: 'Une main se pose sur ton épaule, une autre sur la sienne. Un jōnin est là, entre vous, sans que personne l’ait vu arriver. « Ça suffit. »',
     choix: [
       { id: 'obeir', nom: 'Baisser les poings', detail: 'On ne discute pas avec un jōnin.', succes: { texte: 'Tu recules d’un pas. {Il} aussi. Le jōnin vous regarde l’un après l’autre, longtemps, puis s’en va sans un mot de plus. C’est fini.', fin: 'interrompu' } },
@@ -95,7 +115,8 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'renforts_ennemis',
     type: 'intervention',
     poids: 6,
-    si: { contextes: ['mission', 'embuscade', 'combat_a_mort'], mancheMin: 2, pasBete: true },
+    si: { contextes: ['mission', 'embuscade', 'combat_a_mort'], mancheMin: 2, pasBete: true, jauges: { bruit: 45 } },
+    pertinence: ({ j }) => j.bruit / 90,
     texte: 'Des silhouettes sur les branches : deux, puis trois. Les renforts de {nom} arrivent. {Il} sourit pour la première fois.',
     choix: [
       { id: 'decrocher', nom: 'Décrocher tant qu’il est temps', detail: 'Survivre d’abord.', test: { attribut: 'agilite', base: 0.45 }, succes: { texte: 'Tu jettes une bombe de fumée à tes pieds et tu files entre les troncs. Ils ne te rattrapent pas.', fin: 'fuite' }, echec: { texte: 'Tu cours. Un kunai te rattrape à la cuisse. Tu tombes, et tu te relèves face à eux.', subi: 0.1, etatJoueur: ['jambe_touchee', 3], renfortAdv: 0.3 } },
@@ -108,7 +129,8 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'renfort_allie',
     type: 'intervention',
     poids: 5,
-    si: { contextes: ['mission', 'embuscade', 'combat_a_mort'], joueurSousPct: 50, mancheMin: 2 },
+    si: { contextes: ['mission', 'embuscade', 'combat_a_mort'], joueurSousPct: 50, mancheMin: 2, jauges: { bruit: 35 } },
+    pertinence: ({ j, pctJ }) => j.bruit / 100 + (1 - pctJ) / 2,
     texte: 'Un cri derrière toi : un ninja de ton village dévale la pente, kunai en main. Il t’a entendu·e de loin.',
     choix: [
       { id: 'coordonner', nom: 'Lui crier un plan', detail: 'À deux, prenez-le en tenaille.', test: { attribut: 'charisme', base: 0.5 }, succes: { texte: '« Par la gauche ! » Il comprend tout de suite. Vous le prenez en tenaille.', allie: { nom: 'le renfort', degats: 0.15, manches: 3 }, ouverture: 12, moral: { peur: 15 } }, echec: { texte: 'Il ne t’entend pas dans le vacarme et charge droit devant. Il frappera, mais seul.', allie: { nom: 'le renfort', degats: 0.1, manches: 2 } } },
@@ -120,7 +142,7 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'tiers_attaque',
     type: 'intervention',
     poids: 3,
-    si: { contextes: ['mission', 'embuscade', 'combat_a_mort', 'duel'], mancheMin: 2 },
+    si: { contextes: ['mission', 'embuscade', 'combat_a_mort', 'duel'], mancheMin: 2, jauges: { bruit: 50 } },
     texte: 'Une volée de shuriken s’abat entre vous deux : un troisième larron, caché sur un toit, vous vise tous les deux.',
     choix: [
       { id: 'abri', nom: 'Te mettre à couvert', detail: 'Laisser passer l’orage.', succes: { texte: 'Tu plonges derrière un mur. {nom} n’a pas ta chance : deux lames l’atteignent.', inflige: 0.12, protege: true } },
@@ -134,7 +156,8 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'plafond_cede',
     type: 'environnement',
     poids: 6,
-    si: { terrains: ['interieur', 'temple', 'ruines', 'forge'], mancheMin: 2 },
+    si: { terrains: ['interieur', 'temple', 'ruines', 'forge'], mancheMin: 2, jauges: { instabilite: 60 } },
+    pertinence: ({ j }) => (j.instabilite - 50) / 40,
     texte: 'Un grondement au-dessus de vous. Le plafond fissuré par les coups commence à céder, et des blocs de pierre se détachent entre vous deux.',
     choix: [
       { id: 'esquiver_debris', nom: 'Esquiver les débris', detail: 'D’abord ne pas être écrasé·e.', test: { attribut: 'agilite', base: 0.55 }, succes: { texte: 'Tu roules sous une poutre au moment où le bloc s’écrase là où tu étais.', protege: true }, echec: { texte: 'Un bloc te frôle l’épaule et t’envoie au sol.', subi: 0.15, protege: true } },
@@ -147,7 +170,8 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'arbre_tombe',
     type: 'environnement',
     poids: 6,
-    si: { terrains: ['foret'], mancheMin: 2 },
+    si: { terrains: ['foret'], mancheMin: 2, jauges: { instabilite: 25 } },
+    pertinence: ({ j }) => j.instabilite / 60,
     texte: 'Un craquement sec : un grand cèdre, entamé par vos coups, bascule lentement vers vous.',
     choix: [
       { id: 'sauter', nom: 'Sauter sur le tronc qui tombe', detail: 'Le prendre de haut.', test: { attribut: 'agilite', base: 0.5 }, succes: { texte: 'Tu cours sur le tronc pendant qu’il tombe et tu bondis sur {lui} depuis le ciel.', ouverture: 15 }, echec: { texte: 'L’écorce se dérobe sous tes pieds ; tu tombes avec l’arbre.', subi: 0.12 } },
@@ -159,7 +183,8 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'pont_cede',
     type: 'environnement',
     poids: 5,
-    si: { terrains: ['montagne', 'route', 'quai'], mancheMin: 2 },
+    si: { terrains: ['montagne', 'route', 'quai'], mancheMin: 2, jauges: { instabilite: 40 } },
+    pertinence: ({ j }) => (j.instabilite - 30) / 50,
     texte: 'Sous vos pieds, les planches gémissent. Le pont commence à céder, corde après corde.',
     choix: [
       { id: 'traverser', nom: 'Courir jusqu’à la rive', detail: 'Avant qu’il ne lâche.', test: { attribut: 'agilite', base: 0.55 }, succes: { texte: 'Tu atteins la rive au moment où le pont s’effondre. {Il} est de l’autre côté du vide. Le combat s’arrête là, pour aujourd’hui.', fin: 'interrompu' }, echec: { texte: 'Le pont lâche. Tu te rattrapes à une corde, au-dessus du vide, et tu remontes, à bout de souffle.', subi: 0.15 } },
@@ -171,7 +196,8 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'incendie',
     type: 'environnement',
     poids: 6,
-    si: { terrainEtat: ['brulant'], mancheMin: 2 },
+    si: { mancheMin: 2, jauges: { incendie: 50 } },
+    pertinence: ({ j }) => (j.incendie - 40) / 40,
     texte: 'Le feu de vos techniques a pris dans les herbes sèches. Il court maintenant tout autour de vous, et la fumée monte.',
     choix: [
       { id: 'barriere', nom: 'Te servir du feu comme d’un mur', detail: 'Qu’il soit entre vous.', succes: { texte: 'Tu te places pour que les flammes soient entre vous. {Il} doit les traverser pour t’atteindre.', protege: true } },
@@ -183,7 +209,8 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'riviere_deborde',
     type: 'environnement',
     poids: 4,
-    si: { terrains: ['cotes', 'quai', 'foret', 'plaine'], mancheMin: 3 },
+    si: { terrains: ['cotes', 'quai', 'foret', 'plaine'], mancheMin: 3, jauges: { crue: 50 } },
+    pertinence: ({ j }) => (j.crue - 40) / 40,
     texte: 'Un bruit d’eau qui enfle : la rivière, gonflée par l’orage, sort de son lit et envahit le terrain.',
     choix: [
       { id: 'hauteur', nom: 'Gagner un rocher', detail: 'Rester au sec, en hauteur.', succes: { texte: 'Tu bondis sur un rocher. En bas, {il} a de l’eau jusqu’aux genoux.', ouverture: 10, terrain: 'humide' } },
@@ -195,7 +222,8 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'sol_fissure',
     type: 'environnement',
     poids: 4,
-    si: { terrainEtat: ['roches', 'boue'], mancheMin: 2 },
+    si: { mancheMin: 2, jauges: { instabilite: 45 } },
+    pertinence: ({ j }) => (j.instabilite - 35) / 50,
     texte: 'Le sol, labouré par vos techniques, se fend sous vos pieds. Une crevasse s’ouvre entre vous.',
     choix: [
       { id: 'enjamber', nom: 'Sauter par-dessus', detail: 'Reprendre le contact.', test: { attribut: 'agilite', base: 0.55 }, succes: { texte: 'Tu franchis la crevasse d’un bond et tu retombes sur {lui}.', ouverture: 12 }, echec: { texte: 'Le bord s’effrite sous ton pied.', subi: 0.1, etatJoueur: ['jambe_touchee', 2] } },
@@ -207,7 +235,7 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     id: 'fumee_explosion',
     type: 'environnement',
     poids: 4,
-    si: { contextes: ['mission', 'embuscade', 'combat_a_mort'], mancheMin: 2 },
+    si: { contextes: ['mission', 'embuscade', 'combat_a_mort'], mancheMin: 2, jauges: { bruit: 40 } },
     texte: 'Une explosion, quelque part derrière vous : un parchemin oublié a pris feu. Un nuage de fumée noire envahit tout.',
     choix: [
       { id: 'ecouter', nom: 'Fermer les yeux et écouter', detail: 'Le suivre au bruit.', test: { attribut: 'perception', base: 0.4 }, succes: { texte: 'Tu fermes les yeux. Ses pas, à gauche. Tu frappes au bruit, et tu touches.', inflige: 0.12, ouverture: 8 }, echec: { texte: 'Tu frappes au bruit… c’était une pierre qui roulait.', subi: 0.08 } },
@@ -266,3 +294,5 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     ignore: { texte: 'Ses mots restent en toi, et te troublent un instant.', etatJoueur: ['desoriente', 1] },
   },
 ];
+
+EVENEMENTS_COMBAT.push(...EVENEMENTS_SUPPLEMENTAIRES);

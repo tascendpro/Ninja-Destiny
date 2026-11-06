@@ -13,12 +13,13 @@ import { terrainCourant } from './impacts';
 import { EFFETS_ETAT, poserEtat } from './etats';
 import { bougerMoral } from './esprit';
 import { ajouterRenfort } from './escouade';
+import { HABITE, jaugesInitiales } from './jauges';
 
 export const EVENEMENT = Object.fromEntries(EVENEMENTS_COMBAT.map((e) => [e.id, e])) as Record<string, EvenementCombatDef>;
 
-/** Chance qu'un événement survienne à une manche (à partir de la deuxième). */
-const CHANCE = 0.14;
-const MAX_PAR_COMBAT = 2;
+/** Au plus trois événements par combat, et deux manches au moins entre deux (§5.2 : la plupart des manches, rien). */
+const MAX_PAR_COMBAT = 3;
+const RESPIRATION = 2;
 
 function possible(s: GameState, sc: EtatAffrontement, d: AdversaireDef, e: EvenementCombatDef): boolean {
   const q = e.si;
@@ -31,6 +32,14 @@ function possible(s: GameState, sc: EtatAffrontement, d: AdversaireDef, e: Evene
   if (q.joueurSousPct !== undefined && sc.joueur.endurance / sc.joueur.enduranceMax >= q.joueurSousPct / 100) return false;
   if (q.advSousPct !== undefined && sc.adv.endurance / sc.adv.enduranceMax >= q.advSousPct / 100) return false;
   if (q.pasBete && d.type === 'bete') return false;
+  const j = sc.jauges ?? jaugesInitiales(s);
+  if (q.jauges && Object.entries(q.jauges).some(([k, v]) => j[k as keyof typeof j] < (v ?? 0))) return false;
+  if (q.chapitreMin && s.chapitre < q.chapitreMin) return false;
+  if (q.niveauAdvMin && indexNiveau(sc.niveauAdv) < indexNiveau(q.niveauAdvMin)) return false;
+  if (q.clan && s.creation.clan === 'sans_clan') return false;
+  if (q.escouade && !sc.adv.membres) return false;
+  if (q.habite && !HABITE.includes(terrainCourant(s))) return false;
+  if (q.temperaments && !q.temperaments.includes(sc.temperament)) return false;
   // Une fin d'événement doit être permise par le contexte : pas de fuite là où on ne fuit pas.
   if (e.choix.every((c) => c.succes.fin === 'fuite') && !CONTEXTES[sc.contexte].fuite) return false;
   return true;
@@ -40,14 +49,22 @@ function possible(s: GameState, sc: EtatAffrontement, d: AdversaireDef, e: Evene
 export function declencherEvenement(s: GameState, sc: EtatAffrontement, d: AdversaireDef, r: number): string | undefined {
   sc.evenement = undefined;
   if (sc.choixId === 'campagne' || sc.manche < 2 || (sc.evenementsVus?.length ?? 0) >= MAX_PAR_COMBAT) return undefined;
-  if (r >= CHANCE) return undefined;
-  const liste = EVENEMENTS_COMBAT.filter((e) => possible(s, sc, d, e));
+  if (sc.dernierEvenement !== undefined && sc.manche - sc.dernierEvenement < RESPIRATION) return undefined;
+  // La pertinence : plus l'événement est logique ici et maintenant, plus il est probable (§5.2).
+  const j = sc.jauges ?? jaugesInitiales(s);
+  const x0 = { j, pctJ: sc.joueur.endurance / sc.joueur.enduranceMax, pctA: sc.adv.endurance / sc.adv.enduranceMax, manche: sc.manche };
+  const liste = EVENEMENTS_COMBAT.filter((e) => possible(s, sc, d, e))
+    .map((e) => [e, Math.max(0, Math.min(1, e.pertinence ? e.pertinence(x0) : 0.5)) * e.poids / 5] as const)
+    .filter(([, p]) => p > 0.15);
   if (!liste.length) return undefined;
-  const total = liste.reduce((a, e) => a + e.poids, 0);
-  let x = (r / CHANCE) * total;
-  const e = liste.find((y) => (x -= y.poids) < 0) ?? liste[liste.length - 1];
+  const total = liste.reduce((a, [, p]) => a + p, 0);
+  const chance = Math.min(0.45, total * 0.25);
+  if (r >= chance) return undefined;
+  let x = (r / chance) * total;
+  const e = (liste.find(([, p]) => (x -= p) < 0) ?? liste[liste.length - 1])[0];
   sc.evenement = { id: e.id, manche: sc.manche };
   sc.evenementsVus = [...(sc.evenementsVus ?? []), e.id];
+  sc.dernierEvenement = sc.manche;
   return e.texte;
 }
 
@@ -86,6 +103,11 @@ function appliquer(s: GameState, sc: EtatAffrontement, e: EffetSituation, reussi
   }
   if (e.moral) bougerMoral(sc, e.moral);
   if (e.reputation) s.social.reputation = clamp(s.social.reputation + e.reputation, 0, 100);
+  if (e.faiblesse) sc.lecture.faiblesse = true;
+  if (e.jauges) {
+    const j = (sc.jauges ??= jaugesInitiales(s));
+    for (const [k, v] of Object.entries(e.jauges)) j[k as keyof typeof j] = clamp(j[k as keyof typeof j] + (v ?? 0), 0, 100);
+  }
   return { texte: textes.join(' '), subi, inflige, protege: !!e.protege, fin: e.fin, reussi };
 }
 

@@ -14,6 +14,8 @@ import { CHANCE_MORT } from '../epreuves';
 import type { ActionCombat, AdversaireDef, AffrontementDef, EtatAffrontement, FinCombat, IntentionAdv, RegistreAdversaire } from './types';
 import { CONTEXTES, GABARITS, LIBELLE_NIVEAU, bonusRang, fourchettePlafond, indexNiveau, niveauJoueur } from './contextes';
 import { declencherEvenement } from './evenements';
+import { entrerPhase, majeureDe } from './boss';
+import { apaiserJauges, avertissements, nourrirJauges } from './jauges';
 import { KANJI_ROLE, composerEscouade, synchroniser } from './escouade';
 import { etatsVisibles } from './etats';
 import { visageDe } from './esprit';
@@ -67,7 +69,8 @@ function texteAdv(s: GameState, sc: EtatAffrontement, d: AdversaireDef, t: strin
 /** Ce que l'adversaire lance cette manche, nommé et raconté : sa technique, ou sa grande technique annoncée. */
 function techniqueAdverseRacontee(s: GameState, sc: EtatAffrontement, d: AdversaireDef): string {
   // Le lanceur est nommé : sans lui, on confondrait sa technique avec la tienne quand ce sont les mêmes.
-  if (sc.intention === 'majeure' && d.majeure) return avecNom(`{nom} lance sa grande technique : ${d.majeure.nom} ! `, sc.nomAdversaire);
+  const maj = majeureDe(sc, d);
+  if (sc.intention === 'majeure' && maj) return avecNom(`{nom} lance sa grande technique : ${maj.nom} ! `, sc.nomAdversaire);
   if (sc.intention !== 'technique' || !sc.techniqueAdv) return '';
   const t = techniquesAdversaire(s, d).find((x) => x.id === sc.techniqueAdv);
   if (!t) return '';
@@ -202,6 +205,8 @@ export function creerAffrontement(
 /** Ouverture d'une manche : intention adverse, technique, fiabilité, texte de l'annonce (quatre tirages, toujours). */
 export function ouvrirManche(s: GameState, sc: EtatAffrontement, d: AdversaireDef): void {
   const [rInt, rTech, rFiab, rTexte] = [alea(s), alea(s), alea(s), alea(s)];
+  // Un boss entre peut-être dans une nouvelle phase (§8) : elle se raconte avant tout le reste.
+  const phase = entrerPhase(sc, d);
   sc.temperament = temperamentCourant(sc, d);
   sc.intention = tirerIntention(s, sc, d, rInt);
   const techs = techniquesAdversaire(s, d);
@@ -224,7 +229,11 @@ export function ouvrirManche(s: GameState, sc: EtatAffrontement, d: AdversaireDe
   // Une bête se lit à ses muscles et à sa gueule, pas à ses mains.
   const banque = (d.type === 'bete' ? ANNONCES_BETE : R.contenu.racine.annonces)[montree];
   let texte = choisirVariante(fiab === 'fiable' ? banque.fiable : banque.vague, rTexte);
-  if (sc.intention === 'majeure' && d.majeure && fiab === 'fiable') texte = d.majeure.annonce;
+  const majeure = majeureDe(sc, d);
+  if (sc.intention === 'majeure' && majeure && fiab === 'fiable') texte = majeure.annonce;
+  // Le télégraphe : une grande technique qui a ses parades s'annonce toujours une manche avant, lisible.
+  if (sc.intention === 'preparer' && majeure?.parades) texte = `${majeure.annonce} Il te reste une manche pour t’y préparer.`;
+  if (phase) texte = `${phase}\n\n${texte}`;
   if (fiab === 'fiable' && sc.techniqueAdv && sc.lecture.techniquesVues.includes(sc.techniqueAdv)) {
     const t = techs.find((x) => x.id === sc.techniqueAdv);
     if (t) texte += ` Tu reconnais ce geste : ${t.nom}.`;
@@ -273,6 +282,20 @@ export function jouerAffrontement(s: GameState, a: ActionCombat, ctx: Ctx): Conc
   const nature = res.execution !== 'ratee' ? natureAction(a.choix) : undefined;
   sc.sceaux = [...(sc.sceaux ?? []), nature ?? null].slice(-3);
   sc.derniereSynergie = res.synergie?.cle;
+  // Le lieu se souvient (§5.1) : ta technique, puis la sienne, s'il en a lancé une.
+  const tech = R.maitrises[a.choix];
+  nourrirJauges(s, sc, {
+    nature: res.execution !== 'ratee' ? natureAction(a.choix) : undefined,
+    portee: tech && res.execution !== 'ratee' ? porteeTechnique(a.choix) : 'cible',
+    explosif: a.choix === 'parchemin_explosif',
+    lourd: res.inflige >= sc.adv.enduranceMax * 0.2 || res.subi >= sc.joueur.enduranceMax * 0.2,
+    technique: !!tech,
+  });
+  if (sc.intention === 'technique' || sc.intention === 'majeure') {
+    const el = sc.intention === 'technique' ? techniquesAdversaire(s, d).find((t) => t.id === sc.techniqueAdv)?.element : d.nature;
+    nourrirJauges(s, sc, { nature: el, portee: sc.intention === 'majeure' ? 'large' : 'cible', technique: true });
+  }
+  apaiserJauges(sc);
   vieillirTerrain(sc);
   // Sa technique aussi laisse sa trace, si elle t'a atteint : son eau sert ta foudre.
   if (res.subi > 0 && sc.intention === 'technique' && sc.techniqueAdv) {
@@ -476,9 +499,9 @@ function mortAuCombat(s: GameState, sc: EtatAffrontement, d: AdversaireDef): { t
   if (MORTS_AU_COMBAT[d.id]) cle = d.id;
   else if (d.type === 'bete') cle = 'bete';
   else if (d.escouade) cle = 'escouade';
-  else if (sc.intention === 'majeure' && d.majeure) {
+  else if (sc.intention === 'majeure' && majeureDe(sc, d)) {
     cle = 'majeure';
-    tech = d.majeure.nom;
+    tech = majeureDe(sc, d)!.nom;
   } else {
     const t =
       sc.intention === 'technique'
@@ -706,6 +729,8 @@ export function vueAffrontement(s: GameState): VueAffrontement | undefined {
     const tt = R.contenu.techniquesAdverses.find((x) => x.id === t);
     if (tt) lecture.push(`Technique vue : ${tt.nom}.`);
   }
+  // Ce que le lieu annonce : le plafond qui gronde, le feu qui cherche à prendre.
+  lecture.push(...avertissements(s, sc));
   const fam = familles(s, sc).map((f) => ({ ...f, actions: f.actions.map((a) => ({ ...a, detail: accorderAdv(a.detail, genre) })) }));
   return {
     titre: interpoler(R.evenements[sc.evenementId].titre, s),

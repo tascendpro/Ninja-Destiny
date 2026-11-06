@@ -11,6 +11,7 @@ import { PREFIXE_GENERIQUE, adversaireGenerique, identiteGeneree } from './gener
 import { GABARITS, indexNiveau, niveauJoueur } from './contextes';
 import { effetsMoral, moralDe } from './esprit';
 import { aEtat, modificateurs } from './etats';
+import { majeureDe, phaseCourante } from './boss';
 
 export function adversaireDef(id: string): AdversaireDef {
   if (id.startsWith(PREFIXE_GENERIQUE)) return adversaireGenerique(id);
@@ -80,6 +81,9 @@ const BASE: Record<Temperament, Record<IntentionAdv, number>> = {
 
 /** Le tempérament courant, après une éventuelle bascule. */
 export function temperamentCourant(sc: EtatAffrontement, d: AdversaireDef): Temperament {
+  // Un boss change de personnalité avec ses phases (§8) : la phase l'emporte sur la bascule.
+  const ph = phaseCourante(sc, d)?.temperament ?? [...(sc.phases ?? [])].reverse().map((id) => d.phases?.find((p) => p.id === id)?.temperament).find(Boolean);
+  if (ph) return ph;
   if (!d.bascule) return d.temperament;
   const pct = sc.adv.endurance / sc.adv.enduranceMax;
   const q = d.bascule.quand;
@@ -95,7 +99,7 @@ export function scoresIntentions(s: GameState, sc: EtatAffrontement, d: Adversai
   const techs = techniquesAdversaire(s, d);
   // Situation : ce qu'il peut faire, et ce que sa santé lui dicte.
   if (!techs.length || sc.adv.chakra < 8) sc0.technique = 0;
-  if (!d.majeure || sc.adv.chakra < 20) sc0.preparer = 0;
+  if (!majeureDe(sc, d) || sc.adv.chakra < 20) sc0.preparer = 0;
   if (pct < d.seuils.fuite / 100) sc0.fuir += 60;
   if (pct < d.seuils.reddition / 100) sc0.parler += 40;
   if (sc.contexte === 'entrainement' || sc.contexte === 'examen') sc0.fuir = 0;
@@ -104,7 +108,7 @@ export function scoresIntentions(s: GameState, sc: EtatAffrontement, d: Adversai
   const [a1, a2] = sc.actionsJoueur.slice(-2);
   if (a1 && a1 === a2) sc0.defense += 30;
   if (sc.gardesConsecutives >= 2) {
-    sc0.preparer += d.majeure ? 25 : 0;
+    sc0.preparer += majeureDe(sc, d) ? 25 : 0;
     sc0.technique += 15;
   }
   // Mémoire : un récurrent qui connaît ton ouverture l'attend dès la première manche.

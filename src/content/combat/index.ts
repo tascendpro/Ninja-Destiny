@@ -5,6 +5,7 @@ import { ADVERSAIRES_CAMPAGNE } from '../campagne/combats';
 import { ANNONCES, RECITS } from './lignes';
 import { RECITS_SUPP } from './lignesSupp';
 import { REACTIONS_REPETITION, REPETITIONS } from './repetitions';
+import { PHASES_BOSS } from './boss';
 
 /**
  * Les combats branchés sur l'Affrontement Racine, par « scène/choix ».
@@ -60,7 +61,8 @@ const AFFRONTEMENTS_RACINE: ContenuRacine['affrontements'] = {
 };
 
 export const RACINE: ContenuRacine = {
-  adversaires: [...ADVERSAIRES, ...ADVERSAIRES_AKATSUKI, ...ADVERSAIRES_CAMPAGNE],
+  // Les boss reçoivent leurs phases (§8).
+  adversaires: [...ADVERSAIRES, ...ADVERSAIRES_AKATSUKI, ...ADVERSAIRES_CAMPAGNE].map((d) => (PHASES_BOSS[d.id] && !d.phases ? { ...d, phases: PHASES_BOSS[d.id] } : d)),
   affrontements: { ...AFFRONTEMENTS_RACINE, ...AFFRONTEMENTS_AKATSUKI },
   // Les récits de base et leurs variantes supplémentaires, réunis clé par clé.
   recits: Object.fromEntries([...new Set([...Object.keys(RECITS), ...Object.keys(RECITS_SUPP)])].map((k) => [k, [...(RECITS[k] ?? []), ...(RECITS_SUPP[k] ?? [])]])),

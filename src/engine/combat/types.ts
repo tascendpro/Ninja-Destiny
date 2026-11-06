@@ -162,6 +162,8 @@ export interface AdversaireDef {
   resistances?: Partial<Record<ElementId | 'decisif', number>>;
   /** Un adversaire récurrent garde un registre de ce qu'il a vu de toi. */
   recurrent?: boolean;
+  /** Un boss (§8) : ses phases, dans l'ordre. Elles ne sont pas systématiques : un boss vite abattu n'en voit aucune. */
+  phases?: PhaseBoss[];
   /** Genre grammatical, quand il n'est pas un personnage du jeu (« L'escouade » : féminin). */
   genre?: 'm' | 'f';
   /** Plusieurs ennemis : une technique de zone les prend tous, une ciblée n'en touche qu'un. */
@@ -334,6 +336,12 @@ export interface EtatAffrontement {
   allie?: { nom: string; degats: number; manches: number };
   /** Tu l'as questionné : sa motivation est connue. */
   questionne?: boolean;
+  /** Le terrain qui se souvient (§5.1) : instabilité, incendie, crue, bruit. */
+  jauges?: import('./jauges').JaugesTerrain;
+  /** La manche du dernier événement : il faut respirer entre deux (§5.2). */
+  dernierEvenement?: number;
+  /** Boss (§8) : les phases déjà entrées, la dernière en cours. */
+  phases?: string[];
 }
 
 export interface ActionCombat {
@@ -356,4 +364,25 @@ export interface ContenuRacine {
   /** Récits quand on relance la même technique (par nature, puis par famille), et ce que l'adversaire en dit. */
   repetitions: Record<string, { deux: string[]; trois: string[] }>;
   reactionsRepetition: { deux: string[]; trois: string[] };
+}
+
+/**
+ * Une phase de boss (§8.1) : elle s'ouvre quand sa condition est réunie, une seule fois. Elle peut changer sa
+ * personnalité, ses forces, le terrain, et sa grande technique (télégraphiée une manche avant, avec ses parades).
+ */
+export interface PhaseBoss {
+  id: string;
+  quand: { sousPct?: number; mancheMin?: number };
+  /** Ce qui arrive quand la phase s'ouvre (ajouté à l'annonce). */
+  texte: string;
+  /** Ce qu'il dit en entrant dans la phase. */
+  replique?: string;
+  temperament?: Temperament;
+  /** Ajouts à son attaque et à sa défense. */
+  bonus?: { attaque?: number; defense?: number };
+  /** Part de ses PV max qu'il récupère en entrant dans la phase. */
+  soin?: number;
+  terrain?: import('../../content/combat/synergies').EtatTerrain;
+  /** Sa grande technique de la phase : annoncée une manche avant ; les parades (actions ou familles) la déjouent. */
+  majeure?: { nom: string; puissance: number; annonce: string; parades: string[] };
 }
