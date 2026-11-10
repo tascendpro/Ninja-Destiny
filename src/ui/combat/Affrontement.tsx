@@ -13,6 +13,7 @@ import type { ActionCombat, DepenseElan, Famille } from '../../engine/combat/typ
 import GroupesNature, { KANJI_GROUPE } from './GroupesNature';
 import { R } from '../../engine/registre';
 import Portrait from '../Portrait';
+import { avecParoles } from '../paroles';
 import { classeMulti, styleNatures } from '../natures';
 import { naturesMaitrise } from '../../engine/tempsLibre';
 
@@ -469,7 +470,7 @@ function BlocManche({ j, nom, p }: { j: Entree; nom: string; p: GameState['creat
       <p className="aff-recit-manche">
         {accorder(j.execution, p)} {j.reponse && accorder(j.reponse, p)}
       </p>
-      <p className="aff-recit-manche impact">{accorder(j.impact, p)}</p>
+      <p className="aff-recit-manche impact">{avecParoles(accorder(j.impact, p))}</p>
       {j.synergie && (
         <p className="aff-synergie">
           <b>Enchaînement</b> {nomNature(j.synergie.de)} → {nomNature(j.synergie.vers)} · {j.synergie.nom} <small>({j.synergie.niveau})</small>

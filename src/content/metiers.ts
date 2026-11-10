@@ -186,7 +186,7 @@ export const METIERS: CareerDef[] = [
   },
   {
     id: 'artisan',
-    nom: 'Maître artisan d’armes',
+    nom: 'Artisan d’armes',
     description: 'Fabriquer, réparer, restaurer — et approcher les lames légendaires.',
     acces: { vu: 'g_forge' },
     ageMin: 12,

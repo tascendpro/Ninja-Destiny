@@ -12,6 +12,8 @@ import { duoPossible, genererActivites, naturesActivite, periodeMax } from '../e
 import type { Activite } from '../engine/tempsLibre';
 import { age, libelleDuree, libellePeriode, moisDe, saisonDe } from '../engine/calendrier';
 import Portrait from './Portrait';
+import SceneArt from './SceneArt';
+import { avecParoles } from './paroles';
 import Affrontement, { CarteBilan } from './combat/Affrontement';
 import GroupesNature, { groupeTechnique } from './combat/GroupesNature';
 import { classeMulti, styleNatures } from './natures';
@@ -26,6 +28,10 @@ import type { AttributId } from '../engine/types';
 export function ColonneScene({
   children,
   decor,
+  lieu,
+  theme = 'nuit',
+  anime = true,
+  etat,
 }: {
   lieu?: LieuDef;
   graine?: string;
@@ -36,13 +42,39 @@ export function ColonneScene({
   decor?: VueDecor;
   children?: React.ReactNode;
 }) {
-  const sansImage = children ? <div className="lieu-bandeau lieu-marques">{children}</div> : <div className="espace-scene" aria-hidden="true" />;
+  // Sans image fournie, le lieu est peint à l'encre : une estampe basse, teintée par la saison, qui se fond dans la page.
+  const marques = children ? <div className="lieu-bandeau lieu-marques">{children}</div> : <div className="espace-scene" aria-hidden="true" />;
+  const sansImage = lieu ? (
+    <>
+      <Estampe lieu={lieu} theme={theme} anime={anime} jour={etat?.jour} />
+      {marques}
+    </>
+  ) : (
+    marques
+  );
   return decor ? (
     <DecorBandeau decor={decor} repli={sansImage}>
       {children}
     </DecorBandeau>
   ) : (
     sansImage
+  );
+}
+
+/** L'estampe du lieu : le paysage à l'encre, la saison dans l'air (pétales, lucioles, feuilles, neige). */
+export function Estampe({ lieu, theme, anime, jour, combat = false }: { lieu: LieuDef; theme: 'nuit' | 'washi'; anime: boolean; jour?: number; combat?: boolean }) {
+  const saison = jour === undefined ? undefined : saisonDe(jour);
+  return (
+    <figure className={`estampe${saison ? ` estampe-${saison}` : ''}${combat ? ' estampe-combat' : ''}`} aria-hidden="true">
+      <SceneArt scene={lieu.scene} graine={lieu.id} theme={theme} anime={anime} lieuId={lieu.id} panorama />
+      {anime && saison && (
+        <span className="estampe-air">
+          {Array.from({ length: 9 }, (_, i) => (
+            <i key={i} style={{ '--i': i } as React.CSSProperties} />
+          ))}
+        </span>
+      )}
+    </figure>
   );
 }
 
@@ -85,7 +117,7 @@ function Paragraphes({ texte, presentation, lettrine = false }: { texte: string;
       {accorder(texte, presentation)
         .split(/\n\n+/)
         .map((p, i) => (
-          <p key={i}>{p}</p>
+          <p key={i}>{avecParoles(p)}</p>
         ))}
     </div>
   );
@@ -321,7 +353,15 @@ export default function Recit({
   }
 
   if (etat.scene.type === 'affrontement') {
-    return <Affrontement etat={etat} onCombat={onCombat} />;
+    // Le combat se joue quelque part : le lieu reste en fond, bas et rougi, derrière le face-à-face.
+    const evCombat = R.evenements[(etat.scene as { evenementId?: string }).evenementId ?? ''];
+    const lieuCombat = lieuCourant(etat, evCombat?.lieu ?? '$village');
+    return (
+      <div className="recit-combat">
+        <Estampe lieu={lieuCombat} theme={theme} anime={anime} jour={etat.jour} combat />
+        <Affrontement etat={etat} onCombat={onCombat} />
+      </div>
+    );
   }
 
   if (etat.scene.type === 'combat') {

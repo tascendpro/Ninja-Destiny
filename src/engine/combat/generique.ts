@@ -59,7 +59,9 @@ export function adversaireGenerique(id: string): AdversaireDef {
   const connu = ADVERSAIRES_SCENES[`${evId}/${choixId}`];
   const t0 = Array.isArray(x.ev.texte) ? (x.ev.texte[0] as { texte: string }).texte : x.ev.texte;
   const indices = [x.ev.titre, x.ch.texte, x.ch.test.causeMort ?? '', String(t0).slice(0, 220)].join(' ');
-  const type: TypeAdversaire = connu?.type ?? INDICES_TYPE.find(([, r]) => r.test(indices))?.[0] ?? 'ninja';
+  // Une bagarre d'enfance ou d'Académie sans autre indice oppose des enfants : pas une escouade qui « attache la cible ».
+  const entreEnfants = x.ev.categorie === 'enfance' || x.ev.categorie === 'academie';
+  const type: TypeAdversaire = connu?.type ?? INDICES_TYPE.find(([, r]) => r.test(indices))?.[0] ?? (entreEnfants ? 'eleve' : 'ninja');
   const [nomDefaut, genreDefaut] = NOMS_TYPE[type][escouade ? 'groupe' : 'seul'];
   const voix = REPLIQUES_TYPE[type];
   const bete = type === 'bete';

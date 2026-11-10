@@ -330,6 +330,8 @@ export interface SceneProps {
   description?: string;
   /** Identifiant du lieu, pour chercher une image fournie avant le type de scène. */
   lieuId?: string;
+  /** Cadrage panoramique : seule la bande du paysage où vit le décor est montrée. */
+  panorama?: boolean;
 }
 
 /** Une image fournie (medias.ts) remplace le dessin ; sinon la scène est peinte à l'encre. */
@@ -354,7 +356,7 @@ export function ImageScene({ image, description, priorite = false }: { image: Im
   );
 }
 
-function SceneEncre({ scene, graine, theme, anime = true, description }: SceneProps) {
+function SceneEncre({ scene, graine, theme, anime = true, description, panorama }: SceneProps) {
   const contenu = useMemo(() => {
     const [a, b] = scene.split(':');
     const type = b ?? a;
@@ -402,7 +404,7 @@ function SceneEncre({ scene, graine, theme, anime = true, description }: ScenePr
   }, [scene, graine, theme, anime]);
 
   return (
-    <svg viewBox={`0 0 ${L} ${H}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label={description ?? 'Illustration de la scène'}>
+    <svg viewBox={panorama ? `0 60 ${L} 640` : `0 0 ${L} ${H}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label={description ?? 'Illustration de la scène'}>
       {contenu}
     </svg>
   );

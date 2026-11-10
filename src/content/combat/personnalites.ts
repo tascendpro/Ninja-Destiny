@@ -3,6 +3,7 @@
 // Jetons : {nom}, {Il}/{il}, {lui}, {e} (accord de l'adversaire).
 
 import type { CategorieReplique, Temperament } from '../../engine/combat/types';
+import { REPLIQUES_PERSONNALITE_SUITE } from './personnalites2';
 
 type Banque = Partial<Record<CategorieReplique, string[]>>;
 
@@ -117,3 +118,11 @@ export const REPLIQUES_PERSONNALITE: Record<Temperament, Banque> = {
 export const PENSEES_JOUEUR: Partial<Record<CategorieReplique, string[]>> = {
   joueur_en_difficulte: ['Pas encore… pas maintenant.', 'Si tu tombes ici, qui rentrera le dire ?', 'Respire. Une manche de plus. Juste une.'],
 };
+
+// La suite du recueil rejoint les banques : même tempérament, même moment, plus de voix.
+for (const [t, banque] of Object.entries(REPLIQUES_PERSONNALITE_SUITE) as [Temperament, Banque][]) {
+  for (const [c, lignes] of Object.entries(banque) as [CategorieReplique, string[]][]) {
+    const cible = (REPLIQUES_PERSONNALITE[t] ??= {});
+    cible[c] = [...(cible[c] ?? []), ...lignes];
+  }
+}
