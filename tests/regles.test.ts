@@ -51,8 +51,11 @@ describe('Événements', () => {
   });
   it('un événement unique ne se répète pas', () => {
     const s = partie();
-    expect(s.scene).toEqual({ type: 'evenement', id: 'o_village_konoha' });
-    expect(evenementDisponible(s, R.evenements['o_village_konoha'])).toBe(false);
+    // La partie s'ouvre sur l'un des premiers matins (tiré de la graine) ; une fois vu, il ne revient pas.
+    expect(s.scene.type).toBe('evenement');
+    const id = (s.scene as { id: string }).id;
+    expect(['o_village_konoha', 'o_nuit_cloches', 'o_bandeau_poussiere', 'o_jeu_ninjas']).toContain(id);
+    expect(evenementDisponible(s, R.evenements[id])).toBe(false);
   });
   it('une décision majeure modifie les variables attendues (refus à l’examen de Kiri)', () => {
     let s = partie({ village: 'kiri', clan: 'hozuki', nom: 'Hōzuki', element: 'suiton' });

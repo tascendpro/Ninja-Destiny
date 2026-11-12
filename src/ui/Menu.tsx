@@ -11,6 +11,8 @@ export interface Reglages {
   son: boolean;
   volume: number;
   animations: 'normales' | 'reduites';
+  /** Les paysages peints en tête des scènes (absent : affichés). */
+  paysages?: boolean;
 }
 
 type Section = 'sauvegardes' | 'boutique' | 'reglages';
@@ -157,6 +159,17 @@ export default function Menu({
                 </button>
                 <button className="option" aria-pressed={reglages.animations === 'reduites'} onClick={() => onReglages({ ...reglages, animations: 'reduites' })}>
                   Réduites
+                </button>
+              </div>
+            </div>
+            <div className="champ">
+              <span>Paysages</span>
+              <div className="rangee">
+                <button className="option" aria-pressed={reglages.paysages !== false} onClick={() => onReglages({ ...reglages, paysages: true })}>
+                  Affichés
+                </button>
+                <button className="option" aria-pressed={reglages.paysages === false} onClick={() => onReglages({ ...reglages, paysages: false })}>
+                  Masqués
                 </button>
               </div>
             </div>

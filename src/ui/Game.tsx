@@ -98,6 +98,7 @@ export default function Game() {
   useEffect(() => {
     document.documentElement.dataset.ambiance = reglages.theme;
     document.documentElement.dataset.animations = reglages.animations;
+    document.documentElement.dataset.paysages = reglages.paysages === false ? 'non' : 'oui';
     stockage.ecrire(CLE_REGLAGES, JSON.stringify(reglages));
   }, [reglages, stockage]);
 

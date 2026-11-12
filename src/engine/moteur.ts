@@ -483,6 +483,8 @@ export function nouvellePartie(creation: Creation, graine?: number, imposes?: Pa
   if (s.tirages.prodige) s.drapeaux['prodige'] = true;
   appliquerHeritage(s);
   if (c.origine === 'orphelin') s.drapeaux['orphelin'] = true;
+  // Le premier matin : l'une des quatre ouvertures, tirée de la graine (sans toucher au tirage du destin).
+  s.drapeaux['ouverture'] = (Math.imul(seed ^ 0x9e3779b9, 2654435761) >>> 0) % 4;
   if (c.ageDepart === 10) {
     for (const id of ['taijutsu', 'ninjutsu', 'genjutsu']) s.maitrises[id].trainingDays = 40;
     s.maitrises['taijutsu'].tier = 1;

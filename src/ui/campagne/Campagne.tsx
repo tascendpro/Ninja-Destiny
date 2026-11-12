@@ -10,6 +10,17 @@ import type { ActionLien, Campagne, IdJoueur, SigneCombat, SuiteMort } from '../
 import { LIBELLES_LIEN, SIGNES, actionsLien, motsDuLien, souvenirsDe, vueCombatDuo, vueCommune, vuePrivee } from '../../engine/campagne/moteur';
 import { R } from '../../engine/registre';
 import { projeter, type CartePublique } from '../../engine/campagne/projection';
+import { lieuCourant } from '../../engine/moteur';
+import { ParagrapheRecit } from '../paroles';
+import { Estampe } from '../Recit';
+
+/** Le village de celui qui a la main : les scènes à deux n'ont pas de lieu à elles. */
+function Decor({ c, j }: { c: Campagne; j: IdJoueur }) {
+  const s = c.joueurs[j];
+  const anime = typeof document === 'undefined' || document.documentElement.dataset.animations !== 'reduites';
+  const theme = typeof document !== 'undefined' && document.documentElement.dataset.ambiance === 'washi' ? 'washi' : 'nuit';
+  return <Estampe lieu={lieuCourant(s, '$village')} theme={theme} anime={anime} jour={s.jour} />;
+}
 
 const TON: Record<string, string> = { chaud: 'chaud', amer: 'amer', honteux: 'honteux', fier: 'fier', tragique: 'tragique' };
 
@@ -35,9 +46,7 @@ function Paragraphes({ texte }: { texte: string }) {
   return (
     <>
       {texte.split('\n\n').map((p, i) => (
-        <p key={i} className="narration">
-          {p}
-        </p>
+        <ParagrapheRecit key={i} texte={p} classe="narration" />
       ))}
     </>
   );
@@ -67,6 +76,7 @@ export function SceneCommune({ c, j, onChoisir }: { c: Campagne; j: IdJoueur; on
   const autre = c.creations[(1 - j) as IdJoueur].prenom;
   return (
     <div className="recit">
+      <Decor c={c} j={j} />
       <article className="recit-texte scene-commune">
         <p className="commune-etiquette">
           Scène commune · {c.creations[0].prenom} et {c.creations[1].prenom}
@@ -86,6 +96,7 @@ export function ScenePrivee({ c, j, onChoisir }: { c: Campagne; j: IdJoueur; onC
   if (!v) return null;
   return (
     <div className="recit">
+      <Decor c={c} j={j} />
       <article className="recit-texte scene-commune scene-privee">
         <p className="commune-etiquette">Scène privée · {c.creations[(1 - j) as IdJoueur].prenom} n’en saura rien</p>
         <h1 className="titre-scene">{v.titre}</h1>
@@ -103,6 +114,7 @@ export function ResultatCommun({ c, j, prive = false, onContinuer }: { c: Campag
   const derniere = !prive && c.dernierCombat && !r.libelles[0] ? c.dernierCombat[j].filter((e) => e.manche > 0).at(-1) : undefined;
   return (
     <div className="recit">
+      <Decor c={c} j={j} />
       <article className={`recit-texte scene-commune${prive ? ' scene-privee' : ''}`}>
         <p className="commune-etiquette">{prive ? 'Scène privée' : 'Scène commune'}</p>
         <h1 className="titre-scene">{r.titre}</h1>

@@ -2,6 +2,8 @@ import type { EventDef } from '../../engine/types';
 import { segmentsParVillage } from './outils';
 
 const DEPART6 = { ageDepart: 6 } as const;
+/** Le premier matin propre au village est l'une des quatre ouvertures possibles (les autres : origines2.ts). */
+const OUVERTURE_VILLAGE = { drapeau: 'ouverture', egal: 0 } as const;
 
 export const ORIGINES: EventDef[] = [
   // ───────── Premier matin, un par village ─────────
@@ -13,7 +15,7 @@ export const ORIGINES: EventDef[] = [
     categorie: 'quotidien',
     lieu: '$village',
     priorite: 100,
-    si: { tout: [{ village: 'konoha' }, DEPART6] },
+    si: { tout: [{ village: 'konoha' }, DEPART6, OUVERTURE_VILLAGE] },
     personnages: ['@parent'],
     texte:
       'Le printemps de l’an 52 recouvre Konoha d’une odeur de cèdre et de poussière chaude. Du haut de la falaise, les visages sculptés des Hokage veillent sur des rues où l’on parle encore de la dernière guerre à voix basse.\n\nTu as six ans, et {parent} t’emmène inscrire ton nom à l’Académie. Sur la place, une patrouille de la police militaire Uchiha encercle un marchand accusé de vol. L’homme jure qu’il est innocent. La foule regarde. Personne ne dit rien.',
@@ -56,7 +58,7 @@ export const ORIGINES: EventDef[] = [
     categorie: 'civils',
     lieu: '$village',
     priorite: 100,
-    si: { tout: [{ village: 'suna' }, DEPART6] },
+    si: { tout: [{ village: 'suna' }, DEPART6, OUVERTURE_VILLAGE] },
     personnages: ['@coequipierA'],
     texte:
       'À Suna, la journée commence par la file d’eau. Chaque famille reçoit sa ration au puits du quartier, sous l’œil d’un chūnin qui note tout. Le daimyō a encore réduit le budget du village ; cette saison, les rations ont baissé d’un quart.\n\nDevant toi, une fillette maigre tousse à s’en plier en deux. Sa gourde est vide : elle a renversé sa ration en tombant. Elle s’appelle {@coequipierA}, et elle entre à l’Académie demain, comme toi.',
@@ -94,7 +96,7 @@ export const ORIGINES: EventDef[] = [
     categorie: 'politique',
     lieu: '$village',
     priorite: 100,
-    si: { tout: [{ village: 'kiri' }, DEPART6] },
+    si: { tout: [{ village: 'kiri' }, DEPART6, OUVERTURE_VILLAGE] },
     texte: [
       {
         texte:
@@ -143,7 +145,7 @@ export const ORIGINES: EventDef[] = [
     categorie: 'politique',
     lieu: '$village',
     priorite: 100,
-    si: { tout: [{ village: 'kumo' }, DEPART6] },
+    si: { tout: [{ village: 'kumo' }, DEPART6, OUVERTURE_VILLAGE] },
     personnages: ['@coequipierB'],
     texte:
       'Les ponts de Kumo tremblent sous le vent, et tu as appris à marcher au milieu sans regarder le vide. Ce matin, une patrouille revient du col avec un enfant étranger, poignets liés, bandeau d’un autre village arraché. Un « invité diplomatique », dit le capitaine en riant.\n\nUne bande d’enfants le suit en lui jetant des cailloux. Parmi eux, {@coequipierB}, le grand garçon timide de ta rue, qui lance sans viser — pour faire comme les autres.',
@@ -182,7 +184,7 @@ export const ORIGINES: EventDef[] = [
     categorie: 'civils',
     lieu: 'carrieres_terre',
     priorite: 100,
-    si: { tout: [{ village: 'iwa' }, DEPART6] },
+    si: { tout: [{ village: 'iwa' }, DEPART6, OUVERTURE_VILLAGE] },
     personnages: ['@coequipierA'],
     texte:
       'Iwa vit au rythme des carrières. Ce matin, tu accompagnes {parent} jusqu’aux galeries de l’est quand le sol gronde. Un pan de roche s’effondre sur une entrée. Des cris montent de dessous.\n\nUn garçon couvert de poussière, {@coequipierA}, s’est jeté sur les pierres à mains nues. Son oncle est là-dessous.',

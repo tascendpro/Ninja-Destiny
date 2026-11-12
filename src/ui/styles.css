@@ -6452,9 +6452,9 @@ body::before {
   max-height: 30vh;
   margin: 0 auto;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 55%, transparent 100%), linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 70%, transparent 100%), linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
   -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(180deg, #000 0, #000 55%, transparent 100%), linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 70%, transparent 100%), linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
   mask-composite: intersect;
 }
 .estampe svg,
@@ -6547,8 +6547,8 @@ body::before {
 
 @media (max-width: 700px) {
   .estampe {
-    -webkit-mask-image: linear-gradient(180deg, #000 0, #000 55%, transparent 100%);
-    mask-image: linear-gradient(180deg, #000 0, #000 55%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, #000 0, #000 70%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 0, #000 70%, transparent 100%);
   }
 }
 .estampe + .espace-scene + .recit-texte,
@@ -6608,4 +6608,110 @@ body::before {
 }
 .recit-combat > :not(.estampe) {
   position: relative;
+}
+
+/* Le passage de l'appareil : un halo à la couleur du joueur, un sceau cerclé d'encre, rien d'autre à voir. */
+.passage.joueur-0,
+.passage.joueur-1 {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 42% at 50% 46%, color-mix(in srgb, var(--couleur-joueur) 20%, transparent), transparent 70%),
+    var(--encre);
+}
+.passage.joueur-0::before,
+.passage.joueur-1::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(84vw, 460px);
+  aspect-ratio: 1;
+  translate: -50% -58%;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--couleur-joueur) 38%, transparent);
+  border-right-color: transparent;
+  rotate: -28deg;
+  pointer-events: none;
+}
+.passage .passage-sceau {
+  position: relative;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--couleur-joueur, var(--vermillon)) 18%, transparent), 0 18px 40px -16px var(--couleur-joueur, var(--vermillon));
+  rotate: -4deg;
+}
+.passage > * {
+  position: relative;
+}
+.passage.joueur-0 .btn-principal,
+.passage.joueur-1 .btn-principal {
+  background: var(--couleur-joueur);
+}
+
+/* Le paysage figé : une simple image, rien à repeindre pendant le jeu. */
+.estampe .paysage-fige {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+}
+.estampe-air i {
+  will-change: transform;
+}
+/* Sur téléphone, la bande reste basse : les choix restent à portée du pouce. */
+@media (max-width: 700px) {
+  .estampe:not(.estampe-combat) {
+    aspect-ratio: 3 / 1;
+    max-height: 22vh;
+  }
+  .estampe + .espace-scene + .recit-texte,
+  .estampe + .lieu-bandeau {
+    margin-top: -26px;
+  }
+}
+/* Les paysages se coupent dans les réglages : la mise en page revient à celle d'avant. */
+:root[data-paysages='non'] .estampe {
+  display: none;
+}
+:root[data-paysages='non'] .estampe + .espace-scene + .recit-texte,
+:root[data-paysages='non'] .estampe + .lieu-bandeau {
+  margin-top: 0;
+}
+:root[data-paysages='non'] .estampe + .espace-scene {
+  height: 14px;
+}
+
+/* Les dialogues : une réplique par ligne, le tiret en retrait suspendu, la parole dorée, l'incise en romain. */
+.dialogue > p {
+  margin: 0;
+}
+.dialogue > p + p {
+  margin-top: 0.35em;
+}
+.texte-recit .dialogue + p,
+.texte-recit p + .dialogue,
+.texte-recit .dialogue + .dialogue,
+.scene-commune .dialogue + .narration,
+.scene-commune .narration + .dialogue,
+.scene-commune .dialogue + .dialogue {
+  margin-top: 1em;
+}
+.dialogue > p.replique {
+  padding-left: 1.15em;
+  text-indent: -1.15em;
+}
+.dialogue .tiret {
+  color: var(--or);
+  font-style: normal;
+}
+.texte-recit.lettrine > .dialogue:first-child > p:first-child:not(.replique)::first-letter {
+  float: left;
+  font-family: var(--mincho);
+  font-weight: 800;
+  font-size: 3.3em;
+  line-height: 0.82;
+  margin: 0.06em 0.12em 0 0;
+  text-transform: uppercase;
+  color: var(--or);
 }

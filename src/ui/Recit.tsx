@@ -12,8 +12,8 @@ import { duoPossible, genererActivites, naturesActivite, periodeMax } from '../e
 import type { Activite } from '../engine/tempsLibre';
 import { age, libelleDuree, libellePeriode, moisDe, saisonDe } from '../engine/calendrier';
 import Portrait from './Portrait';
-import SceneArt from './SceneArt';
-import { avecParoles } from './paroles';
+import { PaysageFige } from './SceneArt';
+import { ParagrapheRecit } from './paroles';
 import Affrontement, { CarteBilan } from './combat/Affrontement';
 import GroupesNature, { groupeTechnique } from './combat/GroupesNature';
 import { classeMulti, styleNatures } from './natures';
@@ -66,10 +66,10 @@ export function Estampe({ lieu, theme, anime, jour, combat = false }: { lieu: Li
   const saison = jour === undefined ? undefined : saisonDe(jour);
   return (
     <figure className={`estampe${saison ? ` estampe-${saison}` : ''}${combat ? ' estampe-combat' : ''}`} aria-hidden="true">
-      <SceneArt scene={lieu.scene} graine={lieu.id} theme={theme} anime={anime} lieuId={lieu.id} panorama />
+      <PaysageFige scene={lieu.scene} graine={lieu.id} theme={theme} lieuId={lieu.id} />
       {anime && saison && (
         <span className="estampe-air">
-          {Array.from({ length: 9 }, (_, i) => (
+          {Array.from({ length: 7 }, (_, i) => (
             <i key={i} style={{ '--i': i } as React.CSSProperties} />
           ))}
         </span>
@@ -117,7 +117,7 @@ function Paragraphes({ texte, presentation, lettrine = false }: { texte: string;
       {accorder(texte, presentation)
         .split(/\n\n+/)
         .map((p, i) => (
-          <p key={i}>{avecParoles(p)}</p>
+          <ParagrapheRecit key={i} texte={p} />
         ))}
     </div>
   );
