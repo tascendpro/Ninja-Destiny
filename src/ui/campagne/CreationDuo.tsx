@@ -56,6 +56,7 @@ export default function CreationDuo({ onCommencer, onRetour }: { onCommencer: (c
         key="j2"
         joueur={`Joueur 2 · crée ton ninja${c1 ? ` (aux côtés de ${c1.prenom})` : ''}`}
         libelleFin="Définir votre lien"
+        modele={c1 ?? undefined}
         onRetour={() => setEtape(0)}
         onCommencer={(c) => {
           setC2(c);
@@ -65,6 +66,20 @@ export default function CreationDuo({ onCommencer, onRetour }: { onCommencer: (c
     );
 
   const v = validerLien(c1, c2, type, origine);
+  /** Tire un lien et un passé qui tiennent debout avec vos deux ninjas (l'origine nécessaire est prise d'office). */
+  const lienAuHasard = () => {
+    const types = (Object.keys(LIBELLES_LIEN) as TypeLien[]).filter((t) => {
+      const r = validerLien(c1, c2, t, undefined);
+      return !r.erreur || (r.suggestion && !validerLien(c1, c2, t, r.suggestion).erreur);
+    });
+    const t = types[Math.floor(Math.random() * types.length)] ?? 'amis';
+    const r = validerLien(c1, c2, t, undefined);
+    const passes = Object.keys(LIBELLES_PASSE) as PasseCommun[];
+    setType(t);
+    setOrigine(r.erreur ? r.suggestion : undefined);
+    setPasse(passes[Math.floor(Math.random() * passes.length)]);
+    setSauveur(Math.random() < 0.5 ? 0 : 1);
+  };
   const noms = [c1.prenom, c2.prenom];
   return (
     <main className="creation creation-duo">
@@ -75,6 +90,13 @@ export default function CreationDuo({ onCommencer, onRetour }: { onCommencer: (c
       <p className="sous-titre">
         {R.villages[c1.village]?.nom}, {R.clans[c1.clan]?.nom} · {R.villages[c2.village]?.nom}, {R.clans[c2.clan]?.nom}
       </p>
+
+      <div className="raccourcis-actions duo-hasard">
+        <button className="raccourci-des" onClick={lienAuHasard}>
+          <span aria-hidden="true">縁</span>
+          <strong>Un lien au hasard</strong>
+        </button>
+      </div>
 
       <section className="groupe">
         <h3>Votre lien</h3>

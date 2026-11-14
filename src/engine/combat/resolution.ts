@@ -33,6 +33,8 @@ import { bonusPhase, majeureDe, pareLaMajeure } from './boss';
 import { adversaireDef, statsAdversaire, techniquesAdversaire } from './adversaire';
 import { duoUtilisable } from '../duo';
 import { marquerTerrain, natureAction, synergiePour } from './terrain';
+import { gesteEnchaine } from './gestes';
+import type { GesteDef } from '../../content/combat/gestes';
 import type { Synergie } from './terrain';
 
 // ── Le catalogue des actions ─────────────────────────────────
@@ -381,6 +383,9 @@ function marquer(s: GameState, sc: EtatAffrontement, id: string, v: VueAction): 
   const vu = vuesAction(s, sc, id);
   const syn = R.maitrises[id] ? synergiePour(s, sc, natureAction(id)) : undefined;
   if (syn && syn.niveau !== 'compromis') v.marques.push(syn.parTerrain ? 'terrain favorable' : 'synergie possible');
+  const famille = (TAIJUTSU[id] ? 'taijutsu' : ARME[id] ? 'arme' : R.maitrises[id] ? 'ninjutsu' : undefined) as Famille | undefined;
+  const geste = famille ? gesteEnchaine(sc, famille, id) : undefined;
+  if (geste) v.marques.push(`enchaînement : ${geste.nom.toLowerCase()}`);
   const tac = R.maitrises[id]?.technique?.tactique?.effets ?? [];
   if (tac.includes('interrompt') && sc.intention === 'preparer' && sc.annonce.fiabilite === 'fiable') v.marques.push('peut interrompre');
   if (sc.adv.membres && R.maitrises[id] && porteeTechnique(id) !== 'cible') v.marques.push('tout le groupe');
@@ -441,6 +446,8 @@ export interface ResultatManche {
   decisif: boolean;
   /** L'enchaînement de natures qui a porté cette manche. */
   synergie?: Synergie;
+  /** L'enchaînement de gestes qui a porté cette manche. */
+  geste?: GesteDef;
 }
 
 export interface Tirages {
@@ -632,6 +639,9 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     const syn = synergiePour(s, sc, nature);
     const tac = estTech ? (R.maitrises[cle].technique?.tactique?.effets ?? []) : [];
     if (syn) pPred += syn.lue ? 0.1 : -syn.precision;
+    // L'enchaînement de gestes : il le lit moins bien, sauf s'il l'a déjà vu deux fois dans ce combat.
+    const geste = gesteEnchaine(sc, a.famille, cle);
+    if (geste) pPred += (sc.gestesVus?.[geste.id] ?? 0) >= 2 ? 0.1 : -geste.surprise;
     // Ce qu'il a compris de ce geste (§3.1) ; ce qu'il croit avoir compris, à tort ; son calme ou sa colère.
     const lu = sc.comprises?.[cle];
     if (lu === 'comprise') pPred += 0.15;
@@ -667,6 +677,12 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
       return finir(s, sc, res);
     }
     // C. Impact. Une nature qui nourrit la précédente (le vent attise le feu) frappe plus fort : l'enchaînement.
+    if (geste) {
+      res.geste = geste;
+      sc.gestesVus = { ...(sc.gestesVus ?? {}), [geste.id]: (sc.gestesVus?.[geste.id] ?? 0) + 1 };
+      s.drapeaux['gestes_enchaines'] = (Number(s.drapeaux['gestes_enchaines']) || 0) + 1;
+      if (geste.chakra) s.jauges.chakra = Math.min(s.jauges.chakraMax, s.jauges.chakra + geste.chakra);
+    }
     if (syn) {
       res.synergie = syn;
       marquerTerrain(sc, undefined, syn);
@@ -675,7 +691,7 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     }
     const interromp = tac.includes('interrompt') && (sc.intention === 'preparer' || sc.intention === 'majeure');
     const ouvertureAvant = sc.ouverture;
-    let puissance = puissanceJoueur(s, a) + (elanDepense === 1 ? 10 : 0) + sc.ouverture + (res.inedite ? 12 : 0) + (syn?.puissance ?? 0) + (interromp ? 10 : 0);
+    let puissance = puissanceJoueur(s, a) + (elanDepense === 1 ? 10 : 0) + sc.ouverture + (res.inedite ? 12 : 0) + (syn?.puissance ?? 0) + (geste?.puissance ?? 0) + (interromp ? 10 : 0);
     sc.ouverture = 0;
     let mult = 1;
     const def = R.maitrises[cle];
@@ -697,7 +713,7 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     }
     const gardeAdv = sc.intention === 'defense' ? 'garde' : sc.adv.garde;
     // Une technique qui perce (ou un enchaînement qui contourne) passe la garde.
-    const perce = tac.includes('perce') || syn?.effet === 'perce';
+    const perce = tac.includes('perce') || syn?.effet === 'perce' || geste?.effet === 'perce';
     if (gardeAdv === 'garde' && !perce) mult *= 0.7;
     if (gardeAdv === 'desequilibre') mult *= tac.includes('achevement') ? 1.5 : 1.25;
     // Une technique qui exige une ouverture perd de sa force face à un adversaire bien campé.
@@ -759,11 +775,11 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     if (res.inflige > 0) {
       sc.elan = Math.min(3, sc.elan + 1 + (sc.joueur.garde === 'ouverte' && gardeAdv === 'desequilibre' ? 1 : 0));
       sc.touchesSubiesAdv += 1;
-      if ((a.famille === 'taijutsu' && TAIJUTSU[cle]?.effet === 'desequilibre') || (a.famille === 'arme' && ARME[cle]?.effet === 'desequilibre') || tac.includes('desequilibre') || syn?.effet === 'desequilibre')
+      if ((a.famille === 'taijutsu' && TAIJUTSU[cle]?.effet === 'desequilibre') || (a.famille === 'arme' && ARME[cle]?.effet === 'desequilibre') || tac.includes('desequilibre') || syn?.effet === 'desequilibre' || geste?.effet === 'desequilibre')
         sc.adv.garde = 'desequilibre';
       else sc.adv.garde = 'ouverte';
       // Ce que l'enchaînement fait de plus que frapper : paralyser, aveugler.
-      if (syn?.effet === 'sonne') sc.adv.sonne = Math.max(sc.adv.sonne, 1);
+      if (syn?.effet === 'sonne' || geste?.effet === 'sonne') sc.adv.sonne = Math.max(sc.adv.sonne, 1);
       if (syn?.effet === 'aveugle') sc.advAveugle = 2;
       if (interromp && sc.intention === 'preparer') {
         sc.intention = 'defense';

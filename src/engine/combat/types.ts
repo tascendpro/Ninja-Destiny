@@ -245,6 +245,8 @@ export interface EntreeManche {
   subi?: number;
   /** L'enchaînement de natures joué cette manche, pour son résumé. */
   synergie?: { nom: string; niveau: string; de: string; vers: string };
+  /** L'enchaînement de gestes joué cette manche. */
+  geste?: { nom: string; kanji: string };
   /** Journal technique interne, pour le débogage (§0.3.18). */
   technique: string;
 }
@@ -304,6 +306,10 @@ export interface EtatAffrontement {
   /** Familles interdites par la règle de ce combat. */
   interdit?: Famille[];
   actionsJoueur: string[];
+  /** La famille de chacune de tes actions, dans le même ordre (les enchaînements de gestes la lisent). */
+  famillesJoueur?: Famille[];
+  /** Les enchaînements de gestes déjà joués dans ce combat (id → fois) : l'adversaire finit par les attendre. */
+  gestesVus?: Record<string, number>;
   journal: EntreeManche[];
   repliquesUtilisees: Record<string, number>;
   gardesConsecutives: number;

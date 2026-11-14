@@ -12,6 +12,7 @@ import { accorder } from '../texte';
 import { SCENES_COMMUNES } from '../../content/campagne/scenes';
 import { SCENES_VIE } from '../../content/campagne/scenesVie';
 import { SCENES_SOUVENIRS } from '../../content/campagne/scenesSouvenirs';
+import { SCENES_COMPLICES } from '../../content/campagne/scenesComplices';
 import { SCENES_ENFANCE } from '../../content/campagne/scenesEnfance';
 import { SCENES_GENIN } from '../../content/campagne/scenesGenin';
 import { SCENES_ADULTES } from '../../content/campagne/scenesAdultes';
@@ -28,7 +29,7 @@ export { texteCommun } from './outils';
 export { vueCombatDuo, SIGNES } from './combat';
 export { actionsLien, ensemble } from './lien';
 
-export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS].map((s) => [s.id, s]));
+export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES].map((s) => [s.id, s]));
 
 export const LIBELLES_LIEN: Record<TypeLien, string> = {
   freres: 'Frères et sœurs',

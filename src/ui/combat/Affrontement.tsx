@@ -37,6 +37,8 @@ const ISSUES: Record<string, { mot: string; ton: 'bon' | 'mauvais' | 'neutre' }>
 
 export default function Affrontement({ etat, onCombat }: { etat: GameState; onCombat: (a: ActionCombat) => void }) {
   const v = vueAffrontement(etat);
+  // La dernière manche déjà jouée quand l'écran s'ouvre : on n'anime que les suivantes.
+  const premiereManche = useRef<number | null>(null);
   const p = etat.creation.presentation;
   const [famille, setFamille] = useState<Famille | null>(null);
   const [choix, setChoix] = useState<string | null>(null);
@@ -96,6 +98,8 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
   const entree = v.journal.find((j) => j.manche === 0)?.repliques[0];
   const gA = GARDE[v.adversaire.garde];
   const gJ = GARDE[v.joueur.garde];
+  const mancheVue = premiereManche.current ?? (premiereManche.current = derniere?.manche ?? 0);
+  const transition = derniere && derniere.manche > mancheVue ? derniere : undefined;
 
   type A = NonNullable<typeof fam>['actions'][number];
   // Toucher une carte la choisit ; la toucher de nouveau la lance. Sous une action : son nom, ses marques, son coût. Rien d'autre.
@@ -139,9 +143,10 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
       <article className="recit-texte affrontement">
         <h1 className="titre-scene">{accorder(v.titre, p)}</h1>
 
+        {transition && <TransitionManche key={transition.manche} j={transition} />}
         {/* 1. Face-à-face : toi à gauche, l'adversaire à droite */}
         <div className="aff-duel" ref={haut}>
-          <div className="aff-carte joueur">
+          <div className={`aff-carte joueur${transition?.subi ? ' frappee' : ''}`} key={`cj${transition?.manche ?? 0}`}>
             <span className="aff-avatar">
               <Portrait nom={etat.creation.prenom} village={etat.creation.village} clan={etat.creation.clan} taille={40} />
             </span>
@@ -183,7 +188,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
               {v.contexte.kanji}
             </span>
           </div>
-          <div className="aff-carte adv">
+          <div className={`aff-carte adv${transition?.inflige ? ' frappee' : ''}`} key={`ca${transition?.manche ?? 0}`}>
             <span className="aff-avatar adv" aria-hidden="true">
               敵
             </span>
@@ -457,6 +462,27 @@ function Replique({ nom, texte }: { nom: string; texte: string }) {
   );
 }
 
+/** Le passage d'une manche à l'autre : un coup de pinceau, le numéro, l'issue, l'enchaînement. Il ne bloque rien. */
+function TransitionManche({ j }: { j: Entree }) {
+  const issue = j.issue ? ISSUES[j.issue] : undefined;
+  const combo = j.geste?.nom ?? j.synergie?.nom;
+  return (
+    <div className={`aff-transition ton-${issue?.ton ?? 'neutre'}`} aria-hidden="true">
+      <svg className="aff-transition-trait" viewBox="0 0 600 80" preserveAspectRatio="none">
+        <path d="M8 52 C120 30 260 34 380 40 S560 30 592 22" />
+      </svg>
+      <span className="aff-transition-manche">Manche {j.manche}</span>
+      {issue && <span className="aff-transition-issue">{issue.mot}</span>}
+      {combo && (
+        <span className="aff-transition-combo">
+          {j.geste && <i>{j.geste.kanji}</i>}
+          {combo}
+        </span>
+      )}
+    </div>
+  );
+}
+
 /** Une manche jouée (§22.4) : son issue d'abord, puis le récit d'un seul tenant, la cause, et la réplique. */
 function BlocManche({ j, nom, p }: { j: Entree; nom: string; p: GameState['creation']['presentation'] }) {
   const issue = j.issue ? ISSUES[j.issue] : undefined;
@@ -471,6 +497,14 @@ function BlocManche({ j, nom, p }: { j: Entree; nom: string; p: GameState['creat
         {accorder(j.execution, p)} {j.reponse && accorder(j.reponse, p)}
       </p>
       <p className="aff-recit-manche impact">{avecParoles(accorder(j.impact, p))}</p>
+      {j.geste && (
+        <p className="aff-geste-combo">
+          <span className="aff-geste-sceau" aria-hidden="true">
+            {j.geste.kanji}
+          </span>
+          <b>Enchaînement</b> {j.geste.nom}
+        </p>
+      )}
       {j.synergie && (
         <p className="aff-synergie">
           <b>Enchaînement</b> {nomNature(j.synergie.de)} → {nomNature(j.synergie.vers)} · {j.synergie.nom} <small>({j.synergie.niveau})</small>

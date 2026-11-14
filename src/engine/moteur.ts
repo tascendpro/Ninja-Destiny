@@ -657,6 +657,8 @@ export interface VueChoix {
   mortel?: boolean;
   /** Ce combat se joue en Affrontement Racine : son contexte (les issues ne sont jamais annoncées à l'avance). */
   affrontement?: { contexte: string; kanji: string };
+  /** Le ton de la réponse, dans un dialogue. */
+  ton?: import('./types').TonReponse;
 }
 
 /** Une attaque spéciale telle qu'on la propose : chances, récit selon la forme du combat, risque pour les alliés. */
@@ -761,6 +763,7 @@ export function choixVisibles(s: GameState, ev: EventDef): VueChoix[] {
       allies: attaques?.length ? test?.allies : undefined,
       nature: test ? (test.type === 'combat' ? 'combat' : 'epreuve') : 'libre',
       mortel: !!test?.letal,
+      ton: c.ton,
     });
   }
   if (!res.some((c) => c.disponible)) res.push({ id: CHOIX_PASSER.id, texte: CHOIX_PASSER.texte, disponible: true });
@@ -959,6 +962,8 @@ function choisirMut(s: GameState, choixId: string): void {
   if (tech && affrontementPour(ev.id, baseId)) throw new Error('Attaque spéciale indisponible.');
   s.actions.push({ a: 'choix', id: choixId });
   s.annonce = undefined;
+  // Ta façon de parler : le monde finit par la connaître (les dialogues lisent les drapeaux « ton_… »).
+  if (ch.ton) s.drapeaux[`ton_${ch.ton}`] = (Number(s.drapeaux[`ton_${ch.ton}`]) || 0) + 1;
   const ctx: Ctx = nouveauCtx();
   if (ch.test && affrontementPour(ev.id, ch.id)) {
     ouvrirAffrontement(s, ev, ch);

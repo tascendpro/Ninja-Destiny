@@ -6715,3 +6715,593 @@ body::before {
   text-transform: uppercase;
   color: var(--or);
 }
+
+/* ── Le passage d'une manche à l'autre ── */
+.aff-transition {
+  position: fixed;
+  left: 50%;
+  top: 38%;
+  z-index: 60;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: min(92vw, 560px);
+  padding: 18px 12px 16px;
+  translate: -50% -50%;
+  pointer-events: none;
+  text-align: center;
+  animation: transition-manche 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.aff-transition-trait {
+  position: absolute;
+  inset: 6px 22px;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.aff-transition-trait path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--encre) 88%, transparent);
+  stroke-width: 54;
+  stroke-linecap: round;
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+  animation: transition-trait 0.55s ease-out 0.05s forwards;
+}
+.aff-transition.ton-bon .aff-transition-trait path {
+  stroke: color-mix(in srgb, var(--jade) 30%, var(--encre));
+}
+.aff-transition.ton-mauvais .aff-transition-trait path {
+  stroke: color-mix(in srgb, var(--vermillon) 38%, var(--encre));
+}
+.aff-transition > span {
+  position: relative;
+}
+.aff-transition-manche {
+  font-family: var(--mincho);
+  font-size: var(--t-2xl);
+  font-weight: 700;
+  color: var(--papier);
+  letter-spacing: 0.04em;
+}
+:root[data-ambiance='washi'] .aff-transition-manche,
+:root[data-ambiance='washi'] .aff-transition-issue {
+  color: #fbf6ea;
+}
+.aff-transition-issue {
+  font-size: var(--t-s);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--or);
+}
+.aff-transition-combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  color: #ffe2a8;
+}
+.aff-transition-combo i {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--vermillon);
+  color: #fff6ec;
+  font-style: normal;
+  rotate: -6deg;
+  animation: tampon 0.4s 0.45s ease-out both;
+}
+@keyframes transition-manche {
+  0% {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  14% {
+    opacity: 1;
+    transform: none;
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+@keyframes transition-trait {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* La carte de celui qui vient d'être touché tremble, un instant. */
+.aff-carte.frappee {
+  animation: carte-frappee 0.42s ease-out 0.25s both;
+}
+.aff-carte.adv.frappee {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--jade) 40%, transparent);
+}
+.aff-carte.joueur.frappee {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--vermillon) 50%, transparent);
+}
+@keyframes carte-frappee {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-6px) rotate(-0.6deg);
+  }
+  45% {
+    transform: translateX(5px) rotate(0.4deg);
+  }
+  70% {
+    transform: translateX(-2px);
+  }
+}
+
+/* L'enchaînement de gestes, dans le récit de la manche. */
+.aff-geste-combo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  font-size: var(--t-s);
+  color: var(--or);
+}
+.aff-geste-sceau {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--vermillon);
+  color: var(--texte-bouton);
+  font-family: var(--mincho);
+  rotate: -5deg;
+  animation: tampon 0.4s ease-out both;
+}
+
+/* Le passage de l'appareil : le cercle d'encre se trace, le sceau se tamponne, le nom arrive. */
+.passage.joueur-0::before,
+.passage.joueur-1::before {
+  animation: passage-cercle 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.passage .passage-sceau {
+  animation: passage-sceau 0.55s 0.2s ease-out both;
+}
+.passage h1 {
+  animation: encre 0.6s 0.35s ease both;
+}
+.passage > p,
+.passage .btn-principal {
+  animation: encre 0.5s 0.5s ease both;
+}
+@keyframes passage-cercle {
+  from {
+    opacity: 0;
+    transform: rotate(-140deg) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes passage-sceau {
+  from {
+    opacity: 0;
+    transform: scale(1.8) rotate(-18deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.94) rotate(2deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* L'arrivée d'une scène : le titre, puis le texte, puis les choix, un à un. Court : on peut jouer tout de suite. */
+.recit > .recit-texte > .titre-scene {
+  animation: encre 0.45s ease both;
+}
+.recit > .recit-texte > .texte-recit,
+.recit > .recit-texte > [aria-live] {
+  animation: encre 0.5s 0.08s ease both;
+}
+.recit .choix-liste > li {
+  animation: choix-arrive 0.36s ease both;
+}
+.recit .choix-liste > li:nth-child(1) {
+  animation-delay: 0.16s;
+}
+.recit .choix-liste > li:nth-child(2) {
+  animation-delay: 0.22s;
+}
+.recit .choix-liste > li:nth-child(3) {
+  animation-delay: 0.28s;
+}
+.recit .choix-liste > li:nth-child(n + 4) {
+  animation-delay: 0.34s;
+}
+@keyframes choix-arrive {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.estampe .paysage-fige {
+  animation: paysage-arrive 0.6s ease both;
+}
+@keyframes paysage-arrive {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Le ton d'une réponse, au-dessus de son texte. */
+.choix-texte .ton {
+  display: block;
+  margin-bottom: 2px;
+  font-size: var(--t-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brume);
+}
+.ton-chaleureux { color: #e0a35b !important; }
+.ton-franc { color: var(--jade) !important; }
+.ton-moqueur { color: #c58be0 !important; }
+.ton-froid { color: #7fb3d5 !important; }
+.ton-menacant { color: var(--vermillon-clair) !important; }
+.ton-silence { color: var(--brume) !important; }
+.ton-mensonge { color: #b8a36a !important; }
+.ton-humour { color: #e6c35c !important; }
+:root[data-ambiance='washi'] .ton-chaleureux { color: #a4601c !important; }
+:root[data-ambiance='washi'] .ton-moqueur { color: #7a3f99 !important; }
+:root[data-ambiance='washi'] .ton-froid { color: #2f6a8f !important; }
+:root[data-ambiance='washi'] .ton-mensonge { color: #7a6420 !important; }
+:root[data-ambiance='washi'] .ton-humour { color: #8a6a00 !important; }
+
+/* ── Création : pastilles cliquables, fiche en direct, voies tracées ── */
+.etapes-nav {
+  gap: 4px;
+}
+.etapes-nav button {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 8px 0 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--brume);
+  cursor: pointer;
+}
+.etapes-nav button:disabled {
+  cursor: default;
+}
+.etapes-nav button i {
+  display: block;
+  flex: none;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--trait);
+  transition: background 0.3s, transform 0.3s;
+}
+.etapes-nav button.fait i {
+  background: var(--accent);
+}
+.etapes-nav button.ici i {
+  transform: scaleY(1.9);
+}
+.etapes-nav button span {
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+}
+.etapes-nav button.ici span,
+.etapes-nav button:not(:disabled):hover span {
+  opacity: 1;
+  color: var(--papier-2);
+}
+@media (min-width: 720px) {
+  .etapes-nav button span {
+    opacity: 0.7;
+  }
+}
+
+.fiche-ninja {
+  position: sticky;
+  top: 8px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid color-mix(in srgb, var(--c) 45%, var(--trait));
+  border-radius: var(--rayon-m);
+  background: color-mix(in srgb, var(--encre-2) 88%, var(--c));
+  box-shadow: var(--ombre);
+  animation: encre 0.4s ease both;
+}
+.fiche-sceau {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--c);
+  color: var(--texte-bouton);
+  font-family: var(--mincho);
+  font-size: 1.35rem;
+  transform: rotate(-4deg);
+}
+.fiche-corps {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.fiche-corps strong {
+  font-family: var(--mincho);
+  font-size: var(--t-l);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fiche-corps small {
+  color: var(--brume);
+  font-size: var(--t-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fiche-nature {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--n);
+  color: var(--n);
+  font-family: var(--mincho);
+}
+
+.raccourcis {
+  margin: 0 0 22px;
+}
+.raccourcis-tete h2 {
+  font-family: var(--mincho);
+  font-size: var(--t-l);
+  margin: 0 0 2px;
+}
+.raccourcis-tete p {
+  margin: 0 0 12px;
+  color: var(--brume);
+  font-size: var(--t-s);
+}
+.raccourcis-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.raccourci-des {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 8px;
+  border: 1px solid var(--trait);
+  border-radius: 999px;
+  background: var(--ardoise);
+  color: var(--papier);
+  font-size: var(--t-s);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.raccourci-des span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--texte-bouton);
+  font-family: var(--mincho);
+}
+.raccourci-des:hover,
+.raccourci-des[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+.raccourci-des:active {
+  transform: scale(0.97);
+}
+.duo-hasard {
+  margin: 4px 0 18px;
+}
+
+.voies {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(15.5rem, 78%);
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 2px 2px 10px;
+  margin: 0 -2px;
+  scrollbar-width: thin;
+}
+@media (min-width: 720px) {
+  .voies {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+}
+.voie {
+  scroll-snap-align: start;
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 14px;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon-m);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c) 16%, var(--ardoise)), var(--ardoise) 62%);
+  color: var(--papier);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.voie::after {
+  content: '';
+  position: absolute;
+  right: -18px;
+  bottom: -18px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 2px solid var(--n);
+  opacity: 0.25;
+}
+.voie:hover {
+  border-color: var(--c);
+  transform: translateY(-2px);
+}
+.voie-kanji {
+  flex: none;
+  font-family: var(--mincho);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--c);
+}
+.voie-corps {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.voie-corps strong {
+  font-family: var(--mincho);
+}
+.voie-corps small {
+  color: var(--brume);
+  font-size: var(--t-xs);
+}
+.voie-corps > span {
+  font-size: var(--t-s);
+  color: var(--papier-2);
+  line-height: 1.45;
+}
+.raccourcis-ou {
+  margin: 14px 0 0;
+  color: var(--brume);
+  font-size: var(--t-s);
+  text-align: center;
+}
+.raccourcis-ou::before,
+.raccourcis-ou::after {
+  content: '—';
+  margin: 0 8px;
+  color: var(--trait);
+}
+
+.profil-traits {
+  margin: 14px 0 4px;
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--trait-doux);
+  border-radius: var(--rayon-m);
+  background: var(--encre-2);
+}
+.profil-ligne {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr 2.4rem;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--t-s);
+}
+.profil-ligne i {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--trait-doux);
+  position: relative;
+  overflow: hidden;
+}
+.profil-ligne i::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--l);
+  background: var(--jade);
+  border-radius: 3px;
+  transition: width 0.35s ease;
+}
+.profil-ligne.fort i::after {
+  background: var(--accent);
+}
+.profil-ligne.fort span {
+  color: var(--papier);
+  font-weight: 600;
+}
+.profil-ligne.perte i::after {
+  background: var(--danger);
+}
+.profil-ligne b {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.recap-nom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.recap-sceau {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--c);
+  color: var(--texte-bouton);
+  transform: rotate(-4deg);
+  animation: passage-sceau 0.5s ease both;
+}
+.recap-modifier {
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  margin-left: 6px;
+  color: var(--accent);
+  font-family: var(--gothic);
+  font-size: var(--t-xs);
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  vertical-align: middle;
+}

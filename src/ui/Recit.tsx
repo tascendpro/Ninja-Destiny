@@ -123,6 +123,18 @@ function Paragraphes({ texte, presentation, lettrine = false }: { texte: string;
   );
 }
 
+/** Le ton des réponses : un kanji sur le talisman, un mot au-dessus du texte. */
+const TONS: Record<string, { kanji: string; nom: string }> = {
+  chaleureux: { kanji: '暖', nom: 'Chaleureux' },
+  franc: { kanji: '直', nom: 'Franc' },
+  moqueur: { kanji: '嘲', nom: 'Moqueur' },
+  froid: { kanji: '冷', nom: 'Froid' },
+  menacant: { kanji: '威', nom: 'Menaçant' },
+  silence: { kanji: '黙', nom: 'Se taire' },
+  mensonge: { kanji: '偽', nom: 'Mentir' },
+  humour: { kanji: '笑', nom: 'Plaisanter' },
+};
+
 const RISQUE_CLASSE: Record<string, string> = { faible: 'risque-faible', modéré: 'risque-modere', élevé: 'risque-eleve', extrême: 'risque-extreme' };
 const ISSUE: Record<string, string> = { critique: 'Réussite éclatante', succes: 'Réussite', partiel: 'Réussite partielle', echec: 'Échec' };
 /** Le sceau tamponné sur le résultat. */
@@ -243,14 +255,17 @@ export default function Recit({
                   onClick={() => choisir(ch.id)}
                 >
                   <span className="fuda-kanji" aria-hidden="true">
-                    {ch.disponible ? kanjiChoix(ch.nature, ch.principal) : '封'}
+                    {!ch.disponible ? '封' : ch.ton ? TONS[ch.ton].kanji : kanjiChoix(ch.nature, ch.principal)}
                   </span>
                   {ch.mortel && ch.disponible && (
                     <span className="fuda-mort" title="On peut y mourir">
                       死
                     </span>
                   )}
-                  <span className="choix-texte">{accorder(ch.texte, p)}</span>
+                  <span className="choix-texte">
+                    {ch.ton && <span className={`ton ton-${ch.ton}`}>{TONS[ch.ton].nom}</span>}
+                    {accorder(ch.texte, p)}
+                  </span>
                   {i < 9 && (
                     <kbd className="touche" aria-hidden="true">
                       {i + 1}

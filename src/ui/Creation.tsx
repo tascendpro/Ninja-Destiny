@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AttributId, Creation as CreationT, ElementId, Presentation, VillageId } from '../engine/types';
 import { R } from '../engine/registre';
-import { APTITUDES, CHANCE_JINCHURIKI, CHANCE_PRODIGE, validerCreation } from '../engine/moteur';
+import { CHANCE_JINCHURIKI, CHANCE_PRODIGE, validerCreation } from '../engine/moteur';
 import { nomDeFamille } from '../engine/etat';
 import { accorder } from '../engine/texte';
 import { ATTRIBUT_LIBELLE } from './libelles';
+import { VOIES, appliquerVoie, aptitudeDe as aptitudeDes, creationAuHasard, derniereCreation, memoriserCreation, prenomAuHasard, profilTraits } from './creationAides';
 
 const ETAPES = ['Identité', 'Village', 'Clan', 'Affinité', 'Personnalité', 'Destin', 'Récapitulatif'];
 /** L'ordre de présentation : le village, puis le clan (qui donne le nom de famille), et seulement ensuite le prénom. */
@@ -30,6 +31,7 @@ export default function Creation({
   heritage,
   joueur,
   libelleFin = 'Entrer dans l’histoire',
+  modele,
 }: {
   onCommencer: (c: CreationT) => void;
   onRetour: () => void;
@@ -37,8 +39,19 @@ export default function Creation({
   /** Campagne à deux : qui crée son personnage (« Joueur 1 »). */
   joueur?: string;
   libelleFin?: string;
+  /** Campagne à deux : le ninja de l'autre joueur, pour partir du même village ou du même clan. */
+  modele?: CreationT;
 }) {
-  const [etape, setEtape] = useState(0);
+  const [etape, setEtapeBrute] = useState(0);
+  // L'étape la plus lointaine atteinte : les pastilles du haut y mènent directement.
+  const [atteinte, setAtteinte] = useState(0);
+  const setEtape = (e: number) => {
+    setEtapeBrute(e);
+    setAtteinte((a) => Math.max(a, e));
+  };
+  // Lu après le premier rendu : le rendu statique n'a pas de stockage.
+  const [derniere, setDerniere] = useState<CreationT | undefined>(undefined);
+  useEffect(() => setDerniere(derniereCreation()), []);
   const [c, setC] = useState<CreationT>({
     prenom: '',
     presentation: 'masculin',
@@ -76,27 +89,19 @@ export default function Creation({
     maj({ clan: id, element, origine: id === 'sans_clan' ? (c.origine ?? 'famille') : undefined });
   };
   // L'aptitude naturelle ne se choisit plus : c'est l'attribut que les deux traits renforcent le plus.
-  const aptitudeDe = (traits: string[]): AttributId => {
-    let meilleur: AttributId | undefined;
-    let max = 0;
-    for (const a of APTITUDES as AttributId[]) {
-      const total = traits.reduce((n, t) => n + (R.traits[t]?.bonus[a] ?? 0), 0);
-      if (total > max) {
-        max = total;
-        meilleur = a;
-      }
-    }
-    return meilleur ?? c.aptitude;
-  };
+  const aptitudeDe = (traits: string[]) => aptitudeDes(traits, c.aptitude);
   const basculerTrait = (id: string) => {
     const traits = c.traits.includes(id) ? c.traits.filter((t) => t !== id) : normaux.length < 2 ? [...c.traits, id] : c.traits;
     maj({ traits, aptitude: aptitudeDe(traits) });
   };
-  const tirerPrenom = () => {
-    const pool = R.contenu.noms[c.village];
-    const liste = c.presentation === 'masculin' ? pool.m : c.presentation === 'feminin' ? pool.f : [...pool.m, ...pool.f];
-    maj({ prenom: liste[Math.floor(Math.random() * liste.length)] });
+  const tirerPrenom = () => maj({ prenom: prenomAuHasard(c.village, c.presentation) });
+  /** Une fiche remplie d'un coup (voie, hasard, dernier ninja) : direction le récapitulatif, où tout se modifie. */
+  const remplir = (x: CreationT) => {
+    setC({ ...x, heritage: c.heritage, difficulte: c.difficulte });
+    setEtape(ORDRE.indexOf(6));
+    setAtteinte(ORDRE.length - 1);
   };
+  const allerA = (kCible: number) => setEtape(ORDRE.indexOf(kCible));
 
   const valide = [
     c.prenom.trim().length > 0,
@@ -118,11 +123,25 @@ export default function Creation({
   return (
     <main className="creation">
       {joueur && <p className="creation-joueur">{joueur}</p>}
-      <div className="etapes" aria-hidden="true">
-        {ETAPES.map((e, i) => (
-          <i key={e} className={i <= etape ? 'fait' : ''} />
-        ))}
-      </div>
+      <nav className="etapes etapes-nav" aria-label="Étapes de la création">
+        {ORDRE.map((kk, i) => {
+          const accessible = i <= atteinte && ORDRE.slice(0, i).every((kp) => valide[kp]);
+          return (
+            <button
+              key={kk}
+              className={`${i <= etape ? 'fait' : ''}${i === etape ? ' ici' : ''}`}
+              disabled={!accessible || i === etape}
+              aria-current={i === etape ? 'step' : undefined}
+              aria-label={`Étape ${i + 1} : ${ETAPES[kk]}`}
+              title={ETAPES[kk]}
+              onClick={() => setEtape(i)}
+            >
+              <i />
+              <span>{ETAPES[kk]}</span>
+            </button>
+          );
+        })}
+      </nav>
       <p className="sous-titre">
         Étape {etape + 1} sur {ETAPES.length}
       </p>
@@ -130,6 +149,85 @@ export default function Creation({
         {ETAPES[k]}
       </h1>
       <p className="intro">{INTROS[k]}</p>
+
+      {etape > 0 && k !== 6 && (
+        <aside className="fiche-ninja" style={{ '--c': `var(--v-${c.village})` } as React.CSSProperties} aria-label="Ton ninja jusqu’ici">
+          <span className="fiche-sceau" aria-hidden="true">
+            {village.kanji}
+          </span>
+          <span className="fiche-corps">
+            <strong>{nomAffiche}</strong>
+            <small>
+              {[village.nom, clan ? (c.clan === 'sans_clan' ? 'sans clan' : clan.nom) : undefined, etape > ORDRE.indexOf(3) ? R.elements[c.element].nom.split(' ')[0] : undefined, ...normaux.map((t) => accorder(R.traits[t]?.nom ?? t, P))]
+                .filter(Boolean)
+                .join(' · ')}
+            </small>
+          </span>
+          {etape > ORDRE.indexOf(3) && (
+            <span className="fiche-nature" style={{ '--n': `var(--n-${c.element})` } as React.CSSProperties} aria-hidden="true">
+              {R.elements[c.element].kanji}
+            </span>
+          )}
+        </aside>
+      )}
+
+      {etape === 0 && (
+        <section className="raccourcis" aria-label="Pour aller plus vite">
+          <div className="raccourcis-tete">
+            <h2>Pour aller plus vite</h2>
+            <p>Une voie déjà tracée remplit toute la fiche ; tu pourras tout changer au récapitulatif.</p>
+          </div>
+          <div className="raccourcis-actions">
+            <button className="raccourci-des" onClick={() => remplir(creationAuHasard(c))}>
+              <span aria-hidden="true">運</span>
+              <strong>Laisser le destin choisir</strong>
+            </button>
+            {derniere && derniere.prenom !== modele?.prenom && (
+              <button className="raccourci-des" onClick={() => remplir({ ...derniere, prenom: c.prenom.trim() || derniere.prenom })}>
+                <span aria-hidden="true">再</span>
+                <strong>Reprendre {derniere.prenom}</strong>
+              </button>
+            )}
+            {modele && (
+              <>
+                <button className="raccourci-des" onClick={() => choisirVillage(modele.village)} aria-pressed={c.village === modele.village}>
+                  <span aria-hidden="true">{R.villages[modele.village]?.kanji}</span>
+                  <strong>Même village que {modele.prenom}</strong>
+                </button>
+                {modele.clan !== 'sans_clan' && (
+                  <button
+                    className="raccourci-des"
+                    onClick={() =>
+                      setC((x) => ({ ...x, village: modele.village, clan: modele.clan, element: R.clans[modele.clan]?.elementsRequis && !R.clans[modele.clan].elementsRequis!.includes(x.element) ? modele.element : x.element, origine: undefined }))
+                    }
+                    aria-pressed={c.clan === modele.clan}
+                  >
+                    <span aria-hidden="true">血</span>
+                    <strong>Même clan que {modele.prenom}</strong>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+          <div className="voies">
+            {VOIES.map((v) => (
+              <button key={v.id} className="voie" style={{ '--c': `var(--v-${v.village})`, '--n': `var(--n-${v.element})` } as React.CSSProperties} onClick={() => remplir(appliquerVoie(c, v))}>
+                <span className="voie-kanji" aria-hidden="true">
+                  {v.kanji}
+                </span>
+                <span className="voie-corps">
+                  <strong>{v.nom}</strong>
+                  <small>
+                    {R.villages[v.village].nom} · {R.clans[v.clan].nom} · {R.elements[v.element].nom.split(' ')[0]}
+                  </small>
+                  <span>{v.accroche}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="raccourcis-ou">ou construis ton ninja pas à pas :</p>
+        </section>
+      )}
 
       {k === 0 && (
         <section>
@@ -389,6 +487,23 @@ export default function Creation({
                 </button>
               ))}
           </div>
+          {normaux.length > 0 && (
+            <div className="profil-traits" aria-label="Ce que tes traits changent">
+              {Object.entries(profilTraits(normaux))
+                .filter(([, v]) => v)
+                .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
+                .map(([a, v]) => (
+                  <div key={a} className={`profil-ligne${(v ?? 0) < 0 ? ' perte' : ''}${a === c.aptitude && normaux.length === 2 ? ' fort' : ''}`}>
+                    <span>{ATTRIBUT_LIBELLE[a as AttributId]}</span>
+                    <i style={{ '--l': `${Math.min(100, Math.abs(v ?? 0) * 6)}%` } as React.CSSProperties} />
+                    <b>
+                      {(v ?? 0) > 0 ? '+' : ''}
+                      {v}
+                    </b>
+                  </div>
+                ))}
+            </div>
+          )}
           {normaux.length === 2 && (
             <p className="point-fort">
               Ton point fort : <strong>{ATTRIBUT_LIBELLE[c.aptitude]} (+20)</strong>. Il découle de tes deux traits, et oriente vers certains métiers sans en imposer aucun.
@@ -416,24 +531,52 @@ export default function Creation({
 
       {k === 6 && (
         <section className="detail-choix">
-          <h2>{nomAffiche}</h2>
+          <h2 className="recap-nom">
+            <span className="recap-sceau" style={{ '--c': `var(--v-${c.village})` } as React.CSSProperties} aria-hidden="true">
+              {village.kanji}
+            </span>
+            {nomAffiche}
+            <button className="recap-modifier" onClick={() => allerA(0)} aria-label="Modifier le prénom">
+              modifier
+            </button>
+          </h2>
           <dl className="recap">
             <div>
-              <dt>Village</dt>
+              <dt>
+                Village
+                <button className="recap-modifier" onClick={() => allerA(1)} aria-label="Modifier : village">
+                  modifier
+                </button>
+              </dt>
               <dd>
                 {village.nomComplet}, {village.pays}
               </dd>
             </div>
             <div>
-              <dt>Origine</dt>
+              <dt>
+                Origine
+                <button className="recap-modifier" onClick={() => allerA(2)} aria-label="Modifier : origine">
+                  modifier
+                </button>
+              </dt>
               <dd>{c.clan === 'sans_clan' ? accorder(c.origine === 'orphelin' ? 'Orphelin·e, sans clan' : 'Enfant du commun, sans clan', P) : `Clan ${clan?.nom}`}</dd>
             </div>
             <div>
-              <dt>Affinité</dt>
+              <dt>
+                Affinité
+                <button className="recap-modifier" onClick={() => allerA(3)} aria-label="Modifier : affinité">
+                  modifier
+                </button>
+              </dt>
               <dd>{R.elements[c.element]?.nom}</dd>
             </div>
             <div>
-              <dt>Traits</dt>
+              <dt>
+                Traits
+                <button className="recap-modifier" onClick={() => allerA(4)} aria-label="Modifier : traits">
+                  modifier
+                </button>
+              </dt>
               <dd>{c.traits.map((t) => accorder(R.traits[t]?.nom ?? t, P)).join(', ')}</dd>
             </div>
             <div>
@@ -441,7 +584,12 @@ export default function Creation({
               <dd>{ATTRIBUT_LIBELLE[c.aptitude]}</dd>
             </div>
             <div>
-              <dt>Objectif</dt>
+              <dt>
+                Objectif
+                <button className="recap-modifier" onClick={() => allerA(5)} aria-label="Modifier : objectif">
+                  modifier
+                </button>
+              </dt>
               <dd>{R.objectifs[c.objectif]?.nom}</dd>
             </div>
             {heritage && (
@@ -453,7 +601,12 @@ export default function Creation({
               </div>
             )}
             <div>
-              <dt>Départ</dt>
+              <dt>
+                Départ
+                <button className="recap-modifier" onClick={() => allerA(0)} aria-label="Modifier : départ">
+                  modifier
+                </button>
+              </dt>
               <dd>
                 {c.ageDepart} ans
               </dd>
@@ -478,7 +631,10 @@ export default function Creation({
             Suivant
           </button>
         ) : (
-          <button className="btn-principal" disabled={!valide[6]} onClick={() => onCommencer(c)}>
+          <button className="btn-principal" disabled={!valide[6]} onClick={() => {
+              memoriserCreation(c);
+              onCommencer(c);
+            }}>
             {libelleFin}
           </button>
         )}

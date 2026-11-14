@@ -278,6 +278,7 @@ export function jouerAffrontement(s: GameState, a: ActionCombat, ctx: Ctx): Conc
   const entree = composerManche(s, sc, d, a, res, annonce, r.texte, r.replique);
   sc.journal.push(entree);
   sc.actionsJoueur.push(a.choix);
+  sc.famillesJoueur = [...(sc.famillesJoueur ?? []), a.famille];
   // La chaîne : la nature de ce que tu viens de lancer (rien si elle a raté ou n'en a pas).
   const nature = res.execution !== 'ratee' ? natureAction(a.choix) : undefined;
   sc.sceaux = [...(sc.sceaux ?? []), nature ?? null].slice(-3);
@@ -361,6 +362,11 @@ export function composerManche(s: GameState, sc: EtatAffrontement, d: Adversaire
     const banque = syn.def.recits;
     impact += `${contracter(accorderAdv(avecNom(banque[Math.floor(tirageTexte(s, `synergie:${syn.cle}:${sc.manche}`) * banque.length)], sc.nomAdversaire), genre))} `;
     if (syn.lieu) impact += `${syn.lieu} `;
+  }
+  // L'enchaînement de gestes : ce que tes manches d'avant ont préparé.
+  const geste = res.geste;
+  if (geste && res.issue !== 'predite') {
+    impact += `${contracter(accorderAdv(avecNom(geste.recits[Math.floor(tirageTexte(s, `geste:${geste.id}:${sc.manche}`) * geste.recits.length)], sc.nomAdversaire), genre))} `;
   }
   // Une technique défensive se raconte par elle-même : le mur qui monte, le vent qui tourne.
   if (a.famille === 'defense' && tech) impact += `${accorderAdv(texteTechniqueTouche(s, a.choix, 'loin', `${sc.manche}`), genre)} `;
@@ -451,6 +457,7 @@ export function composerManche(s: GameState, sc: EtatAffrontement, d: Adversaire
     issue: res.issue,
     inflige: res.inflige,
     subi: res.subi,
+    geste: geste && res.issue !== 'predite' ? { nom: geste.nom, kanji: geste.kanji } : undefined,
     synergie: syn && res.issue !== 'predite' ? { nom: syn.def.nom, niveau: LIBELLE_SYNERGIE[syn.niveau], de: syn.parTerrain ? 'terrain' : syn.cle.split('>')[0], vers: syn.cle.split('>')[1] } : undefined,
     technique: `intention=${sc.intention} exec=${res.execution} inflige=${res.inflige} subi=${res.subi} J=${sc.joueur.endurance}/${sc.joueur.enduranceMax} A=${sc.adv.endurance}/${sc.adv.enduranceMax} elan=${sc.elan}`,
   };

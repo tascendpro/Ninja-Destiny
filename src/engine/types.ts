@@ -251,9 +251,13 @@ export interface CheckDef {
   echec: Outcome;
 }
 
+/** Le ton d'une réponse dans un dialogue : affiché sur le choix, et retenu (drapeau « ton_… ») pour que le monde s'en souvienne. */
+export type TonReponse = 'chaleureux' | 'franc' | 'moqueur' | 'froid' | 'menacant' | 'silence' | 'mensonge' | 'humour';
+
 export interface ChoiceDef {
   id: string;
   texte: string;
+  ton?: TonReponse;
   si?: Condition;
   /** Si présent et que la condition échoue, le choix reste visible mais verrouillé avec cette raison. */
   verrou?: string;
