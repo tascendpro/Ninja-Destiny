@@ -17,6 +17,7 @@ import { SCENE_ECHO_PROMESSE, SCENE_ECHO_SOUVENIR, planifierEchos } from '../../
 import { SCENES_MORT_SIMULEE, SCENE_RETOUR_SEPARATION } from '../../content/campagne/mortSimulee';
 import { SCENES_SECRETS_AUTRE } from '../../content/campagne/secretsAutre';
 import { SCENES_LAMES } from '../../content/campagne/lames';
+import { SCENES_RANGS, planifierRangs } from '../../content/campagne/scenesRangs';
 import { SCENES_ENFANCE } from '../../content/campagne/scenesEnfance';
 import { SCENES_GENIN } from '../../content/campagne/scenesGenin';
 import { SCENES_ADULTES } from '../../content/campagne/scenesAdultes';
@@ -33,7 +34,7 @@ export { texteCommun } from './outils';
 export { vueCombatDuo, SIGNES } from './combat';
 export { actionsLien, ensemble } from './lien';
 
-export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, SCENE_HERITIER_SANG, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES, SCENE_ECHO_SOUVENIR, SCENE_ECHO_PROMESSE, ...SCENES_MORT_SIMULEE, ...SCENES_SECRETS_AUTRE, ...SCENES_LAMES].map((s) => [s.id, s]));
+export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, SCENE_HERITIER_SANG, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES, SCENE_ECHO_SOUVENIR, SCENE_ECHO_PROMESSE, ...SCENES_MORT_SIMULEE, ...SCENES_SECRETS_AUTRE, ...SCENES_LAMES, ...SCENES_RANGS].map((s) => [s.id, s]));
 
 export const LIBELLES_LIEN: Record<TypeLien, string> = {
   freres: 'Frères et sœurs',
@@ -475,6 +476,7 @@ function apresAction(c: Campagne): void {
   verifierFuite(c);
   verifierSeuils(c);
   planifierEchos(c);
+  planifierRangs(c);
   ouvrirBarriere(c);
   // Les deux vies sont finies (et aucun mort n'attend de choisir) : la campagne se conclut.
   if (!c.fin && c.joueurs.every(finie) && !c.morts.includes('a_choisir') && !c.combat) c.fin = conclureCampagne(c);
@@ -578,6 +580,7 @@ export function gainsDuLien(c: Campagne, j: IdJoueur): void {
     if (ax.confiance + ax.loyaute >= 90) gains.push({ source: `Ce que ${nom} t’a appris`, points: 1 });
     if (ax.jalousie >= 45) gains.push({ source: `La jalousie envers ${nom}`, points: 1 });
     if (ax.dette >= 40) gains.push({ source: `Être à la hauteur de ce que tu dois à ${nom}`, points: 1 });
+    if (c.memeEquipe) gains.push({ source: `Les missions avec ${nom}`, points: 1 });
   } else if (ax.peur_de_perdre >= 20 || ax.loyaute >= 30) gains.push({ source: `Pour ${nom}, que tu crois mort`, points: 1 });
   // Au plus trois points par an : le lien pousse, il ne remplace pas l'entraînement.
   let reste = 3;

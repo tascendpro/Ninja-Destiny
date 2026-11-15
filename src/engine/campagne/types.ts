@@ -375,6 +375,8 @@ export interface Campagne {
   /** Les scènes déjà jouées (les scènes de seuil et dynamiques ne reviennent pas). */
   vues: string[];
   stats: StatsBinome;
+  /** Affectés à la même équipe de genin (undefined : pas encore décidé). */
+  memeEquipe?: boolean;
   /** Une épée légendaire gagnée à deux, qui attend de savoir qui la prendra. */
   quete?: { lame: string };
   /** La mort simulée : l'un a fait croire à sa mort et vit ailleurs ; ils ne se voient plus jusqu'à son retour. */
