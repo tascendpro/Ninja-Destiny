@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Creation as CreationT } from '../../engine/types';
 import type { PasseCommun, TypeLien } from '../../engine/campagne/types';
-import { LIBELLES_LIEN, LIBELLES_PASSE, validerLien } from '../../engine/campagne/moteur';
+import { LIBELLES_LIEN, LIBELLES_PASSE, passesDuLien, validerLien } from '../../engine/campagne/moteur';
 import { R } from '../../engine/registre';
 import Creation from '../Creation';
 import { contraintesDuLien } from '../creationAides';
@@ -36,7 +36,9 @@ export default function Salon({ onDemarrer, onRetour }: { onDemarrer: (p: Partie
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [type, setType] = useState<TypeLien>('amis');
-  const [passe, setPasse] = useState<PasseCommun>('rencontre');
+  const [passeChoisi, setPasse] = useState<PasseCommun>('rencontre');
+  // Un passé qui n'existe pas pour le lien choisi (« depuis toujours » pour des inconnus) cède la place au premier possible.
+  const passe: PasseCommun = passesDuLien(type).some((x) => x.id === passeChoisi) ? passeChoisi : passesDuLien(type)[0].id;
   const [copie, setCopie] = useState(false);
   const brouillon = useRef<number | undefined>(undefined);
   const lancement = useRef(false);
@@ -210,10 +212,10 @@ export default function Salon({ onDemarrer, onRetour }: { onDemarrer: (p: Partie
           <section className="groupe">
             <h3>Votre passé commun</h3>
             <div className="options deux">
-              {(Object.keys(LIBELLES_PASSE) as PasseCommun[]).map((x) => (
+              {passesDuLien(type).map(({ id: x, nom, texte }) => (
                 <button key={x} className="option" aria-pressed={passe === x} onClick={() => setPasse(x)}>
-                  <strong>{LIBELLES_PASSE[x].nom}</strong>
-                  <p>{LIBELLES_PASSE[x].texte}</p>
+                  <strong>{nom}</strong>
+                  <p>{texte}</p>
                 </button>
               ))}
             </div>

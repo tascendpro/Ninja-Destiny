@@ -12,7 +12,9 @@ import { VOIES, appliquerVoie, aptitudeDe as aptitudeDes, creationAuHasard, dern
 
 const ETAPES = ['Identité', 'Village', 'Clan', 'Affinité', 'Personnalité', 'Destin', 'Récapitulatif'];
 /** L'ordre de présentation : le village, puis le clan (qui donne le nom de famille), et seulement ensuite le prénom. */
-const ORDRE = [1, 2, 0, 3, 4, 5, 6];
+const ORDRE_COMPLET = [1, 2, 0, 3, 4, 5, 6];
+/** L'invité d'une famille (frères et sœurs, même clan) : le village et le clan viennent de l'hôte, il ne les voit pas. */
+const ORDRE_FAMILLE = [0, 3, 4, 5, 6];
 
 const INTROS = [
   'Ton prénom est la seule chose que tu choisis vraiment. Le reste, tu en as déjà hérité.',
@@ -52,6 +54,7 @@ export default function Creation({
   /** Reprendre une fiche déjà commencée (modifier son ninja). */
   initiale?: CreationT;
 }) {
+  const ORDRE_JOUEUR = contraintes?.famille ? ORDRE_FAMILLE : ORDRE_COMPLET;
   const [etape, setEtapeBrute] = useState(0);
   // L'étape la plus lointaine atteinte : les pastilles du haut y mènent directement.
   const [atteinte, setAtteinte] = useState(0);
@@ -110,10 +113,10 @@ export default function Creation({
     const x = contraintes ? respecter(x0, contraintes) : x0;
     if (!x) return;
     setC({ ...x, heritage: c.heritage, difficulte: c.difficulte });
-    setEtape(ORDRE.indexOf(6));
-    setAtteinte(ORDRE.length - 1);
+    setEtape(ORDRE_JOUEUR.indexOf(6));
+    setAtteinte(ORDRE_JOUEUR.length - 1);
   };
-  const allerA = (kCible: number) => setEtape(ORDRE.indexOf(kCible));
+  const allerA = (kCible: number) => ORDRE_JOUEUR.includes(kCible) && setEtape(ORDRE_JOUEUR.indexOf(kCible));
 
   const villageFerme = (v: VillageId) => (!!contraintes?.attente && !contraintes.village) || (!!contraintes?.village && v !== contraintes.village) || !!contraintes?.villagesInterdits?.includes(v);
   const clanFerme = (id: string) => !!contraintes?.attente || (!!contraintes?.clan && id !== contraintes.clan) || !!contraintes?.clansInterdits?.includes(id);
@@ -142,8 +145,8 @@ export default function Creation({
     !!c.objectif,
     validerCreation(c).length === 0,
   ];
-  // La position dans le parcours (etape) et le contenu affiché (k) : voir ORDRE.
-  const k = ORDRE[etape];
+  // La position dans le parcours (etape) et le contenu affiché (k) : voir ORDRE_JOUEUR.
+  const k = ORDRE_JOUEUR[etape];
   const erreurs = k === 6 ? validerCreation(c) : [];
   // Dès qu'un village est choisi, toute la création prend sa couleur.
   useEffect(() => {
@@ -154,8 +157,8 @@ export default function Creation({
     <main className="creation">
       {joueur && <p className="creation-joueur">{joueur}</p>}
       <nav className="etapes etapes-nav" aria-label="Étapes de la création">
-        {ORDRE.map((kk, i) => {
-          const accessible = i <= atteinte && ORDRE.slice(0, i).every((kp) => valide[kp]);
+        {ORDRE_JOUEUR.map((kk, i) => {
+          const accessible = i <= atteinte && ORDRE_JOUEUR.slice(0, i).every((kp) => valide[kp]);
           return (
             <button
               key={kk}
@@ -173,13 +176,13 @@ export default function Creation({
         })}
       </nav>
       <p className="sous-titre">
-        Étape {etape + 1} sur {ETAPES.length}
+        Étape {etape + 1} sur {ORDRE_JOUEUR.length}
       </p>
       <h1 className="titre-ecran" style={{ marginTop: 6 }}>
         {ETAPES[k]}
       </h1>
       <p className="intro">{INTROS[k]}</p>
-      {contraintes?.note && (k === 1 || k === 2) && (
+      {contraintes?.note && (k === 1 || k === 2 || (contraintes.famille && (k === 0 || k === 6))) && (
         <p className="contrainte-lien" role="status">
           {contraintes.note}
         </p>
@@ -193,12 +196,12 @@ export default function Creation({
           <span className="fiche-corps">
             <strong>{nomAffiche}</strong>
             <small>
-              {[village.nom, clan ? (c.clan === 'sans_clan' ? 'sans clan' : clan.nom) : undefined, etape > ORDRE.indexOf(3) ? R.elements[c.element].nom.split(' ')[0] : undefined, ...normaux.map((t) => accorder(R.traits[t]?.nom ?? t, P))]
+              {[village.nom, clan ? (c.clan === 'sans_clan' ? 'sans clan' : clan.nom) : undefined, etape > ORDRE_JOUEUR.indexOf(3) ? R.elements[c.element].nom.split(' ')[0] : undefined, ...normaux.map((t) => accorder(R.traits[t]?.nom ?? t, P))]
                 .filter(Boolean)
                 .join(' · ')}
             </small>
           </span>
-          {etape > ORDRE.indexOf(3) && (
+          {etape > ORDRE_JOUEUR.indexOf(3) && (
             <span className="fiche-nature" style={{ '--n': `var(--n-${c.element})` } as React.CSSProperties} aria-hidden="true">
               {R.elements[c.element].kanji}
             </span>

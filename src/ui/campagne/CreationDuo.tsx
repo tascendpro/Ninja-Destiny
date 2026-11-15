@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import type { Creation as CreationT } from '../../engine/types';
 import type { IdJoueur, OrigineLien, PasseCommun, TypeLien } from '../../engine/campagne/types';
-import { LIBELLES_LIEN, LIBELLES_ORIGINE, LIBELLES_PASSE, validerLien } from '../../engine/campagne/moteur';
+import { LIBELLES_LIEN, LIBELLES_ORIGINE, LIBELLES_PASSE, passesDuLien, validerLien } from '../../engine/campagne/moteur';
 import { R } from '../../engine/registre';
 import Creation from '../Creation';
 
@@ -33,7 +33,9 @@ export default function CreationDuo({ onCommencer, onRetour }: { onCommencer: (c
   const [c2, setC2] = useState<CreationT | null>(null);
   const [type, setType] = useState<TypeLien>('amis');
   const [origine, setOrigine] = useState<OrigineLien | undefined>(undefined);
-  const [passe, setPasse] = useState<PasseCommun>('rencontre');
+  const [passeChoisi, setPasse] = useState<PasseCommun>('rencontre');
+  // Un passé qui n'existe pas pour le lien choisi (« depuis toujours » pour des inconnus) cède la place au premier possible.
+  const passe: PasseCommun = passesDuLien(type).some((x) => x.id === passeChoisi) ? passeChoisi : passesDuLien(type)[0].id;
   const [sauveur, setSauveur] = useState<IdJoueur>(0);
 
   if (etape === 0)
@@ -132,10 +134,10 @@ export default function CreationDuo({ onCommencer, onRetour }: { onCommencer: (c
       <section className="groupe">
         <h3>Votre passé commun</h3>
         <div className="options deux">
-          {(Object.keys(LIBELLES_PASSE) as PasseCommun[]).map((p) => (
+          {passesDuLien(type).map(({ id: p, nom, texte }) => (
             <button key={p} className="option" aria-pressed={passe === p} onClick={() => setPasse(p)}>
-              <strong>{LIBELLES_PASSE[p].nom}</strong>
-              <p>{LIBELLES_PASSE[p].texte}</p>
+              <strong>{nom}</strong>
+              <p>{texte}</p>
             </button>
           ))}
         </div>

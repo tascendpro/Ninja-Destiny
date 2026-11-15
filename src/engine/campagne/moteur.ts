@@ -60,6 +60,81 @@ export const LIBELLES_PASSE: Record<PasseCommun, { nom: string; texte: string }>
   mefiance: { nom: 'La méfiance', texte: 'Vos familles se sont toujours méfiées l’une de l’autre.' },
 };
 
+/**
+ * Le passé commun, dit selon le lien : deux frères ne se sont jamais « rencontrés », deux inconnus n'ont pas de secret
+ * partagé. Chaque lien n'offre que les passés qui ont un sens pour lui, avec ses propres mots ; l'effet sur le lien
+ * (confiance, rivalité, dette…) reste celui du passé choisi.
+ */
+const PASSES_DU_LIEN: Partial<Record<TypeLien, Partial<Record<PasseCommun, { nom: string; texte: string }>>>> = {
+  freres: {
+    rencontre: { nom: 'Depuis toujours', texte: 'Vous avez grandi dans la même chambre. Vous n’avez jamais eu besoin de vous rencontrer : l’autre a toujours été là.' },
+    promesse: { nom: 'La promesse du toit', texte: 'Un soir, sur le toit de la maison, vous vous êtes juré de devenir les meilleurs ninjas de la famille. Tous les deux.' },
+    dette: { nom: 'La rivière', texte: 'Petit, l’un est tombé dans la rivière en crue. L’autre a plongé sans réfléchir. Les parents n’en ont jamais rien su.' },
+    competition: { nom: 'La comparaison', texte: 'À table, à l’Académie, devant le clan : on vous a toujours comparés. Vous avez fini par le faire vous-mêmes.' },
+    secret: { nom: 'Le secret de famille', texte: 'Une nuit, vous avez entendu les parents parler d’une chose qu’on ne vous a jamais dite. Vous ne l’avez répétée à personne.' },
+    perte: { nom: 'La chaise vide', texte: 'Il y a une place vide à la table de la famille, depuis que vous êtes tout petits. Vous n’en parlez jamais, ni l’un ni l’autre.' },
+    mefiance: { nom: 'Le préféré', texte: 'Un parent a toujours préféré l’un des deux. Tout le monde le sait. Personne ne le dit.' },
+  },
+  clan: {
+    rencontre: { nom: 'Les enfants du clan', texte: 'Deux familles du même clan, la même cour d’entraînement depuis l’âge de marcher.' },
+    promesse: { nom: 'Le serment du clan', texte: 'Le jour de la cérémonie du clan, vous avez prêté le même serment, côte à côte.' },
+    dette: { nom: 'La dette', texte: 'L’un a sauvé la vie de l’autre, et le clan ne l’a pas oublié.' },
+    competition: { nom: 'L’héritier', texte: 'Les anciens hésitent entre vos deux familles pour l’avenir du clan. Vous le savez tous les deux.' },
+    secret: { nom: 'Ce que les anciens cachent', texte: 'Vous avez découvert ensemble ce que les anciens du clan cachent dans la réserve des rouleaux.' },
+    perte: { nom: 'Le deuil du clan', texte: 'Vous avez perdu chacun un proche lors du même drame, que le clan a gardé pour lui.' },
+    mefiance: { nom: 'Les deux branches', texte: 'Vos deux branches du clan ne se parlent plus depuis une génération. Vous ne savez même pas pourquoi.' },
+  },
+  amis: {
+    rencontre: { nom: 'Le jour où tout a commencé', texte: 'Vous vous êtes rencontrés enfants, et rien n’a plus été pareil.' },
+    promesse: { nom: 'La promesse', texte: 'Vous vous êtes promis de devenir les meilleurs ninjas de votre génération, ensemble.' },
+    dette: { nom: 'La dette', texte: 'L’un a sauvé la vie de l’autre, un jour où personne ne regardait.' },
+    competition: { nom: 'La première place', texte: 'Amis, mais toujours à vous disputer la première place.' },
+    secret: { nom: 'Le secret', texte: 'Vous avez vu ensemble quelque chose que personne d’autre ne sait.' },
+    perte: { nom: 'La perte', texte: 'Vous avez perdu chacun un proche lors du même événement. C’est là que vous êtes devenus inséparables.' },
+  },
+  rivaux: {
+    rencontre: { nom: 'Le premier affront', texte: 'Le premier jour, l’un a humilié l’autre devant tout le monde. Ça a commencé comme ça.' },
+    dette: { nom: 'La dette honteuse', texte: 'L’un a sauvé la vie de l’autre. Celui qui a été sauvé ne l’a jamais digéré.' },
+    competition: { nom: 'La première place', texte: 'Vous vous êtes toujours disputé la première place. Personne d’autre ne compte.' },
+    secret: { nom: 'Le secret', texte: 'Chacun sait sur l’autre une chose qui pourrait le détruire. Aucun n’a encore parlé.' },
+    mefiance: { nom: 'Les familles ennemies', texte: 'Vos familles se méfient l’une de l’autre depuis toujours.' },
+  },
+  inconnus: {
+    rencontre: { nom: 'Tout reste à vivre', texte: 'Vous ne vous connaissez pas encore. Votre rencontre se jouera bientôt.' },
+    competition: { nom: 'Un nom au tableau', texte: 'Vous ne vous connaissez pas, mais vos noms se suivent au tableau des résultats de l’Académie.' },
+    mefiance: { nom: 'La rumeur', texte: 'On vous a parlé de l’autre, et rien de bon.' },
+  },
+  clans_differents: {
+    rencontre: { nom: 'La rencontre interdite', texte: 'Vos clans ne se fréquentent pas. Vous vous êtes rencontrés quand même, en cachette.' },
+    promesse: { nom: 'La promesse cachée', texte: 'Vous vous êtes promis que vos clans ne vous sépareraient jamais.' },
+    dette: { nom: 'La dette entre clans', texte: 'L’un a sauvé l’autre, et son clan le lui a reproché.' },
+    competition: { nom: 'L’honneur des clans', texte: 'Chaque victoire de l’un est une victoire de son clan sur l’autre.' },
+    secret: { nom: 'Le secret', texte: 'Vous avez vu ensemble quelque chose que vos deux clans préféreraient oublier.' },
+    perte: { nom: 'Le vieux drame', texte: 'Un drame ancien entre vos deux clans vous a coûté à chacun un proche.' },
+    mefiance: { nom: 'La vieille méfiance', texte: 'Vos clans se méfient l’un de l’autre depuis des générations.' },
+  },
+  villages_differents: {
+    rencontre: { nom: 'La frontière', texte: 'Vous vous êtes rencontrés enfants, à la frontière, le temps d’une trêve.' },
+    promesse: { nom: 'La promesse de la trêve', texte: 'Vous vous êtes promis que vos villages ne feraient jamais de vous des ennemis.' },
+    dette: { nom: 'La dette', texte: 'L’un a sauvé l’autre, de l’autre côté de la frontière. Personne ne doit le savoir.' },
+    competition: { nom: 'L’examen commun', texte: 'Le même examen, deux villages : vous vous êtes disputé la première place.' },
+    secret: { nom: 'Le secret de la frontière', texte: 'Vous avez vu ensemble ce qui se passe vraiment à la frontière.' },
+    perte: { nom: 'La guerre', texte: 'Vous avez perdu chacun un proche dans la même bataille, dans deux camps opposés.' },
+    mefiance: { nom: 'Les ennemis', texte: 'Vos villages sont ennemis. Vous l’avez appris très tôt.' },
+  },
+  improbable: {
+    dette: { nom: 'Sous les décombres', texte: 'L’un était pris sous les décombres. L’autre l’a entendu, et a creusé à mains nues.' },
+    perte: { nom: 'L’effondrement', texte: 'Le même effondrement vous a pris chacun un proche, et vous a laissés l’un à côté de l’autre.' },
+  },
+};
+
+/** Les passés possibles pour un lien, avec ses mots à lui. */
+export function passesDuLien(type: TypeLien): { id: PasseCommun; nom: string; texte: string }[] {
+  const propres = PASSES_DU_LIEN[type];
+  const ids = (propres ? Object.keys(propres) : Object.keys(LIBELLES_PASSE)) as PasseCommun[];
+  return ids.map((id) => ({ id, ...(propres?.[id] ?? LIBELLES_PASSE[id]) }));
+}
+
 // ── Cohérence ────────────────────────────────────────────────
 
 /** Le lien est-il possible entre ces deux personnages ? Sinon, une phrase qui dit pourquoi, et l'origine qui le rendrait possible. */
@@ -122,7 +197,7 @@ function lienInitial(type: TypeLien, origine: OrigineLien | undefined, passe: Pa
   if (passe === 'perte') ajout('les2', { peur_de_perdre: 15, dependance: 10 });
   if (passe === 'mefiance') ajout('les2', { mefiance: 20 });
   if (passe === 'rencontre') ajout('les2', { confiance: 5 });
-  lien.souvenirs.push({ id: `passe_${passe}`, jour: JOUR_DEPART, texte: LIBELLES_PASSE[passe].texte, poids: 4, tonalite: passe === 'perte' ? 'tragique' : passe === 'mefiance' ? 'amer' : 'chaud', connuDe: [0, 1] });
+  lien.souvenirs.push({ id: `passe_${passe}`, jour: JOUR_DEPART, texte: (PASSES_DU_LIEN[type]?.[passe] ?? LIBELLES_PASSE[passe]).texte, poids: 4, tonalite: passe === 'perte' ? 'tragique' : passe === 'mefiance' ? 'amer' : 'chaud', connuDe: [0, 1] });
   return lien;
 }
 
@@ -450,7 +525,9 @@ function appliquerMut(c: Campagne, x: ActionCampagne): void {
   const { seq: _seq, vis: _vis, jour: _jour, ...brute } = x;
   c.actions.push({ ...brute, seq: c.actions.length + 1, vis: visibilite(x), jour: c.joueurs[j].jour } as ActionCampagne);
   if ('a' in x) {
+    const anniversaires = c.joueurs[j].anniversaires.length;
     appliquerActionMut(c.joueurs[j], x.a);
+    if (c.joueurs[j].anniversaires.length > anniversaires) gainsDuLien(c, j);
     c.tour = j;
   } else if ('commune' in x) choisirCommuneMut(c, j, x.commune);
   else if ('lu' in x) lireMut(c, j);
@@ -476,6 +553,39 @@ export function soumettre(c0: Campagne, x: ActionCampagne): Campagne {
   const c = cloner(c0);
   appliquerMut(c, x);
   return c;
+}
+
+/**
+ * Ce que l'autre change dans ta progression : à chaque anniversaire, ce que tu ressens pour lui te pousse (ou te
+ * retient). La rivalité fait travailler, la confiance fait apprendre, la dette oblige, le deuil donne une raison.
+ * Les points s'ajoutent à l'anniversaire, avec leur source : le joueur voit d'où ils viennent.
+ */
+export function gainsDuLien(c: Campagne, j: IdJoueur): void {
+  const s = c.joueurs[j];
+  const anniv = s.anniversaires.at(-1);
+  if (!anniv || finie(s)) return;
+  const o = autre(j);
+  const nom = c.creations[o].prenom;
+  const ax = c.lien.axes[j];
+  const somme = (x: GameState) => Object.values(x.attributs).reduce((t, v) => t + v, 0);
+  const gains: { source: string; points: number }[] = [];
+  if (c.joueurs[o].statut === 'mort') {
+    if (ax.loyaute >= 30 || ax.peur_de_perdre >= 30) gains.push({ source: `Pour ${nom}, qui n’est plus là`, points: 1 });
+  } else if (!c.separation?.actif || c.separation.absent !== o) {
+    if (ax.rivalite >= 35) gains.push(somme(c.joueurs[o]) > somme(s) ? { source: `Dépasser ${nom}`, points: 2 } : { source: `Rester devant ${nom}`, points: 1 });
+    if (ax.confiance + ax.loyaute >= 90) gains.push({ source: `Ce que ${nom} t’a appris`, points: 1 });
+    if (ax.jalousie >= 45) gains.push({ source: `La jalousie envers ${nom}`, points: 1 });
+    if (ax.dette >= 40) gains.push({ source: `Être à la hauteur de ce que tu dois à ${nom}`, points: 1 });
+  } else if (ax.peur_de_perdre >= 20 || ax.loyaute >= 30) gains.push({ source: `Pour ${nom}, que tu crois mort`, points: 1 });
+  // Au plus trois points par an : le lien pousse, il ne remplace pas l'entraînement.
+  let reste = 3;
+  for (const g of gains) {
+    const n = Math.min(g.points, reste);
+    if (n <= 0) break;
+    reste -= n;
+    anniv.gains.push({ source: g.source, points: n });
+    s.pointsStat += n;
+  }
 }
 
 /** Une action du moteur solo (l'interface passe une fonction) : on en déduit les actions, qu'on soumet une à une. */

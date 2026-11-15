@@ -132,6 +132,8 @@ export interface Contraintes {
   note?: string;
   /** L'hôte n'a pas encore choisi : ce qui dépend de lui reste fermé. */
   attente?: boolean;
+  /** Invité d'une famille : village et clan viennent de l'hôte, les étapes Village et Clan disparaissent. */
+  famille?: boolean;
 }
 
 /**
@@ -144,8 +146,8 @@ export function contraintesDuLien(type: string, siege: 0 | 1, autre: Partial<Cre
   if (memeFamille) {
     const clanReel = type === 'clan' ? { clansInterdits: ['sans_clan'] } : {};
     if (siege === 0) return { ...clanReel, note: type === 'freres' ? `Tu choisis le village et le clan de la famille : ${prenomAutre} aura les mêmes.` : `Tu choisis le clan : ${prenomAutre} sera du même clan.` };
-    if (!autre?.village || !autre?.clan) return { ...clanReel, village: autre?.village, attente: true, note: `${prenomAutre} choisit le village et le clan de la famille. Attends son choix : il apparaîtra ici tout seul.` };
-    return { ...clanReel, village: autre.village, clan: autre.clan, note: `${type === 'freres' ? 'Même famille' : 'Même clan'} que ${prenomAutre} : village et clan sont déjà choisis.` };
+    if (!autre?.village || !autre?.clan) return { ...clanReel, famille: true, village: autre?.village, attente: true, note: `${prenomAutre} choisit le village et le clan de la famille. Attends son choix : il apparaîtra ici tout seul.` };
+    return { ...clanReel, famille: true, village: autre.village, clan: autre.clan, note: `${type === 'freres' ? 'Même famille' : 'Même clan'} que ${prenomAutre} : village et clan sont déjà choisis.` };
   }
   if (type === 'clans_differents') return { clansInterdits: autre?.clan ? [autre.clan] : [], note: autre?.clan ? `${prenomAutre} a pris le clan ${R.clans[autre.clan]?.nom ?? autre.clan} : il t’est fermé.` : 'Vos deux clans devront être différents.' };
   if (type === 'villages_differents') return { villagesInterdits: autre?.village ? [autre.village] : [], note: autre?.village ? `${prenomAutre} vient de ${R.villages[autre.village]?.nom} : choisis un autre village.` : 'Vos deux villages devront être différents.' };
