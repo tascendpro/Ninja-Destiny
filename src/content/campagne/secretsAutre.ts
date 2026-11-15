@@ -28,13 +28,14 @@ const SECRETS: SecretDef[] = [
     porte: (s) => !!s.drapeaux['jinchuriki'],
     titre: 'Ce qui dort sous la peau de {autre}',
     decouverte:
-      'Une nuit de mission, {autre} dort mal. Tu te lèves pour le réveiller, et tu t’arrêtes net : sous sa tunique, un sceau noir tourne lentement sur son ventre, comme une chose vivante. L’air autour de {lui:autre} est brûlant. Le lendemain matin, {il:autre} a l’air de ne se souvenir de rien.',
+      'Une nuit de mission, {autre} dort mal. Tu te lèves pour {le:autre} réveiller, et tu t’arrêtes net : sous sa tunique, un sceau noir tourne lentement sur son ventre, comme une chose vivante. L’air autour de {lui:autre} est brûlant. Le lendemain matin, {il:autre} a l’air de ne se souvenir de rien.',
     enquete: { suspicion: 25, reputation: -10, note: 'Des ninjas du conseil t’ont convoqué pour vérifier ton sceau, longuement, sans un mot d’explication. Quelqu’un a parlé de la bête.' },
     aveu: '« J’ai vu le sceau. Cette nuit-là, en mission. » {autre} ne bouge plus.',
   },
   {
     id: 'lignee',
-    porte: (s) => s.secrets.includes('lignee_yuki') || !!s.drapeaux['sang_inconnu'],
+    // La glace : seulement la lignée Yuki (un autre sang caché ne gèle pas l'eau).
+    porte: (s) => s.secrets.includes('lignee_yuki'),
     titre: 'Le sang de {autre}',
     decouverte:
       'À l’entraînement, une goutte d’eau gèle en l’air entre les doigts de {autre}, une fraction de seconde. {Il:autre} referme la main aussitôt, et regarde autour de {lui:autre}. Il n’y a que toi. Tu sais ce que ça veut dire : une lignée que certains villages traquent encore.',
@@ -88,7 +89,7 @@ function scenesDe(d: SecretDef): SceneCommuneDef[] {
       issues: [
         {
           cle: 'parler',
-          texte: 'Tu ne dis rien sur le moment. Tu attendras d’être seul avec {autre}. Ce genre de chose ne se dit pas devant les autres.',
+          texte: 'Tu ne dis rien sur le moment. Tu attendras un moment à l’écart, avec {autre}. Ce genre de chose ne se dit pas devant les autres.',
           apres: (c, j) => {
             fait(c, { id: cle(autre(j)), texte: `Tu sais le secret de ${c.creations[autre(j)].prenom}.`, connus: [j], preuves: 0, cible: autre(j) });
             planifierCommune(c, AVEU(d.id), 20);

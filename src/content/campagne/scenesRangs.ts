@@ -10,7 +10,8 @@ import { ageA, autre, hash01, planifierCommune } from '../../engine/campagne/out
 
 const MEME_VILLAGE: TypeLien[] = ['freres', 'clan', 'amis', 'rivaux', 'inconnus', 'clans_differents', 'improbable'];
 const rang = (c: Campagne, j: IdJoueur) => rangIndex(c.joueurs[j].rang);
-const vivants = (c: Campagne) => c.joueurs.every((s) => s.statut !== 'mort' && s.scene.type !== 'fin') && !c.separation?.actif;
+// Les deux vivants, présents, et du même village : une classe, une équipe, un gilet ne se partagent pas entre deux villages.
+const vivants = (c: Campagne) => c.joueurs.every((s) => s.statut !== 'mort' && s.scene.type !== 'fin') && !c.separation?.actif && c.creations[0].village === c.creations[1].village;
 
 /** Une phrase par lien, et une par défaut. */
 const selon = (c: Campagne, textes: Partial<Record<TypeLien, string>> & { defaut: string }) => textes[c.lien.type] ?? textes.defaut;
@@ -96,7 +97,7 @@ export const SCENES_RANGS: SceneCommuneDef[] = [
     ],
     issues: [
       { cle: 'couvrir+couvrir', texte: 'Dos à dos, sans un mot. Le sensei, de loin, sourit pour la première fois.', lien: { les2: { confiance: 6 } }, accord: 5, combat: 'combat_frontiere', suite: { scene: 'mc_suite_convoi', dans: 3 * 360 } },
-      { cle: 'foncer+couvrir', texte: '{un} fonce ; {deux} le couvre, sans qu’on lui demande. C’est exactement ce que le sensei voulait voir.', lien: { un: { dette: 4 }, deux: { loyaute: 4 } }, accord: 4, combat: 'combat_frontiere', suite: { scene: 'mc_suite_convoi', dans: 3 * 360 } },
+      { cle: 'foncer+couvrir', texte: '{un} fonce ; {deux} {le:un} couvre, sans qu’on lui demande. C’est exactement ce que le sensei voulait voir.', lien: { un: { dette: 4 }, deux: { loyaute: 4 } }, accord: 4, combat: 'combat_frontiere', suite: { scene: 'mc_suite_convoi', dans: 3 * 360 } },
       { cle: 'foncer+foncer', texte: 'Vous foncez tous les deux sur le même homme. Le sensei jure. Il va falloir réparer ça au milieu du combat.', lien: { les2: { rivalite: 4 } }, accord: 1, combat: 'combat_frontiere', suite: { scene: 'mc_suite_convoi', dans: 3 * 360 } },
       { cle: 'defaut', texte: 'Le sensei donne ses ordres, sèchement. Vous obéissez, chacun à sa place.', accord: 3, combat: 'combat_frontiere' },
     ],
@@ -122,7 +123,7 @@ export const SCENES_RANGS: SceneCommuneDef[] = [
     issues: [
       { cle: 'duel+duel', texte: 'Vos coéquipiers reculent en cercle. Vos sensei croisent les bras. Le rouleau ira au vainqueur.', lien: { les2: { rivalite: 6, respect: 4 } }, combat: 'duel_examen' },
       { cle: 'partager+partager', texte: 'Deux équipes, une seule mission, faite à six. Vos sensei protestent pour la forme, puis s’assoient pour regarder. Le rouleau est rapporté en un temps record, et le bureau des missions ne sait pas à qui le compter.', lien: { les2: { confiance: 5, loyaute: 3 } }, accord: 5, effets: { les2: [{ stat: 'social.reputation', delta: 2 }] }, souvenir: { id: 'mission_a_six', texte: 'La mission faite à six, par deux équipes qui devaient se la disputer.', poids: 3, tonalite: 'chaud' } },
-      { cle: 'devancer+*', texte: '{un} file pendant que {deux} parle encore. Le rouleau est à {un}. Le bureau des missions le félicite ; {deux}, beaucoup moins.', lien: { deux: { ressentiment: 8, rivalite: 6 }, un: { rivalite: 3 } }, effets: { un: [{ stat: 'social.reputation', delta: 3 }] } },
+      { cle: 'devancer+*', texte: '{un} file pendant que {deux} parle encore. Le rouleau est à {un}. Le bureau des missions félicite {un} ; {deux}, beaucoup moins.', lien: { deux: { ressentiment: 8, rivalite: 6 }, un: { rivalite: 3 } }, effets: { un: [{ stat: 'social.reputation', delta: 3 }] } },
       { cle: 'defaut', texte: 'Vous ne vous mettez pas d’accord. Vos sensei finissent par tirer à la courte paille. Ça vous vexe tous les deux.', lien: { les2: { rivalite: 3 } } },
     ],
   },
@@ -132,7 +133,8 @@ export const SCENES_RANGS: SceneCommuneDef[] = [
     titre: 'Le gilet',
     age: { min: 14, max: 22 },
     types: MEME_VILLAGE,
-    si: (c) => vivants(c) && rang(c, 0) !== rang(c, 1) && Math.max(rang(c, 0), rang(c, 1)) >= rangIndex('chunin'),
+    // L'un vient d'avoir le gilet de chūnin, l'autre ne l'a pas encore (un jōnin n'a plus rien à fêter ici).
+    si: (c) => vivants(c) && Math.max(rang(c, 0), rang(c, 1)) === rangIndex('chunin') && Math.min(rang(c, 0), rang(c, 1)) < rangIndex('chunin'),
     texte: (c) => {
       const promu = (rang(c, 0) > rang(c, 1) ? 0 : 1) as IdJoueur;
       const n = c.creations[promu].prenom;
@@ -279,7 +281,7 @@ export const SCENES_SUITES: SceneCommuneDef[] = [
             { id: 'exiger', texte: 'Exiger la vérité, maintenant, dehors', famille: 'agir' },
           ]
         : [
-            { id: 'verite', texte: 'Dire la vérité : tu avais peur de le perdre en mission', famille: 'parler' },
+            { id: 'verite', texte: 'Dire la vérité : tu avais peur de {le:autre} perdre en mission', famille: 'parler' },
             { id: 'ambition', texte: 'Dire la vérité : tu voulais réussir sans lui', famille: 'agir' },
             { id: 'esquiver', texte: '« C’était il y a longtemps. »', famille: 'partir' },
           ]) as SceneCommuneDef['choix'],

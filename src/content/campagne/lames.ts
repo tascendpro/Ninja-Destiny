@@ -80,7 +80,7 @@ export function donnerLame(c: Campagne, j: IdJoueur): void {
     noter(c, o, `${l.nomLame} est désormais entre les mains de ${c.creations[j].prenom}.`);
   } else {
     // Certaines lames choisissent leur porteur : elle a refusé, et s'est perdue dans la bataille.
-    noter(c, j, `${l.nomLame} t’a refusé. Le temps de comprendre, elle avait disparu.`);
+    noter(c, j, `${l.nomLame} n’a pas voulu de toi. Le temps de comprendre, elle avait disparu.`);
     noter(c, o, `${l.nomLame} a refusé ${c.creations[j].prenom}, et elle a disparu.`);
   }
   c.quete = undefined;
@@ -104,16 +104,16 @@ function seul(c: Campagne, j: IdJoueur, l: LameQuete): void {
     for (const x of c.joueurs) if (x.pnj[l.porteur]) x.pnj[l.porteur].etat = 'mort';
     c.quete = { lame: l.lame };
     donnerLame(c, j);
-    ajouterJournal(s, `Seul, sur la piste de ${l.nomPorteur}. Tu es revenu avec ${l.nomLame}, et des cicatrices que personne n’a vues se faire.`, 3);
+    ajouterJournal(s, `Sans personne, sur la piste de ${l.nomPorteur}. Tu rapportes ${l.nomLame}, et des cicatrices que personne n’a vues se faire.`, 3);
     appliquerEffets(s, [{ blessure: { id: `lame_${l.lame}`, nom: `La lame de ${l.nomPorteur}`, gravite: 2, jours: 40 } }], nouveauCtx());
   } else if (mort) {
-    s.drapeaux['cause_mort'] = `parti seul affronter ${l.nomPorteur}`;
+    s.drapeaux['cause_mort'] = `en affrontant ${l.nomPorteur}, sans personne`;
     appliquerEffets(s, [{ stat: 'jauges.sante', delta: -1000 }], nouveauCtx());
-    noter(c, autre(j), `${c.creations[j].prenom} est parti seul sur la piste de ${l.nomPorteur}. On a retrouvé son bandeau, trois semaines plus tard, sur une plage.`);
+    noter(c, autre(j), `${c.creations[j].prenom} a suivi la piste de ${l.nomPorteur}, sans personne. On a retrouvé son bandeau, trois semaines plus tard, sur une plage.`);
   } else {
     appliquerEffets(s, [{ blessure: { id: `lame_${l.lame}`, nom: `Vaincu par ${l.nomPorteur}`, gravite: 3, jours: 90 } }], nouveauCtx());
-    ajouterJournal(s, `${l.nomPorteur} t’a laissé pour mort sur la grève. Tu as rampé jusqu’au village le plus proche.`, 3);
-    noter(c, autre(j), `${c.creations[j].prenom} est revenu de la piste de ${l.nomPorteur}, sur une civière. Sans l’épée.`);
+    ajouterJournal(s, `${l.nomPorteur} s’en va sans se retourner, et te laisse sur la grève. Tu rampes jusqu’au village le plus proche.`, 3);
+    noter(c, autre(j), `On a ramené ${c.creations[j].prenom} de la piste de ${l.nomPorteur}, sur une civière. Sans l’épée.`);
   }
 }
 
@@ -218,7 +218,7 @@ export const SCENES_LAMES: SceneCommuneDef[] = [
       },
       {
         cle: 'moi+toi',
-        texte: '{un} la réclame ; {deux} la lui laisse. {un} arrache la lame du sable. Elle est plus lourde qu’on ne croit, et plus légère qu’on ne le craignait.',
+        texte: '{un} la réclame ; {deux} la laisse à {un}. {un} arrache la lame du sable. Elle est plus lourde qu’on ne croit, et plus légère qu’on ne le craignait.',
         lien: { deux: { respect: 4 }, un: { dette: 8 } },
         apres: (c, un) => donnerLame(c, un),
       },

@@ -687,18 +687,18 @@ export const SCENE_HERITIER_SANG: SceneCommuneDef = {
   titre: 'Le même regard',
   dynamique: true,
   texte:
-    'Un enfant se présente à la porte, un bandeau trop grand sur le front. « On m’a dit que vous l’aviez connu. Que vous étiez là, à la fin. » Il a le même regard. Exactement le même. Celui qui vous fixait, ce jour-là, juste avant de tomber.',
+    'Un enfant se présente à la porte, un bandeau trop grand sur le front. « On m’a dit que vous étiez là, à la fin. » Il a le même regard. Exactement le même. Celui qui vous fixait, ce jour-là, juste avant de tomber.',
   textePour: (c, j) =>
     j === heritierDe(c)
-      ? 'Au village, on dit qu’il est mort en duel. On ne dit pas contre qui. Quand tu prononces son nom, la personne en face de toi détourne les yeux une demi-seconde de trop.'
-      : 'Tu sais exactement comment il est mort. Tu étais là. C’est toi. Et cet enfant vient te demander de lui raconter.',
+      ? 'Au village, on dit seulement : un duel. On ne dit pas contre qui. Quand tu prononces son nom, la personne en face de toi détourne les yeux une demi-seconde de trop.'
+      : 'Tu sais exactement comment c’est arrivé. Tu étais là. C’est toi. Et cet enfant vient te demander de lui raconter.',
   choix: [],
   choixPour: (c, j) =>
     j === heritierDe(c)
       ? [
           { id: 'questionner', texte: '« Vous étiez là. Qui l’a tué ? »', famille: 'observer' },
           { id: 'accueillir', texte: 'Ne rien demander, et rester', famille: 'proteger' },
-          { id: 'defier', texte: '« Un jour, je serai plus fort que lui. Plus fort que vous. »', famille: 'agir' },
+          { id: 'defier', texte: '« Un jour, je vous dépasserai. Vous, et tous les autres. »', famille: 'agir' },
         ]
       : [
           { id: 'avouer', texte: 'Lui dire la vérité : c’est toi', famille: 'parler' },
@@ -715,7 +715,7 @@ export const SCENE_HERITIER_SANG: SceneCommuneDef = {
     },
     {
       cle: 'avouer+*',
-      texte: 'Tu le dis avant qu’il demande quoi que ce soit. « C’est moi qui l’ai tué. » L’enfant recule d’un pas, comme si les mots pouvaient le frapper. Ils le peuvent. Il part en courant. Tu ne sais pas s’il reviendra, et tu ne sais pas si tu le veux.',
+      texte: 'Tu le dis avant qu’il demande quoi que ce soit. « C’est moi. C’est ma main. » L’enfant recule d’un pas, comme si les mots pouvaient le frapper. Ils le peuvent. Il part en courant. Tu ne sais pas s’il reviendra, et tu ne sais pas si tu le veux.',
       lien: { deux: { ressentiment: 30, mefiance: 10 }, un: { dette: -5, peur_de_perdre: 5 } },
       souvenir: { id: 'heritier', texte: 'L’aveu à l’héritier, et la porte restée ouverte derrière lui.', poids: 5, tonalite: 'tragique' },
       apres: apprendre,
@@ -742,7 +742,7 @@ export const SCENE_HERITIER_SANG: SceneCommuneDef = {
     },
     {
       cle: 'defier+*',
-      texte: '« Un jour, je serai plus fort. » Il le dit sans savoir à qui il parle vraiment. Toi, tu le sais. Tu hoches la tête. « Je t’attendrai. »',
+      texte: '« Un jour, je vous dépasserai. » L’enfant le dit sans savoir à qui il parle vraiment. Toi, tu le sais. Tu hoches la tête. « Je t’attendrai. »',
       // « un » est l'héritier ici : c'est son choix qui est cité dans la clé.
       lien: { un: { rivalite: 20 }, deux: { peur_de_perdre: 5, dette: 5 } },
       promesse: { id: 'heritier_defi', texte: 'L’héritier a juré de devenir plus fort que celui qui a tué son prédécesseur.' },

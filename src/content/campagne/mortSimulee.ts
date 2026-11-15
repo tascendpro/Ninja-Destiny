@@ -45,8 +45,8 @@ function chute(c: Campagne, a: IdJoueur): void {
     [{ statut: 'deserteur' }, { stat: 'attributs.controleChakra', delta: 6 }, { stat: 'attributs.discretion', delta: 6 }, { stat: 'attributs.force', delta: 3 }, { drapeau: 'mort_simulee' }],
     nouveauCtx(),
   );
-  ajouterJournal(s, `Tu as disparu dans le torrent, sous les yeux de ${nom(c, b)}. L’homme au masque t’a repêché plus bas.`, 3);
-  ajouterJournal(c.joueurs[b], `${nom(c, a)} est tombé dans le torrent. On n’a jamais retrouvé le corps.`, 3);
+  ajouterJournal(s, `Tu as disparu dans le torrent, sous les yeux de ${nom(c, b)}. L’homme au masque attendait plus bas, au bord de l’eau.`, 3);
+  ajouterJournal(c.joueurs[b], `${nom(c, a)} a disparu dans le torrent. On n’a jamais retrouvé le corps.`, 3);
   noter(c, b, `On a cherché ${nom(c, a)} pendant neuf jours. On n’a jamais retrouvé le corps. On a enterré un bandeau, sous une pierre trop neuve.`);
   noter(c, a, `L’homme au masque te soigne sans un mot. « Maintenant, tu n’existes plus. C’est le plus difficile. Le reste, je te l’apprendrai. »`);
   fait(c, {
@@ -55,7 +55,7 @@ function chute(c: Campagne, a: IdJoueur): void {
     connus: [a],
     preuves: 1,
     cible: b,
-    texteCible: `${nom(c, a)} n’est pas mort. Il a fait semblant, sous tes yeux.`,
+    texteCible: `${nom(c, a)} est vivant. La chute, sous tes yeux, n’était qu’une mise en scène.`,
   });
   souvenir(c, 'pont', `Le vieux pont, la nuit où ${nom(c, a)} est tombé.`, 5, 'tragique', [b]);
   souvenir(c, 'pont_chute', `La nuit du pont, et la main de ${nom(c, b)} tendue vers toi.`, 5, 'tragique', [a]);
@@ -69,7 +69,7 @@ function retrouves(c: Campagne, intention: string): void {
   c.separation = { ...c.separation!, actif: false, fini: true, intention };
   const f = c.faits.find((x) => x.id === 'mort_simulee');
   if (f && !f.connus.includes(b)) f.connus.push(b);
-  souvenir(c, 'retour_masque', `Le soir où ${nom(c, a)} est revenu d’entre les morts, assis à sa place à table.`, 5, intention === 'detruire' ? 'tragique' : 'amer');
+  souvenir(c, 'retour_masque', `Le soir du retour de ${nom(c, a)}, assis dans le noir, à sa place à table.`, 5, intention === 'detruire' ? 'tragique' : 'amer');
 }
 
 /** Revenir au village : le mort qu'on a enterré redevient un ninja, sous haute surveillance. */
@@ -163,7 +163,7 @@ export const SCENES_MORT_SIMULEE: SceneCommuneDef[] = [
       },
       {
         cle: 'tomber+*',
-        texte: '{deux} crie le nom de {un}. {un} se retourne, une demi-seconde, et la lame le cueille à ce moment-là. Il tombe. Le torrent l’avale. {deux} reste à genoux sur les planches jusqu’à l’aube, les yeux brûlants.',
+        texte: '{deux} crie le nom de {un}. {un} se retourne, une demi-seconde, et la lame {le:un} cueille à ce moment-là. {Il:un} tombe. Le torrent l’avale. {deux} reste à genoux sur les planches jusqu’à l’aube, les yeux brûlants.',
         effets: { deux: [{ eveilDanger: 65 }] },
         apres: (c, un) => chute(c, un),
       },
@@ -209,7 +209,7 @@ export const SCENES_MORT_SIMULEE: SceneCommuneDef[] = [
     issues: [
       {
         cle: 'retrouver+accueillir',
-        texte: '{un} raconte tout : le masque, le pont, les années. {deux} écoute en le tenant par la manche, comme si {il:un} pouvait disparaître encore. Le lendemain, {un} se présente au village. On l’interroge pendant des jours. On le surveillera des années. Mais il est vivant, et il est là.',
+        texte: '{un} raconte tout : le masque, le pont, les années. {deux} écoute en {le:un} tenant par la manche, comme si {il:un} pouvait disparaître encore. Le lendemain, {un} se présente au village. On l’interroge pendant des jours. On {le:un} surveillera des années. Mais {il:un} est vivant, et {il:un} est là.',
         lien: { deux: { ressentiment: 10, peur_de_perdre: 15, confiance: -5 }, un: { loyaute: 8, dette: 10 } },
         apres: (c) => {
           retrouves(c, 'retrouver');
@@ -218,7 +218,7 @@ export const SCENES_MORT_SIMULEE: SceneCommuneDef[] = [
       },
       {
         cle: 'retrouver+suivre',
-        texte: '{deux} dit qu’{il:deux} le suivra n’importe où. {un} répond qu’il ne va nulle part, cette fois. Ils restent assis à la table jusqu’au matin, à se raconter des années perdues.',
+        texte: '{deux} dit qu’{il:deux} {le:un} suivra n’importe où. {un} répond qu’il ne va nulle part, cette fois. Ils restent assis à la table jusqu’au matin, à se raconter des années perdues.',
         lien: { les2: { loyaute: 10 }, deux: { ressentiment: 5 } },
         apres: (c) => {
           retrouves(c, 'retrouver');
@@ -244,7 +244,7 @@ export const SCENES_MORT_SIMULEE: SceneCommuneDef[] = [
       },
       {
         cle: 'emmener+accueillir',
-        texte: '« Viens avec moi. » {deux} le serre contre {lui:deux}, et répond : « Reste. » Ils restent longtemps comme ça, chacun tirant l’autre vers sa vie. C’est {un} qui cède. Il se présentera au village demain. Pour {deux}.',
+        texte: '« Viens avec moi. » {deux} le serre contre {lui:deux}, et répond : « Reste. » Ils restent longtemps comme ça, chacun tirant l’autre vers sa vie. C’est {un} qui cède. {Il:un} se présentera au village demain. Pour {deux}.',
         lien: { un: { dette: 12, loyaute: 6 }, deux: { peur_de_perdre: 12 } },
         apres: (c) => {
           retrouves(c, 'emmener');
@@ -253,7 +253,7 @@ export const SCENES_MORT_SIMULEE: SceneCommuneDef[] = [
       },
       {
         cle: 'emmener+frapper',
-        texte: '« Viens avec moi. » La réponse est un poing. {un} encaisse, essuie le sang, et se met en garde. S’il faut gagner {deux} à la loyale, il le fera.',
+        texte: '« Viens avec moi. » La réponse est un poing. {un} encaisse, essuie le sang, et se met en garde. S’il faut gagner {deux} à la loyale, {un} le fera.',
         lien: { deux: { ressentiment: 20 }, un: { rivalite: 10 } },
         combat: 'duel_honneur',
         apres: (c) => retrouves(c, 'emmener'),
