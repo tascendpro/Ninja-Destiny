@@ -514,7 +514,9 @@ export function periodeMax(s: GameState): number {
 
 /** Chance, après chaque bloc d'une période, qu'un imprévu vienne l'interrompre. */
 /** Chance d'imprévu par bloc de temps libre : l'enfance déborde de petites choses, l'âge adulte se resserre. */
-const IMPREVU = { enfant: 0.7, ado: 0.4, jeune: 0.22, adulte: 0.12 };
+// Les imprévus du temps libre. Avant l'examen chūnin, l'enfance ne doit pas se noyer dans les petites scènes :
+// on garde l'essentiel (la trame tombe toujours), le reste se raréfie.
+const IMPREVU = { enfant: 0.35, ado: 0.25, jeune: 0.22, adulte: 0.12 };
 
 const BOUCLABLES = new Set(['duo', 'entrainer', 'nature', 'technique', 'repos', 'famille', 'social', 'travail', 'etudier', 'metier', 'route']);
 const ENTRAINEMENT = new Set(['duo', 'entrainer', 'nature', 'technique', 'route']);

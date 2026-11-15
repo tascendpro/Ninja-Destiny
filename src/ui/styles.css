@@ -8320,3 +8320,8 @@ body::before {
 :root[data-animations='reduites'] .salon-arrivee-cercle circle {
   stroke-dashoffset: 0;
 }
+.aff-indisponibles {
+  margin: 0 0 6px;
+  color: var(--brume);
+  font-size: var(--t-xs);
+}

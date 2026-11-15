@@ -327,9 +327,11 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
                 </div>
               );
             // Les actions du menu, les plus parlantes d'abord : disponibles, puis marquées (enchaînement, synergie…).
-            const items = v.familles
-              .filter((f) => m.familles.includes(f.id))
-              .flatMap((f) => f.actions.map((a) => ({ a, f: f.id })))
+            // Ce qui est impossible maintenant ne prend pas de place : seules les actions jouables occupent les quatre cases.
+            const toutes = v.familles.filter((f) => m.familles.includes(f.id)).flatMap((f) => f.actions.map((a) => ({ a, f: f.id })));
+            const indisponibles = toutes.filter((x) => !x.a.disponible).length;
+            const items = toutes
+              .filter((x) => x.a.disponible)
               .map((x, i) => ({ ...x, i }))
               .sort((x, y) => Number(y.a.disponible) - Number(x.a.disponible) || y.a.marques.length - x.a.marques.length || x.i - y.i);
             const pages = Math.max(1, Math.ceil(items.length / PAR_PAGE));
@@ -354,6 +356,11 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
                     </button>
                   )}
                 </div>
+                {indisponibles > 0 && (
+                  <p className="aff-indisponibles">
+                    {indisponibles} autre{indisponibles > 1 ? 's' : ''} hors de portée pour l’instant (chakra, arme, palier).
+                  </p>
+                )}
                 <div className="aff-cartes aff-grille4">
                   {visibles.map(({ a, f }) => (
                     <span key={`${f}:${a.id}`} className="aff-carte-wrap" onClickCapture={() => setFamille(f)}>
