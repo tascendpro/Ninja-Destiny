@@ -35,12 +35,27 @@ const ISSUES: Record<string, { mot: string; ton: 'bon' | 'mauvais' | 'neutre' }>
   annulee: { mot: 'Annulé', ton: 'neutre' },
 };
 
+/**
+ * Quatre grands choix, comme dans un jeu de combat : on n'a jamais plus de quatre actions sous les yeux.
+ * Chaque menu regroupe des familles du moteur ; les actions les plus parlantes (enchaînement, synergie, technique
+ * inédite) passent devant, et « Autres » fait défiler le reste.
+ */
+const MENUS: { id: string; nom: string; kanji: string; familles: Famille[]; aide: string }[] = [
+  { id: 'attaque', nom: 'Attaquer', kanji: '撃', familles: ['taijutsu', 'arme'], aide: 'Corps à corps, armes' },
+  { id: 'jutsu', nom: 'Jutsu', kanji: '術', familles: ['ninjutsu', 'pouvoir'], aide: 'Techniques, pouvoirs' },
+  { id: 'defense', nom: 'Défense', kanji: '守', familles: ['defense', 'objet'], aide: 'Parer, esquiver, objets' },
+  { id: 'tactique', nom: 'Tactique', kanji: '策', familles: ['observation', 'parole', 'situation', 'fuite'], aide: 'Observer, parler, fuir' },
+];
+const PAR_PAGE = 4;
+
 export default function Affrontement({ etat, onCombat }: { etat: GameState; onCombat: (a: ActionCombat) => void }) {
   const v = vueAffrontement(etat);
   // La dernière manche déjà jouée quand l'écran s'ouvre : on n'anime que les suivantes.
   const premiereManche = useRef<number | null>(null);
   const p = etat.creation.presentation;
   const [famille, setFamille] = useState<Famille | null>(null);
+  const [menu, setMenu] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
   const [choix, setChoix] = useState<string | null>(null);
   const [elan, setElan] = useState<DepenseElan | undefined>(undefined);
   // Contre une escouade : qui viser. Par défaut, le premier qui barre le chemin.
@@ -52,6 +67,9 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
   useEffect(() => {
     setChoix(null);
     setElan(undefined);
+    // Chaque manche repart des quatre grands choix.
+    setMenu(null);
+    setFamille(null);
     if (nbEntrees > 1) haut.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }, [nbEntrees]);
 
@@ -70,15 +88,14 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
       if (e.altKey || e.ctrlKey || e.metaKey) return;
       const cible = e.target as HTMLElement | null;
       if (cible && ['INPUT', 'TEXTAREA', 'SELECT'].includes(cible.tagName)) return;
-      if (/^[1-9]$/.test(e.key)) {
-        const f = v.familles[Number(e.key) - 1];
-        if (f) {
-          setFamille(f.id);
-          setChoix(null);
-        }
+      if (/^[1-4]$/.test(e.key) && !menu) {
+        setMenu(MENUS[Number(e.key) - 1].id);
+        setPage(0);
+        setChoix(null);
       } else if (e.key === 'Escape') {
         setChoix(null);
         setFamille(null);
+        setMenu(null);
       } else if (e.key === 'Enter' && choix) confirmer();
     };
     window.addEventListener('keydown', ecoute);
@@ -146,7 +163,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
         {transition && <TransitionManche key={transition.manche} j={transition} />}
         {transition?.nature && <EffetNature key={`n${transition.manche}`} nature={transition.nature} />}
         {/* 1. Face-à-face : toi à gauche, l'adversaire à droite */}
-        <div className="aff-duel" ref={haut}>
+        <div className="aff-duel arene" ref={haut}>
           <div className={`aff-carte joueur${transition?.subi ? ' frappee' : ''}`} key={`cj${transition?.manche ?? 0}`}>
             <span className="aff-avatar">
               <Portrait nom={etat.creation.prenom} village={etat.creation.village} clan={etat.creation.clan} taille={40} />
@@ -277,75 +294,76 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
 
         {/* 4. La commande : familles en onglets, puis les actions en cartes */}
         <section className="aff-commande" aria-label="Ton action pour cette manche">
-          <div className="aff-familles" role="tablist" aria-label="Familles d’actions">
-            {v.familles.map((f, i) => (
-              <button
-                key={f.id}
-                type="button"
-                role="tab"
-                className={`aff-famille${famille === f.id ? ' active' : ''}${f.id === 'situation' ? ' situation' : ''}`}
-                aria-selected={famille === f.id}
-                aria-controls="aff-panneau"
-                onClick={() => {
-                  setFamille(famille === f.id ? null : f.id);
-                  setChoix(null);
-                }}
-              >
-                <span className="aff-famille-kanji" aria-hidden="true">
-                  {f.kanji}
-                </span>
-                <span className="aff-famille-nom">{f.nom}</span>
-                <kbd className="touche" aria-hidden="true">
-                  {i + 1}
-                </kbd>
-              </button>
-            ))}
-          </div>
-
-          {membres && (
-            <div className="aff-escouade" role="radiogroup" aria-label="Qui viser">
-              <span className="aff-escouade-titre">Viser</span>
-              {membres.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={cibleValide === m.id}
-                  disabled={m.horsCombat}
-                  className={`aff-membre r-${m.role}${cibleValide === m.id ? ' visee' : ''}${m.horsCombat ? ' hors' : ''}`}
-                  onClick={() => setCible(m.id)}
-                >
-                  <span className="aff-membre-kanji" aria-hidden="true">
-                    {m.kanji}
-                  </span>
-                  <span className="aff-membre-corps">
-                    <span className="aff-membre-nom">{m.nom}</span>
-                    <span className="aff-membre-etat">{m.parti ? 'enfui' : m.horsCombat ? 'à terre' : `${m.role} · ${m.pct} %`}</span>
-                    <span className="aff-membre-jauge" aria-hidden="true">
-                      <i style={{ width: `${m.horsCombat ? 0 : m.pct}%` }} />
+          {(() => {
+            const m = MENUS.find((x) => x.id === menu);
+            if (!m)
+              return (
+                <div className="aff-menu" role="group" aria-label="Que fais-tu ?">
+                  {MENUS.map((x, i) => {
+                    const n = v.familles.filter((f) => x.familles.includes(f.id)).reduce((t, f) => t + f.actions.filter((a) => a.disponible).length, 0);
+                    return (
+                      <button
+                        key={x.id}
+                        type="button"
+                        className={`aff-menu-bouton menu-${x.id}`}
+                        disabled={n === 0}
+                        onClick={() => {
+                          setMenu(x.id);
+                          setPage(0);
+                          setChoix(null);
+                        }}
+                      >
+                        <span className="aff-menu-kanji" aria-hidden="true">
+                          {x.kanji}
+                        </span>
+                        <span className="aff-menu-nom">{x.nom}</span>
+                        <small>{x.aide}</small>
+                        <kbd className="touche" aria-hidden="true">
+                          {i + 1}
+                        </kbd>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            // Les actions du menu, les plus parlantes d'abord : disponibles, puis marquées (enchaînement, synergie…).
+            const items = v.familles
+              .filter((f) => m.familles.includes(f.id))
+              .flatMap((f) => f.actions.map((a) => ({ a, f: f.id })))
+              .map((x, i) => ({ ...x, i }))
+              .sort((x, y) => Number(y.a.disponible) - Number(x.a.disponible) || y.a.marques.length - x.a.marques.length || x.i - y.i);
+            const pages = Math.max(1, Math.ceil(items.length / PAR_PAGE));
+            const visibles = items.slice((page % pages) * PAR_PAGE, (page % pages) * PAR_PAGE + PAR_PAGE);
+            return (
+              <div id="aff-panneau" className={`aff-sous-menu menu-${m.id}`} role="group" aria-label={m.nom}>
+                <div className="aff-sous-tete">
+                  <button
+                    type="button"
+                    className="aff-retour"
+                    onClick={() => {
+                      setMenu(null);
+                      setChoix(null);
+                      setFamille(null);
+                    }}
+                  >
+                    ‹ {m.nom}
+                  </button>
+                  {pages > 1 && (
+                    <button type="button" className="aff-autres" onClick={() => setPage((page + 1) % pages)}>
+                      Autres ({(page % pages) + 1}/{pages}) ›
+                    </button>
+                  )}
+                </div>
+                <div className="aff-cartes aff-grille4">
+                  {visibles.map(({ a, f }) => (
+                    <span key={`${f}:${a.id}`} className="aff-carte-wrap" onClickCapture={() => setFamille(f)}>
+                      {carte(a)}
                     </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {fam ? (
-            <div id="aff-panneau" className="aff-panneau" role="tabpanel" aria-label={`Actions : ${fam.nom}`}>
-              {(() => {
-                const gestes = fam.actions.filter((a) => a.chakra === undefined);
-                const techniques = fam.actions.filter((a) => a.chakra !== undefined);
-                return (
-                  <>
-                    {gestes.length > 0 && <div className="aff-cartes">{gestes.map(carte)}</div>}
-                    {techniques.length > 0 && <GroupesNature items={techniques} techId={(a) => a.id} titre={`${fam.nom} : techniques par nature`} rendu={carte} />}
-                  </>
-                );
-              })()}
-            </div>
-          ) : (
-            <p className="aff-invite">Choisis une famille : frapper, composer des signes, te défendre, observer, parler ou fuir.</p>
-          )}
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 5. La barre de lancement : toujours à portée du pouce */}
           {fam && (

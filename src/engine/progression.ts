@@ -57,6 +57,7 @@ export function gainsAnnuels(s: GameState, nouvelAge: number): GainAnnuel[] {
 export function anniversaire(s: GameState, nouvelAge: number, ctx?: Ctx): void {
   if (nouvelAge < 7 || s.statut === 'mort') return;
   fusionsParMaitrise(s, nouvelAge, ctx);
+  apprentissagesNaturels(s, nouvelAge, ctx);
   const gains = gainsAnnuels(s, nouvelAge);
   const total = gains.reduce((a, x) => a + x.points, 0);
   s.merites = { missionsBase: missionsReussies(s) };
@@ -66,6 +67,31 @@ export function anniversaire(s: GameState, nouvelAge: number, ctx?: Ctx): void {
   if (s.anniversaires.length > 30) s.anniversaires.shift();
   ctx?.changements.push({ t: 'points', age: nouvelAge, total, gains });
   ajouterJournal(s, `${nouvelAge} ans : ${total} points de stat gagnés (${gains.map((x) => `${x.source} ${x.points}`).join(', ')}).`, 1);
+}
+
+/**
+ * Ce qu'on apprend en grandissant, sans le choisir : coller le chakra aux pieds pour courir sur l'écorce, puis sur l'eau.
+ * Ça vient avec l'âge et le contrôle du chakra, comme on apprend à nager : pas une activité de temps libre.
+ */
+export const APPRIS_EN_GRANDISSANT: { id: string; age: number; controle: number; apres?: string; texte: string }[] = [
+  { id: 'kinobori', age: 9, controle: 30, texte: 'Un soir, sans y penser, tu montes en courant le long d’un tronc, jusqu’à la première branche. Le chakra colle à tes pieds comme s’il l’avait toujours fait.' },
+  { id: 'suimen', age: 12, controle: 40, apres: 'kinobori', texte: 'Au bord de la rivière, tu poses un pied sur l’eau, puis l’autre. Elle tient. Tu traverses jusqu’à l’autre rive, et tu n’oses pas te retourner.' },
+];
+
+export function apprentissagesNaturels(s: GameState, nouvelAge: number, ctx?: Ctx): void {
+  for (const a of APPRIS_EN_GRANDISSANT) {
+    if (nouvelAge < a.age || (s.maitrises[a.id]?.tier ?? 0) >= 1) continue;
+    if (s.attributs.controleChakra < a.controle && nouvelAge < a.age + 3) continue;
+    if (a.apres && (s.maitrises[a.apres]?.tier ?? 0) < 1) continue;
+    const def = R.maitrises[a.id];
+    if (!def) continue;
+    const ms = s.maitrises[a.id] ?? nouvelleMaitrise(def, 60, 'creation');
+    eveiller(ms, s.jour, nouvelAge);
+    ms.tier = Math.max(1, ms.tier) as typeof ms.tier;
+    s.maitrises[a.id] = ms;
+    ajouterJournal(s, a.texte, 2);
+    ctx?.changements.push({ t: 'info', message: `${def.nom} : appris en grandissant.` });
+  }
 }
 
 /** Les combinaisons à maîtriser avant qu'une fusion naisse du travail, sans lignée. */

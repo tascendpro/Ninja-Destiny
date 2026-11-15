@@ -174,6 +174,9 @@ export function lienUtile(s: GameState, id: string): boolean {
   return Object.entries(s.roles).some(([role, pnj]) => pnj === id && r.roles.has(role));
 }
 
+export { APPRIS_EN_GRANDISSANT } from './progression';
+import { APPRIS_EN_GRANDISSANT } from './progression';
+
 export function genererActivites(s: GameState): Activite[] {
   const res: Activite[] = [];
   const d = dureeBase(s);
@@ -238,6 +241,8 @@ export function genererActivites(s: GameState): Activite[] {
     const aPortee: Activite[] = [];
     for (const def of R.contenu.maitrises) {
       if (!def.technique || (s.maitrises[def.id]?.tier ?? 0) >= 1) continue;
+      // Marcher sur les arbres, puis sur l'eau : ça ne s'apprend pas en temps libre, ça vient avec le chakra (progression.ts).
+      if (APPRIS_EN_GRANDISSANT.some((x) => x.id === def.id)) continue;
       // Une technique de maître reste un secret tant qu'on ne l'a pas rencontré.
       const ens = def.technique.enseignee;
       if (typeof ens === 'object' && !s.drapeaux[ens.drapeau]) continue;

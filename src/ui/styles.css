@@ -7950,3 +7950,210 @@ body::before {
   45% { transform: scaleY(1); opacity: 1; }
   100% { transform: scaleY(1); opacity: 0; }
 }
+
+/* ── Le combat, façon arène : l'adversaire en haut à droite, toi en bas à gauche, quatre grands choix ── */
+.aff-duel.arene {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    'adv adv'
+    'centre centre'
+    'joueur joueur'
+    'sous sous';
+  gap: 6px;
+  padding: 14px 12px 10px;
+  border-radius: var(--rayon-m);
+  background:
+    radial-gradient(ellipse 60% 18% at 72% 34%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 18% at 28% 84%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--ciel) 45%, var(--encre-2)), var(--encre-2) 55%, color-mix(in srgb, var(--accent) 8%, var(--encre-2)));
+  border: 1px solid var(--trait-doux);
+  overflow: hidden;
+}
+.aff-duel.arene .aff-carte.adv {
+  grid-area: adv;
+  justify-self: end;
+  flex-direction: row-reverse;
+  width: min(100%, 22rem);
+}
+.aff-duel.arene .aff-carte.joueur {
+  grid-area: joueur;
+  justify-self: start;
+  width: min(100%, 22rem);
+}
+.aff-duel.arene .aff-centre {
+  grid-area: centre;
+  justify-self: center;
+  opacity: 0.55;
+  flex-direction: row;
+  gap: 8px;
+}
+.aff-duel.arene .aff-sous-duel {
+  grid-area: sous;
+  text-align: center;
+}
+.aff-duel.arene .aff-carte {
+  background: color-mix(in srgb, var(--ardoise) 88%, transparent);
+  border: 1px solid var(--trait);
+  border-radius: 14px;
+  padding: 8px 10px;
+  box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.7);
+  animation: arene-entree 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.aff-duel.arene .aff-carte.adv {
+  animation-name: arene-entree-adv;
+}
+.aff-duel.arene .aff-avatar {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  position: relative;
+}
+.aff-duel.arene .aff-avatar::after {
+  content: '';
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  bottom: -8px;
+  height: 12px;
+  border-radius: 50%;
+  background: color-mix(in srgb, #000 35%, transparent);
+  z-index: -1;
+}
+.aff-duel.arene .aff-avatar.adv {
+  font-size: 1.9rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--danger) 25%, var(--ardoise));
+  color: var(--papier);
+}
+.aff-duel.arene .aff-jauge {
+  height: 9px;
+  border-radius: 6px;
+}
+.aff-duel.arene .aff-endurance,
+.aff-duel.arene .aff-adv {
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+@keyframes arene-entree {
+  from { transform: translateX(-30px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes arene-entree-adv {
+  from { transform: translateX(30px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* La boîte de dialogue : ce que tu lis de lui, comme un message de combat. */
+.affrontement .aff-annonce {
+  border: 2px solid var(--trait);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 3px var(--encre-2), inset 0 0 0 4px var(--trait-doux);
+}
+
+/* Les quatre grands choix. */
+.aff-menu {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.aff-menu-bouton {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  text-align: left;
+  min-height: 72px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 2px solid var(--mc);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--mc) 26%, var(--ardoise)), var(--ardoise));
+  color: var(--papier);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.2s;
+  box-shadow: 0 6px 0 -1px color-mix(in srgb, var(--mc) 55%, #000);
+}
+.aff-menu-bouton:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 -1px color-mix(in srgb, var(--mc) 55%, #000);
+}
+.aff-menu-bouton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.aff-menu-kanji {
+  grid-row: span 2;
+  font-family: var(--mincho);
+  font-size: 1.8rem;
+  color: var(--mc);
+  line-height: 1;
+}
+.aff-menu-nom {
+  font-family: var(--mincho);
+  font-size: var(--t-l);
+  font-weight: 700;
+}
+.aff-menu-bouton small {
+  color: var(--brume);
+  font-size: var(--t-xs);
+}
+.aff-menu-bouton .touche {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+}
+.menu-attaque { --mc: #e0604f; }
+.menu-jutsu { --mc: #7b8cf0; }
+.menu-defense { --mc: #4fae8c; }
+.menu-tactique { --mc: #d8ab52; }
+
+/* Le sous-menu : quatre actions au plus. */
+.aff-sous-menu {
+  animation: encre 0.25s ease both;
+}
+.aff-sous-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.aff-retour,
+.aff-autres {
+  background: none;
+  border: 1px solid var(--trait);
+  border-radius: 999px;
+  padding: 6px 14px;
+  color: var(--papier);
+  font-size: var(--t-s);
+  cursor: pointer;
+}
+.aff-retour {
+  border-color: var(--mc);
+  color: var(--mc);
+  font-weight: 700;
+}
+.aff-grille4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.aff-carte-wrap {
+  display: contents;
+}
+.aff-grille4 .aff-action {
+  min-height: 74px;
+  border-radius: 14px;
+  border-left: 5px solid var(--nat, var(--mc));
+}
+@media (max-width: 380px) {
+  .aff-menu-bouton {
+    min-height: 64px;
+    padding: 10px;
+  }
+  .aff-menu-kanji {
+    font-size: 1.5rem;
+  }
+}
