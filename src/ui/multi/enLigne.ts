@@ -69,8 +69,21 @@ const erreur = (e: unknown) => {
 
 // ── Supabase ─────────────────────────────────────────────────
 
-const URL_SB = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const CLE_SB = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+/**
+ * L'adresse du projet, réduite à son origine : la page « Data API » de Supabase affiche souvent l'URL de l'API REST
+ * (…supabase.co/rest/v1/), que le client refuse (« invalid path specified in request url »). Espaces et guillemets retirés.
+ */
+function origine(brut: string | undefined): string | undefined {
+  const t = brut?.trim().replace(/^["']|["']$/g, '');
+  if (!t) return undefined;
+  try {
+    return new URL(t.includes('://') ? t : `https://${t}`).origin;
+  } catch {
+    return t;
+  }
+}
+const URL_SB = origine(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const CLE_SB = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim().replace(/^["']|["']$/g, '');
 
 let client: SupabaseClient | undefined;
 async function sb(): Promise<{ db: SupabaseClient; moi: string }> {
