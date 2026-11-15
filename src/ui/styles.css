@@ -7816,3 +7816,24 @@ body::before {
 .salon .option:disabled {
   opacity: 0.45;
 }
+.salon-erreur-flottante {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  z-index: 70;
+  background: var(--encre-2);
+  box-shadow: var(--ombre);
+}
+.contrainte-lien {
+  margin: -6px 0 16px;
+  padding: 9px 12px;
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: 0 var(--rayon-s) var(--rayon-s) 0;
+  font-size: var(--t-s);
+}
+.tuile:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

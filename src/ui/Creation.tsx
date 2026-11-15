@@ -7,6 +7,7 @@ import { CHANCE_JINCHURIKI, CHANCE_PRODIGE, validerCreation } from '../engine/mo
 import { nomDeFamille } from '../engine/etat';
 import { accorder } from '../engine/texte';
 import { ATTRIBUT_LIBELLE } from './libelles';
+import { respecter, type Contraintes } from './creationAides';
 import { VOIES, appliquerVoie, aptitudeDe as aptitudeDes, creationAuHasard, derniereCreation, memoriserCreation, prenomAuHasard, profilTraits } from './creationAides';
 
 const ETAPES = ['Identité', 'Village', 'Clan', 'Affinité', 'Personnalité', 'Destin', 'Récapitulatif'];
@@ -32,6 +33,9 @@ export default function Creation({
   joueur,
   libelleFin = 'Entrer dans l’histoire',
   modele,
+  contraintes,
+  onChange,
+  initiale,
 }: {
   onCommencer: (c: CreationT) => void;
   onRetour: () => void;
@@ -41,6 +45,12 @@ export default function Creation({
   libelleFin?: string;
   /** Campagne à deux : le ninja de l'autre joueur, pour partir du même village ou du même clan. */
   modele?: CreationT;
+  /** Deux téléphones : ce que le lien impose (village et clan de l'hôte, clan ou village déjà pris par l'autre). */
+  contraintes?: Contraintes;
+  /** Deux téléphones : chaque changement est publié, pour que l'autre voie ce qu'on a pris. */
+  onChange?: (c: CreationT) => void;
+  /** Reprendre une fiche déjà commencée (modifier son ninja). */
+  initiale?: CreationT;
 }) {
   const [etape, setEtapeBrute] = useState(0);
   // L'étape la plus lointaine atteinte : les pastilles du haut y mènent directement.
@@ -52,7 +62,7 @@ export default function Creation({
   // Lu après le premier rendu : le rendu statique n'a pas de stockage.
   const [derniere, setDerniere] = useState<CreationT | undefined>(undefined);
   useEffect(() => setDerniere(derniereCreation()), []);
-  const [c, setC] = useState<CreationT>({
+  const [c, setC] = useState<CreationT>(() => initiale ?? {
     prenom: '',
     presentation: 'masculin',
     ageDepart: 6,
@@ -96,17 +106,37 @@ export default function Creation({
   };
   const tirerPrenom = () => maj({ prenom: prenomAuHasard(c.village, c.presentation) });
   /** Une fiche remplie d'un coup (voie, hasard, dernier ninja) : direction le récapitulatif, où tout se modifie. */
-  const remplir = (x: CreationT) => {
+  const remplir = (x0: CreationT) => {
+    const x = contraintes ? respecter(x0, contraintes) : x0;
+    if (!x) return;
     setC({ ...x, heritage: c.heritage, difficulte: c.difficulte });
     setEtape(ORDRE.indexOf(6));
     setAtteinte(ORDRE.length - 1);
   };
   const allerA = (kCible: number) => setEtape(ORDRE.indexOf(kCible));
 
+  const villageFerme = (v: VillageId) => (!!contraintes?.attente && !contraintes.village) || (!!contraintes?.village && v !== contraintes.village) || !!contraintes?.villagesInterdits?.includes(v);
+  const clanFerme = (id: string) => !!contraintes?.attente || (!!contraintes?.clan && id !== contraintes.clan) || !!contraintes?.clansInterdits?.includes(id);
+  // Ce que le lien impose s'applique dès que c'est connu ; un choix devenu interdit est retiré.
+  useEffect(() => {
+    if (!contraintes) return;
+    setC((x) => {
+      const r = respecter(x, contraintes);
+      if (r) return JSON.stringify(r) === JSON.stringify(x) ? x : r;
+      const villageOk = !contraintes.villagesInterdits?.includes(x.village);
+      return { ...x, village: villageOk ? x.village : (R.contenu.villages.find((v) => !villageFerme(v.id))?.id ?? x.village), clan: '' };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(contraintes)]);
+  useEffect(() => {
+    onChange?.(c);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [c]);
+
   const valide = [
     c.prenom.trim().length > 0,
-    !!c.village,
-    !!c.clan,
+    !!c.village && !villageFerme(c.village),
+    !!c.clan && !clanFerme(c.clan),
     !!c.element && (!clan?.elementsRequis || clan.elementsRequis.includes(c.element)),
     normaux.length === 2 && !!c.aptitude,
     !!c.objectif,
@@ -149,6 +179,11 @@ export default function Creation({
         {ETAPES[k]}
       </h1>
       <p className="intro">{INTROS[k]}</p>
+      {contraintes?.note && (k === 1 || k === 2) && (
+        <p className="contrainte-lien" role="status">
+          {contraintes.note}
+        </p>
+      )}
 
       {etape > 0 && k !== 6 && (
         <aside className="fiche-ninja" style={{ '--c': `var(--v-${c.village})` } as React.CSSProperties} aria-label="Ton ninja jusqu’ici">
@@ -178,7 +213,16 @@ export default function Creation({
             <p>Une voie déjà tracée remplit toute la fiche ; tu pourras tout changer au récapitulatif.</p>
           </div>
           <div className="raccourcis-actions">
-            <button className="raccourci-des" onClick={() => remplir(creationAuHasard(c))}>
+            <button
+              className="raccourci-des"
+              onClick={() => {
+                // Le destin tire jusqu'à trouver un ninja que le lien permet.
+                for (let i = 0; i < 40; i++) {
+                  const x = creationAuHasard(c);
+                  if (!contraintes || respecter(x, contraintes)) return remplir(x);
+                }
+              }}
+            >
               <span aria-hidden="true">運</span>
               <strong>Laisser le destin choisir</strong>
             </button>
@@ -210,7 +254,7 @@ export default function Creation({
             )}
           </div>
           <div className="voies">
-            {VOIES.map((v) => (
+            {VOIES.filter((v) => !contraintes || respecter(appliquerVoie(c, v), contraintes)).map((v) => (
               <button key={v.id} className="voie" style={{ '--c': `var(--v-${v.village})`, '--n': `var(--n-${v.element})` } as React.CSSProperties} onClick={() => remplir(appliquerVoie(c, v))}>
                 <span className="voie-kanji" aria-hidden="true">
                   {v.kanji}
@@ -290,7 +334,7 @@ export default function Creation({
         <section>
           <div className="choix-grille cinq">
             {R.contenu.villages.map((v) => (
-              <button key={v.id} className="tuile tuile-couleur" style={{ '--c': `var(--v-${v.id})` } as React.CSSProperties} aria-pressed={c.village === v.id} onClick={() => choisirVillage(v.id)}>
+              <button key={v.id} className="tuile tuile-couleur" style={{ '--c': `var(--v-${v.id})` } as React.CSSProperties} aria-pressed={c.village === v.id} disabled={villageFerme(v.id)} onClick={() => choisirVillage(v.id)}>
                 <span className="kanji" aria-hidden="true">
                   {v.kanji}
                 </span>
@@ -345,7 +389,7 @@ export default function Creation({
         <section>
           <div className="choix-grille">
             {clansVillage.map((k) => (
-              <button key={k.id} className="tuile tuile-couleur" style={{ '--c': `var(--v-${c.village})` } as React.CSSProperties} aria-pressed={c.clan === k.id} onClick={() => choisirClan(k.id)}>
+              <button key={k.id} className="tuile tuile-couleur" style={{ '--c': `var(--v-${c.village})` } as React.CSSProperties} aria-pressed={c.clan === k.id} disabled={clanFerme(k.id)} onClick={() => choisirClan(k.id)}>
                 <strong>{k.nom}</strong>
                 <small>{k.id === 'sans_clan' ? 'Aucun nom de famille' : k.rarete === 'commun' ? 'Lignée connue' : k.rarete === 'rare' ? 'Lignée rare' : 'Lignée très rare'}</small>
               </button>

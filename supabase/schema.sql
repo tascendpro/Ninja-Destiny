@@ -12,7 +12,7 @@ create table if not exists public.parties (
   graine bigint not null,
   hote uuid not null default auth.uid(),
   invite uuid,
-  creation_hote jsonb not null,
+  creation_hote jsonb,
   creation_invite jsonb,
   lien jsonb,
   -- 'attente' (l'invité n'est pas là), 'lien' (les deux fiches sont là, l'hôte choisit le lien), 'en_cours'
@@ -54,18 +54,4 @@ create policy actions_ecrire on public.actions_campagne for insert with check (
   joueur = public.siege(partie_id) and exists (select 1 from parties where id = partie_id and etat = 'en_cours')
 );
 
--- Rejoindre par code : l'invité ne voit pas la partie avant d'en faire partie, d'où cette fonction.
-create or replace function public.rejoindre(p_code text, p_creation jsonb) returns uuid
-language plpgsql security definer set search_path = public as $$
-declare p parties;
-begin
-  select * into p from parties where code = upper(p_code) for update;
-  if p.id is null then raise exception 'code_inconnu'; end if;
-  if p.hote = auth.uid() then raise exception 'deja_hote'; end if;
-  if p.invite is not null and p.invite <> auth.uid() then raise exception 'partie_complete'; end if;
-  update parties set invite = auth.uid(), creation_invite = p_creation, etat = case when etat = 'attente' then 'lien' else etat end where id = p.id;
-  return p.id;
-end $$;
-
-grant execute on function public.rejoindre(text, jsonb) to authenticated;
-grant execute on function public.siege(uuid) to authenticated;
+-- Rejoindre par code, puis déposer son ninja : voir migration_002_groupe_d_abord.sql (à exécuter aussi).

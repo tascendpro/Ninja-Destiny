@@ -176,7 +176,7 @@ export default function Game() {
   );
 
   const demarrerEnLigne = (p: PartieDistante) => {
-    if (!p.creationInvite || !p.lien) return;
+    if (!p.creationHote || !p.creationInvite || !p.lien) return;
     enLigne?.synchro.arreter();
     const base = nouvelleCampagne(p.creationHote, p.creationInvite, p.lien, p.graine);
     const synchro = new Synchro(serviceEnLigne().journal(p.id), base, (c) => setCampagne(c));
