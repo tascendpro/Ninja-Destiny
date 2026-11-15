@@ -21,6 +21,7 @@ import type {
   PorteeTechnique,
   Tirages,
   VillageId,
+  GainAnnuel,
 } from './types';
 import { ATTRIBUTS } from './types';
 import { R } from './registre';
@@ -130,6 +131,32 @@ export function validerCreation(c: Creation): string[] {
   if (!R.objectifs[c.objectif]) err.push('Objectif inconnu.');
   if (!['recit', 'shinobi', 'legende'].includes(c.difficulte)) err.push('Difficulté inconnue.');
   return err;
+}
+
+/**
+ * Les quatre années d'enfance qu'on ne joue pas (6 à 10 ans) : ce qu'elles auraient rapporté, sans les jouer.
+ * Des points de stat à répartir (croissance, Académie, et un entraînement qui varie d'un enfant à l'autre), visibles dans
+ * « D'où viennent les points », et un entraînement tiré au hasard sur chaque maîtrise de départ : certains enfants ont
+ * passé leurs soirées sur le terrain, d'autres sur les rouleaux de leur clan.
+ */
+function enfanceResumee(s: GameState): void {
+  const entrainement = aleaEntier(s, 2, 7);
+  const gains: GainAnnuel[] = [
+    { source: 'Croissance, de 6 à 10 ans', points: 8 },
+    { source: 'Quatre ans d’Académie', points: 4 },
+    { source: 'Entraînement de l’enfance', points: entrainement },
+  ];
+  s.pointsStat += gains.reduce((t, g) => t + g.points, 0);
+  s.anniversaires.push({ age: 10, gains });
+  for (const id of Object.keys(s.maitrises)) {
+    const m = s.maitrises[id];
+    const def = R.maitrises[id];
+    // Les lignées latentes et la bête scellée ne s'entraînent pas : elles attendent leur éveil.
+    if (!def || m.source === 'heritage' && (def.eveil || id === 'chakra_biju')) continue;
+    m.trainingDays += aleaEntier(s, 15, 70);
+    if (['taijutsu', 'ninjutsu', 'genjutsu', `nature_${s.creation.element}`].includes(id) && m.tier < 1 && aleaEntier(s, 0, 99) < 70) m.tier = 1;
+  }
+  ajouterJournal(s, `Tu as 10 ans. Quatre ans d’enfance derrière toi : ${s.pointsStat} points à répartir, et des gestes que ton corps connaît déjà.`, 2);
 }
 
 function etatVide(c: Creation, graine: number): GameState {
@@ -437,12 +464,10 @@ export function nouvellePartie(creation: Creation, graine?: number, imposes?: Pa
   for (const src of [village.bonus, clan.bonus, ...traitsEffectifs.map((t) => R.traits[t].bonus)]) {
     for (const [k, v] of Object.entries(src)) s.attributs[k as AttributId] += v ?? 0;
   }
+  // Commencer à 10 ans : le corps a grandi (comme les anniversaires de 7 à 10 ans l'auraient fait), le reste se répartit.
   if (c.ageDepart === 10) {
-    s.attributs.force += 8;
-    s.attributs.agilite += 8;
-    s.attributs.perception += 4;
-    s.attributs.intellect += 4;
-    s.attributs.controleEmotionnel += 4;
+    s.attributs.force += 4;
+    s.attributs.agilite += 4;
   }
   for (const a of ATTRIBUTS) s.attributs[a] = clamp(s.attributs[a], 5, 100);
   for (const t of traitsEffectifs) {
@@ -485,11 +510,7 @@ export function nouvellePartie(creation: Creation, graine?: number, imposes?: Pa
   if (c.origine === 'orphelin') s.drapeaux['orphelin'] = true;
   // Le premier matin : l'une des quatre ouvertures, tirée de la graine (sans toucher au tirage du destin).
   s.drapeaux['ouverture'] = (Math.imul(seed ^ 0x9e3779b9, 2654435761) >>> 0) % 4;
-  if (c.ageDepart === 10) {
-    for (const id of ['taijutsu', 'ninjutsu', 'genjutsu']) s.maitrises[id].trainingDays = 40;
-    s.maitrises['taijutsu'].tier = 1;
-    s.maitrises['ninjutsu'].tier = 1;
-  }
+  if (c.ageDepart === 10) enfanceResumee(s);
 
   // Registre des armes uniques
   for (const w of R.contenu.armes) {

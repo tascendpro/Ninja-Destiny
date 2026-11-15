@@ -14,7 +14,9 @@ import Recit from './Recit';
 import Tableau from './Tableau';
 import Magasin from './Magasin';
 import NommerEnfant, { doitNommerEnfant } from './NommerEnfant';
-import { ModalePoints } from './Repartition';
+import { ModalePoints, resumeRepartition } from './ModalePoints';
+import { clePerso, lirePreferences } from './preferencesPoints';
+import { planVide, proposer } from '../engine/plan';
 import Journal from './Journal';
 import Encyclopedie from './Encyclopedie';
 import BingoBook from './BingoBook';
@@ -27,11 +29,15 @@ import { gravite } from './fiche';
 import { remonter } from './defilement';
 import CreationDuo from './campagne/CreationDuo';
 import { BandeauDuo, ChoixMort, EcranPassage, FinDuo, Nouvelles, Proposition, ResultatCommun, SceneCommune, ScenePrivee, VueLien } from './campagne/Campagne';
-import { agir, agirLien, choisirCombat, choisirCommune, choisirMort, choisirPrivee, enAttente, joueurActif, lireNotes, lireResultat, nouvelleCampagne, priveeDue, rafraichir, vueCombatDuo } from '../engine/campagne/moteur';
+import PageCommune from './campagne/PageCommune';
+import Salon from './multi/Salon';
+import { memoriserPartie, partieMemorisee, serviceEnLigne, type PartieDistante } from './multi/enLigne';
+import { Synchro, nouvellesActions } from '../engine/multi/synchro';
+import { agir, agirLien, choisirCombat, choisirCommune, choisirMort, choisirPrivee, decider, enAttente, joueurActif, peutAgir, lireNotes, lireResultat, nouvelleCampagne, priveeDue, rafraichir, vueCombatDuo, vuePage } from '../engine/campagne/moteur';
 import type { ActionLien, Campagne, IdJoueur, SigneCombat } from '../engine/campagne/types';
 import type { ActionCombat } from '../engine/combat/types';
 
-type Ecran = 'accueil' | 'creation' | 'creation_duo' | 'jeu' | 'savoir';
+type Ecran = 'accueil' | 'creation' | 'creation_duo' | 'salon' | 'jeu' | 'savoir';
 type Onglet = 'recit' | 'ninja' | 'magasin' | 'journal' | 'bingo' | 'savoir' | 'lien';
 
 const NAV: { id: Onglet; kanji: string; nom: string }[] = [
@@ -58,8 +64,11 @@ export default function Game() {
   const [campagne, setCampagne] = useState<Campagne | null>(null);
   const [joueurVu, setJoueurVu] = useState<IdJoueur | null>(null);
   const [signe, setSigne] = useState<SigneCombat | undefined>(undefined);
-  const actif = campagne ? joueurActif(campagne) : null;
-  const etat: GameState | null = campagne ? campagne.joueurs[actif ?? campagne.tour] : etatSolo;
+  // La partie en ligne : cet appareil ne joue que son siège, en parallèle de l'autre ; il attend aux moments communs.
+  const [enLigne, setEnLigne] = useState<{ partie: PartieDistante; synchro: Synchro } | null>(null);
+  const siege = enLigne?.partie.siege;
+  const actif = campagne ? (siege !== undefined ? (peutAgir(campagne, siege) ? siege : null) : joueurActif(campagne)) : null;
+  const etat: GameState | null = campagne ? campagne.joueurs[siege ?? actif ?? campagne.tour] : etatSolo;
   const [meta, setMeta] = useState<Meta>({ parties: 0, finsObtenues: [], evenementsVus: [], decouvertes: [], succes: [], ryo: 0, viesVersees: [] });
   const [reglages, setReglages] = useState<Reglages>(REGLAGES_DEFAUT);
   const [menu, setMenu] = useState<null | 'sauvegardes' | 'boutique' | 'reglages'>(null);
@@ -70,12 +79,9 @@ export default function Game() {
   // La modale de points s'ouvre d'elle-même quand de nouveaux points arrivent ; « Plus tard » la referme jusqu'aux suivants.
   const [modalePoints, setModalePoints] = useState(false);
   const pointsVus = useRef<number | null>(null);
-  useEffect(() => {
-    const n = etat?.pointsStat ?? 0;
-    if (pointsVus.current !== null && n > pointsVus.current && !etat?.fin) setModalePoints(true);
-    if (n === 0) setModalePoints(false);
-    pointsVus.current = n;
-  }, [etat?.pointsStat, etat?.fin]);
+  // Le plan appliqué tout seul à l'anniversaire : ce qu'il faut pour revenir en arrière (solo), tant que rien d'autre n'a suivi.
+  const [annulPlan, setAnnulPlan] = useState<{ avant: GameState; texte: string } | null>(null);
+  const sansAuto = useRef(false);
   const fermerPoints = useCallback(() => setModalePoints(false), []);
 
   useEffect(() => {
@@ -152,12 +158,49 @@ export default function Game() {
 
   const majCampagne = useCallback(
     (c: Campagne) => {
+      if (enLigne && campagne) {
+        // En ligne : on affiche tout de suite, et on envoie au journal commun ce que cette action a ajouté.
+        const nouvelles = nouvellesActions(campagne, c);
+        setCampagne(c);
+        enLigne.synchro.envoyer(nouvelles, enLigne.partie.siege).catch((e) => {
+          setToast(`Ton action n’a pas été enregistrée : ${(e as Error).message}`);
+          setCampagne(enLigne.synchro.confirme);
+        });
+        return;
+      }
       setCampagne(c);
       setCampagneSauvee(c);
       stockage.ecrire(CLE_CAMPAGNE, JSON.stringify(c));
     },
-    [stockage],
+    [stockage, enLigne, campagne],
   );
+
+  const demarrerEnLigne = (p: PartieDistante) => {
+    if (!p.creationInvite || !p.lien) return;
+    enLigne?.synchro.arreter();
+    const base = nouvelleCampagne(p.creationHote, p.creationInvite, p.lien, p.graine);
+    const synchro = new Synchro(serviceEnLigne().journal(p.id), base, (c) => setCampagne(c));
+    setEnLigne({ partie: p, synchro });
+    setCampagne(base);
+    setEtat(null);
+    setJoueurVu(p.siege);
+    setOnglet('recit');
+    setEcran('jeu');
+    memoriserPartie(p.id);
+    synchro.demarrer();
+  };
+  const reprendreEnLigne = async () => {
+    const id = partieMemorisee();
+    if (!id) return;
+    try {
+      const p = await serviceEnLigne().lire(id);
+      if (p.etat === 'en_cours') demarrerEnLigne(p);
+      else setToast('Cette partie n’a pas encore commencé : retourne dans le salon.');
+    } catch (e) {
+      memoriserPartie(null);
+      setToast(`Partie introuvable : ${(e as Error).message}`);
+    }
+  };
 
   const appliquer = useCallback(
     (fn: (s: GameState) => GameState) => {
@@ -190,6 +233,42 @@ export default function Game() {
     },
     [etat, stockage, reglages.son, campagne, actif, majCampagne],
   );
+
+  // De nouveaux points : le plan automatique les valide (si le joueur l'a activé), sinon la modale s'ouvre, déjà remplie.
+  useEffect(() => {
+    const n = etat?.pointsStat ?? 0;
+    const avant = pointsVus.current;
+    pointsVus.current = n;
+    if (n === 0) setModalePoints(false);
+    if (!etat || avant === null || n <= avant || etat.fin) return;
+    const prefs = lirePreferences(clePerso(etat));
+    const rep = !sansAuto.current && prefs.auto && prefs.plan && !planVide(prefs.plan) ? proposer(etat, prefs.plan) : {};
+    sansAuto.current = false;
+    if (Object.keys(rep).length === 0) {
+      setModalePoints(true);
+      return;
+    }
+    const texte = resumeRepartition(rep);
+    if (campagne) {
+      appliquer((x) => repartir(x, rep));
+      setToast(`Plan appliqué : ${texte}.`);
+    } else {
+      setAnnulPlan({ avant: etat, texte });
+      appliquer((x) => repartir(x, rep));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [etat?.pointsStat, etat?.fin]);
+  // L'annulation n'a plus de sens dès qu'une autre décision a suivi.
+  useEffect(() => {
+    if (annulPlan && (!etatSolo || etatSolo.actions.length !== annulPlan.avant.actions.length + 1)) setAnnulPlan(null);
+  }, [etatSolo, annulPlan]);
+  const annulerPlan = () => {
+    if (!annulPlan) return;
+    sansAuto.current = true;
+    setEtat(annulPlan.avant);
+    enregistrer(stockage, 'auto', annulPlan.avant);
+    setAnnulPlan(null);
+  };
 
   const commencerDuo = (c1: CreationT, c2: CreationT, lien: Parameters<typeof nouvelleCampagne>[2]) => {
     try {
@@ -226,6 +305,8 @@ export default function Game() {
   };
   const lienDuo = (x: ActionLien) => campagne && actif !== null && essayer(() => agirLien(campagne, actif, x));
   const quitterDuo = () => {
+    enLigne?.synchro.arreter();
+    setEnLigne(null);
     setCampagne(null);
     setJoueurVu(null);
     setEcran('accueil');
@@ -282,6 +363,8 @@ export default function Game() {
           onEncyclopedie={() => setEcran('savoir')}
           onReglages={() => setMenu('reglages')}
           onDuo={() => setEcran('creation_duo')}
+          onEnLigne={() => setEcran('salon')}
+          onReprendreEnLigne={partieMemorisee() ? () => void reprendreEnLigne() : undefined}
           campagne={campagneSauvee ?? undefined}
           onReprendreDuo={reprendreDuo}
         />
@@ -320,6 +403,14 @@ export default function Game() {
     );
   }
 
+  if (ecran === 'salon') {
+    return (
+      <div className="coque">
+        <Salon onDemarrer={demarrerEnLigne} onRetour={() => setEcran('accueil')} />
+      </div>
+    );
+  }
+
   if (ecran === 'creation_duo') {
     return (
       <div className="coque">
@@ -331,6 +422,45 @@ export default function Game() {
 
   // La campagne à deux : l'écran de passage masque tout entre deux joueurs ; les scènes communes passent avant le reste.
   if (campagne && ecran === 'jeu') {
+    // Une scène commune se vit sur la même page, à deux : pas d'écran de passage. Les résultats de combat gardent l'ancien chemin.
+    const page = vuePage(campagne);
+    const surLaPage = !!page && !campagne.morts.includes('a_choisir') && (page.etape === 'reactions' || !!campagne.resultat?.libelles[0] || !!campagne.resultat?.decision);
+    if (page && surLaPage)
+      return (
+        <div className="coque jeu">
+          <main className="contenu">
+            <PageCommune
+              c={campagne}
+              vue={page}
+              siege={siege}
+              onChoisir={(j, id) => essayer(() => choisirCommune(campagne, j, id))}
+              onDecider={(j, id, v) => essayer(() => decider(campagne, j, id, v))}
+              onLire={(j) => essayer(() => lireResultat(campagne, j))}
+            />
+          </main>
+          {toast && (
+            <div className="toast" role="status">
+              {toast}
+            </div>
+          )}
+        </div>
+      );
+    if (actif === null && siege !== undefined && !campagne.fin && joueurActif(campagne) !== null)
+      return (
+        <div className="coque">
+          <div className={`passage joueur-${siege}`} role="status">
+            <span className="passage-sceau" aria-hidden="true">
+              待
+            </span>
+            <h1>{campagne.creations[(1 - siege) as IdJoueur].prenom} joue</h1>
+            <p>{enAttente(campagne, siege) ?? `Tu attends ${campagne.creations[(1 - siege) as IdJoueur].prenom} : la suite se joue à deux.`}</p>
+            <p className="passage-message">Cet écran se met à jour tout seul dès que c’est à toi.</p>
+            <button className="btn-secondaire" onClick={quitterDuo}>
+              Quitter (la partie est gardée)
+            </button>
+          </div>
+        </div>
+      );
     if (actif === null)
       return (
         <div className="coque">
@@ -351,7 +481,7 @@ export default function Game() {
           </main>
         </div>
       );
-    if (joueurVu !== actif) {
+    if (siege === undefined && joueurVu !== actif) {
       const signeRecu = vueCombatDuo(campagne, actif)?.signeAutre;
       const message = signeRecu ? `${campagne.creations[(1 - actif) as IdJoueur].prenom} te fait signe : « ${signeRecu} »` : enAttente(campagne, (1 - actif) as IdJoueur);
       return (
@@ -491,6 +621,7 @@ export default function Game() {
               </>
             )}
             <Recit
+              key={clePerso(etat)}
               etat={etat}
               theme={reglages.theme}
               anime={anime}
@@ -505,6 +636,7 @@ export default function Game() {
           ))}
         {onglet === 'ninja' && (
           <Tableau
+            key={clePerso(etat)}
             etat={etat}
             peutEquiper={magasinOuvert(etat)}
             onEquiper={(id) => {
@@ -574,6 +706,16 @@ export default function Game() {
           onFermer={() => setMenu(null)}
           onToast={setToast}
         />
+      )}
+      {annulPlan && (
+        <div className="toast toast-action" role="status">
+          <span>
+            Plan appliqué : {annulPlan.texte}.
+          </span>
+          <button type="button" onClick={annulerPlan}>
+            Annuler
+          </button>
+        </div>
       )}
       {toast && (
         <div className="toast" role="status">

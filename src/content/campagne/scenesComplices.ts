@@ -1,4 +1,4 @@
-import type { Campagne, SceneCommuneDef } from '../../engine/campagne/types';
+import type { Campagne, DecisionCommuneDef, SceneCommuneDef } from '../../engine/campagne/types';
 
 /**
  * Les scènes complices : jeux d'enfants, paris, corvées, traditions. Des moments où l'on choisit chacun en secret,
@@ -609,3 +609,160 @@ export const SCENES_COMPLICES: SceneCommuneDef[] = [
     ],
   },
 ];
+
+/**
+ * Les décisions communes : après les réactions de chacun, une question qui vous engage tous les deux. L'un propose, l'autre
+ * accepte (ou propose autre chose). Une seule issue, la même pour les deux. Jeton {un} : celui qui a proposé.
+ */
+const DECISIONS: Record<string, DecisionCommuneDef> = {
+  mc_cx_porte_scellee: {
+    question: 'Sur le chemin du retour, il faut décider ce que vous faites de cette porte.',
+    choix: [
+      {
+        id: 'revenir',
+        texte: 'Y retourner ensemble, la nuit de la prochaine pleine lune',
+        issue: {
+          texte: 'Vous vous serrez le petit doigt, comme on scelle les vraies affaires. La prochaine pleine lune est dans dix-neuf jours. Vous les comptez tous les deux.',
+          lien: { les2: { confiance: 3, dependance: 2 } },
+          promesse: { id: 'porte_lune', texte: 'Redescendre ensemble sous le vieux temple, une nuit de pleine lune.' },
+        },
+      },
+      {
+        id: 'jurer',
+        texte: 'Jurer de n’en parler à personne, jamais',
+        issue: {
+          texte: '« Jure. » « Je jure. » « Sur quoi ? » « Sur… sur toi. » C’est le serment le plus sérieux que vous ayez jamais fait. Personne, au village, ne saura qu’il existe une porte sous le temple.',
+          lien: { les2: { loyaute: 5 } },
+          promesse: { id: 'porte_secret', texte: 'Ne jamais parler à personne de la porte sous le vieux temple.' },
+        },
+      },
+      {
+        id: 'oublier',
+        texte: 'Faire comme s’il ne s’était rien passé',
+        issue: {
+          texte: 'Vous n’en parlez plus. Ni le lendemain, ni après. Mais chaque fois que vous passez devant le vieux temple, l’un de vous deux change de trottoir, et l’autre le remarque.',
+          lien: { les2: { mefiance: 2 } },
+          souvenir: { id: 'porte_oubliee', texte: 'La porte sous le temple, dont vous n’avez plus jamais parlé.', poids: 2, tonalite: 'amer' },
+        },
+      },
+    ],
+  },
+  mc_cx_premier_salaire: {
+    question: 'Avant de vous séparer, {j1} sort une vieille boîte en fer. Une caisse commune, pour les coups durs ?',
+    choix: [
+      {
+        id: 'caisse',
+        texte: 'Ouvrir la caisse commune : cinq ryō chacun, tous les mois',
+        issue: {
+          texte: 'Cinq ryō chacun, glissés dans la boîte, qui va dormir sous une latte du plancher. C’est peu. C’est à vous deux. Un jour, quelqu’un en aura besoin.',
+          effets: { les2: [{ stat: 'jauges.ryo', delta: -5 }] },
+          lien: { les2: { confiance: 3, loyaute: 2 } },
+          promesse: { id: 'caisse_commune', texte: 'La boîte en fer sous le plancher : cinq ryō chacun, tous les mois, pour les coups durs.' },
+        },
+      },
+      {
+        id: 'chacun',
+        texte: 'Chacun garde son argent : on est ninjas, pas marchands',
+        issue: {
+          texte: 'La boîte retourne dans le tiroir. Chacun son argent, chacun ses dettes. C’est plus simple. C’est aussi un peu plus froid, et vous le sentez tous les deux en vous quittant.',
+          lien: { les2: { respect: 2 } },
+        },
+      },
+    ],
+  },
+  mc_cx_lettres_frontiere: {
+    question: 'Le marchand de thé repart demain. Il attend votre réponse pour la saison prochaine.',
+    choix: [
+      {
+        id: 'continuer',
+        texte: 'Continuer à écrire, quels que soient les risques',
+        issue: {
+          texte: 'Le marchand hoche la tête et range vos deux lettres sous la même boîte de thé. Il ne demande pas ce qu’elles disent. Il dit seulement : « Les gens comme vous, je les aime bien. Ils me font gagner peu et vivre longtemps. »',
+          lien: { les2: { loyaute: 4, peur_de_perdre: 2 } },
+          effets: { les2: [{ stat: 'social.suspicion', delta: 3 }] },
+          promesse: { id: 'lettres_saison', texte: 'Une lettre par saison, par le marchand de thé, quoi que décident vos villages.' },
+        },
+      },
+      {
+        id: 'espacer',
+        texte: 'Espacer : une lettre par an, pas plus',
+        issue: {
+          texte: 'Une lettre par an. C’est sage, c’est prudent, et c’est terriblement long. Le marchand passe deux fois sans rien, puis une fois avec une lettre si épaisse qu’il doit la cacher dans deux boîtes.',
+          lien: { les2: { confiance: 2, peur_de_perdre: 3 } },
+        },
+      },
+    ],
+  },
+  mc_cx_maison_fuit: {
+    question: 'Il reste une question, que personne n’ose poser à table : qui s’occupera de {parent}, plus tard, quand il le faudra vraiment ?',
+    choix: [
+      {
+        id: 'ensemble',
+        texte: 'Les deux, à tour de rôle : on se le promet maintenant',
+        issue: {
+          texte: 'Vous vous le promettez à voix basse, dans la cuisine, pendant que {parent} fait semblant de dormir. Le lendemain matin, il y a deux bols de riz de plus sur la table. {parent} avait tout entendu.',
+          lien: { les2: { loyaute: 4, confiance: 2 } },
+          promesse: { id: 'parent_tour', texte: 'S’occuper de votre parent à tour de rôle, quand il le faudra.' },
+        },
+      },
+      {
+        id: 'plus_tard',
+        texte: 'On verra le moment venu',
+        issue: {
+          texte: 'On verra. C’est ce qu’on dit quand on ne veut pas voir. Le toit ne fuit plus ; la question, elle, reste là, quelque part entre vous deux.',
+          lien: { les2: { ressentiment: 2 } },
+        },
+      },
+    ],
+  },
+  mc_cx_shogi: {
+    question: 'En rangeant les pièces, {j1} demande : « Jeudi prochain ? »',
+    choix: [
+      {
+        id: 'tradition',
+        texte: '« Tous les jeudis. Quoi qu’il arrive. »',
+        issue: {
+          texte: 'Tous les jeudis. Vous le dites comme une plaisanterie. Ça n’en est pas une : à partir de ce soir, la serveuse garde votre table, et le plateau ne quitte plus le tiroir.',
+          lien: { les2: { loyaute: 4 } },
+          accord: 3,
+          promesse: { id: 'jeudis', texte: 'Une partie de shōgi, tous les jeudis, quoi qu’il arrive.' },
+        },
+      },
+      {
+        id: 'quand',
+        texte: '« Quand on pourra. »',
+        issue: {
+          texte: 'Quand on pourra. Les missions, les gardes, les blessures : vous ne pourrez pas souvent. Mais chaque fois que vous pourrez, l’autre sera là.',
+          lien: { les2: { confiance: 2 } },
+          accord: 1,
+        },
+      },
+    ],
+  },
+  mc_cx_equipe_commune: {
+    question: 'Le {kage} veut savoir pour combien de temps vous gardez ces trois genin.',
+    choix: [
+      {
+        id: 'jusquau_bout',
+        texte: 'Jusqu’à leur examen de chūnin, ensemble',
+        issue: {
+          texte: 'Le {kage} lève un sourcil. « Ensemble ? Vous deux ? » Vous dites oui en même temps. Trois genin viennent de gagner deux sensei qui ne seront jamais d’accord sur rien, sauf sur eux.',
+          lien: { les2: { respect: 3, loyaute: 2 } },
+          effets: { les2: [{ stat: 'social.reputation', delta: 2 }] },
+          promesse: { id: 'trois_genin', texte: 'Mener les trois genin jusqu’à leur examen de chūnin, ensemble.' },
+        },
+      },
+      {
+        id: 'une_annee',
+        texte: 'Une année, et on les confie à quelqu’un d’autre',
+        issue: {
+          texte: 'Une année. C’est raisonnable : vous avez vos propres missions. À la fin de l’année, en les regardant partir avec un autre sensei, vous avez tous les deux la même impression d’avoir abandonné quelque chose.',
+          lien: { les2: { confiance: 1 } },
+          effets: { les2: [{ stat: 'social.reputation', delta: 1 }] },
+        },
+      },
+    ],
+  },
+};
+
+for (const sc of SCENES_COMPLICES) if (DECISIONS[sc.id]) sc.decision = DECISIONS[sc.id];

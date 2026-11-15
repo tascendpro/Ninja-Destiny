@@ -26,6 +26,8 @@ export default function Accueil({
   onEncyclopedie,
   onReglages,
   onDuo,
+  onEnLigne,
+  onReprendreEnLigne,
   campagne,
   onReprendreDuo,
 }: {
@@ -41,6 +43,9 @@ export default function Accueil({
   onEncyclopedie: () => void;
   onReglages: () => void;
   onDuo: () => void;
+  /** Deux téléphones : le salon (créer ou rejoindre par code), et la partie en ligne à reprendre. */
+  onEnLigne?: () => void;
+  onReprendreEnLigne?: () => void;
   campagne?: Campagne;
   onReprendreDuo: () => void;
 }) {
@@ -105,10 +110,22 @@ export default function Accueil({
               </span>
             </button>
           )}
+          {onReprendreEnLigne && (
+            <button className="btn-principal" onClick={onReprendreEnLigne}>
+              <span className="btn-kanji" aria-hidden="true">繋</span>
+              Reprendre la partie en ligne
+            </button>
+          )}
           <button className="btn-secondaire" onClick={onDuo}>
             <span className="btn-kanji" aria-hidden="true">絆</span>
             À deux sur ce téléphone
           </button>
+          {onEnLigne && (
+            <button className="btn-secondaire" onClick={onEnLigne}>
+              <span className="btn-kanji" aria-hidden="true">繋</span>
+              À deux, chacun son téléphone
+            </button>
+          )}
           <div className="accueil-secondaires">
             {aDesSauvegardes && (
               <button className="btn-secondaire" onClick={onCharger}>

@@ -114,6 +114,8 @@ export interface SceneCommuneDef {
   /** Choix propres à chacun (sinon, les mêmes pour les deux). */
   choixPour?: (c: Campagne, j: IdJoueur) => ChoixCommun[];
   issues: IssueCommune[];
+  /** Après les réactions de chacun, une décision prise ensemble (une seule, pour les deux) : l'un propose, l'autre accepte. */
+  decision?: DecisionCommuneDef;
 }
 
 /** Une scène commune ouverte : qui a choisi quoi, en secret. */
@@ -129,7 +131,39 @@ export interface ResultatCommun {
   texte: string;
   libelles: [string, string];
   lu: [boolean, boolean];
+  /** Ce que la scène a changé, pour chacun : seulement ce que son personnage peut savoir. */
+  changements?: [Changement[], Changement[]];
+  /** La décision commune de la scène, si elle en a une : tant qu'elle n'est pas prise, personne ne reprend sa vie. */
+  decision?: DecisionEtat;
 }
+
+/** Une décision commune : une question, des options ; chaque option a une seule issue, appliquée aux deux. */
+export interface DecisionCommuneDef {
+  question: string;
+  choix: { id: string; texte: string; issue: Omit<IssueCommune, 'cle' | 'combat' | 'apres'> }[];
+}
+
+/**
+ * Le protocole « proposer, puis accepter ». Toucher une option la propose ; l'autre la touche à son tour pour l'accepter,
+ * ou en propose une autre. La version monte à chaque proposition : une acceptation qui vise une version périmée est refusée.
+ */
+export interface DecisionEtat {
+  version: number;
+  proposition?: { par: IdJoueur; choix: string };
+  prise?: { choix: string; texte: string; libelle: string };
+}
+
+/** Une trace laissée par une scène commune, telle qu'un joueur la voit (l'interface la met en mots). */
+export type Changement =
+  | { t: 'axe'; axe: AxeLien; delta: number }
+  | { t: 'accord'; delta: number }
+  | { t: 'souvenir'; texte: string }
+  | { t: 'promesse'; texte: string }
+  | { t: 'attribut'; id: string; delta: number }
+  | { t: 'ryo'; delta: number }
+  | { t: 'reputation'; delta: number }
+  | { t: 'blessure'; nom: string }
+  | { t: 'eveil'; nom: string };
 
 export interface Barriere {
   id: string;
@@ -225,6 +259,7 @@ export type ActionCampagne = MetaAction &
   | { j: IdJoueur; a: Action }
   | { j: IdJoueur; commune: string }
   | { j: IdJoueur; lu: true }
+  | { j: IdJoueur; decision: string; version: number }
   | { j: IdJoueur; privee: string; choix: string }
   | { j: IdJoueur; combat: ActionCombat; signe?: SigneCombat }
   | { j: IdJoueur; lien: ActionLien }
@@ -340,6 +375,10 @@ export interface Campagne {
   /** Les scènes déjà jouées (les scènes de seuil et dynamiques ne reviennent pas). */
   vues: string[];
   stats: StatsBinome;
+  /** La mort simulée : l'un a fait croire à sa mort et vit ailleurs ; ils ne se voient plus jusqu'à son retour. */
+  separation?: { absent: IdJoueur; depuis: number; actif: boolean; fini?: boolean; intention?: string };
+  /** Les échos : la promesse ou le souvenir qui revient, et ceux déjà revenus (« p:id », « s:id »). */
+  echos?: { rappels: string[]; souvenir?: string; promesse?: string; dernier?: number };
   /** La chronique du monde : ce qu'on raconte de vous, saison après saison. */
   chronique: { jour: number; texte: string }[];
   akatsuki: EtatAkatsuki;

@@ -266,6 +266,7 @@ export const ORIGINES: EventDef[] = [
       {
         id: 'aine',
         texte: 'Un soir où {aine} t’a appris à lancer',
+        si: { pnj: '@aine', etat: ['vivant', 'blesse'] },
         effets: [
           { relation: '@aine', delta: { amitie: 15, confiance: 10 } },
           { entrainer: 'famille_kunai', jours: 40, mentor: true },
@@ -365,6 +366,7 @@ export const ORIGINES: EventDef[] = [
       {
         id: 'aine',
         texte: 'Proposer d’y emmener {aine}',
+        si: { pnj: '@aine', etat: ['vivant', 'blesse'] },
         effets: [{ relation: '@coequipierA', delta: { confiance: -6 } }, { relation: '@aine', delta: { amitie: 6 } }, { stat: 'attributs.charisme', delta: 1 }],
         resultat: '{@coequipierA} se renfrogne. « C’était à nous. » {Il:@coequipierA} finit par accepter. {Aine} vient une fois, s’ennuie, et ne revient plus. Le mal est fait.',
       },

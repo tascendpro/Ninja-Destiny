@@ -10,15 +10,17 @@ import { appliquerEffets } from '../effets';
 import { ajouterJournal, cloner, defPnj, nouveauCtx } from '../etat';
 import { accorder } from '../texte';
 import { SCENES_COMMUNES } from '../../content/campagne/scenes';
-import { SCENES_VIE } from '../../content/campagne/scenesVie';
+import { SCENES_VIE, SCENE_HERITIER_SANG } from '../../content/campagne/scenesVie';
 import { SCENES_SOUVENIRS } from '../../content/campagne/scenesSouvenirs';
 import { SCENES_COMPLICES } from '../../content/campagne/scenesComplices';
+import { SCENE_ECHO_PROMESSE, SCENE_ECHO_SOUVENIR, planifierEchos } from '../../content/campagne/echos';
+import { SCENES_MORT_SIMULEE, SCENE_RETOUR_SEPARATION } from '../../content/campagne/mortSimulee';
 import { SCENES_ENFANCE } from '../../content/campagne/scenesEnfance';
 import { SCENES_GENIN } from '../../content/campagne/scenesGenin';
 import { SCENES_ADULTES } from '../../content/campagne/scenesAdultes';
 import { SCENES_ARCS, SCENES_AKATSUKI } from '../../content/campagne/scenesArcs';
 import { AXES_LIEN } from './types';
-import type { ActionCampagne, ActionLien, AxeLien, Campagne, ChoixCommun, IdJoueur, IssueCommune, LienJoueurs, OrigineLien, PasseCommun, SceneCommuneDef, SigneCombat, SuiteMort, TypeLien } from './types';
+import type { ActionCampagne, ActionLien, AxeLien, Campagne, Changement, ChoixCommun, IdJoueur, IssueCommune, LienJoueurs, OrigineLien, PasseCommun, SceneCommuneDef, SigneCombat, SuiteMort, TypeLien } from './types';
 import type { ActionCombat } from '../combat/types';
 import { ageA, autre, borne, bouger, decaler, finie, hash01, jourMonde, noter, planifierCommune, texteCommun } from './outils';
 import { aChoisirCombat, choisirCombatMut, ouvrirCombatDuo } from './combat';
@@ -29,7 +31,7 @@ export { texteCommun } from './outils';
 export { vueCombatDuo, SIGNES } from './combat';
 export { actionsLien, ensemble } from './lien';
 
-export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES].map((s) => [s.id, s]));
+export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, SCENE_HERITIER_SANG, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES, SCENE_ECHO_SOUVENIR, SCENE_ECHO_PROMESSE, ...SCENES_MORT_SIMULEE].map((s) => [s.id, s]));
 
 export const LIBELLES_LIEN: Record<TypeLien, string> = {
   freres: 'Frères et sœurs',
@@ -160,6 +162,8 @@ function partagerFamille(c: Campagne): void {
   if (c.lien.type !== 'freres') return;
   const [a, b] = c.joueurs;
   if (memeFoyer(c)) {
+    // Sous le même toit, les deux joueurs ont le même grand frère ou la même grande sœur : un troisième enfant, plus âgé,
+    // le même dans les deux vies (même nom, même destin). Sa mort frappe les deux à la fois.
     for (const id of FAMILLE) {
       if (!a.pnjGeneres[id]) continue;
       b.pnjGeneres[id] = cloner(a.pnjGeneres[id]);
@@ -235,7 +239,10 @@ function planifierAges(c: Campagne): void {
 // ── Le temps à deux ──────────────────────────────────────────
 
 /** Le mort qui a choisi le retour participe à la scène où il revient. */
-const present = (c: Campagne, j: IdJoueur, id?: string) => !finie(c.joueurs[j]) || (c.morts[j] === 'retour' && id === 'mc_retour');
+const present = (c: Campagne, j: IdJoueur, id?: string) =>
+  (!finie(c.joueurs[j]) && !(c.separation?.actif && c.separation.absent === j && id !== SCENE_RETOUR_SEPARATION)) || (c.morts[j] === 'retour' && id === 'mc_retour');
+/** L'un des deux a disparu de la vie de l'autre (mort simulée) : ils ne se voient plus jusqu'à son retour. */
+export const separes = (c: Campagne) => !!c.separation?.actif;
 
 /** Ce joueur est-il arrivé à la barrière (au jour dit, entre deux périodes) et doit-il attendre l'autre ? */
 function arrive(c: Campagne, j: IdJoueur): boolean {
@@ -301,6 +308,9 @@ export function joueurActif(c: Campagne): IdJoueur | null {
   const choixMort = ([0, 1] as IdJoueur[]).find((j) => c.morts[j] === 'a_choisir');
   if (choixMort !== undefined) return choixMort;
   if (c.resultat) {
+    const d = c.resultat.decision;
+    // Une décision en suspens : c'est à l'autre de répondre à la proposition (ou au premier de proposer).
+    if (d && !d.prise) return d.proposition ? autre(d.proposition.par) : 0;
     const j = ([0, 1] as IdJoueur[]).find((x) => !c.resultat!.lu[x]);
     if (j !== undefined) return j;
   }
@@ -315,6 +325,28 @@ export function joueurActif(c: Campagne): IdJoueur | null {
   const [a, b] = libres.map((j) => c.joueurs[j].jour);
   if (a !== b) return a < b ? 0 : 1;
   return c.tour;
+}
+
+/**
+ * Sur deux appareils, chacun joue quand il a quelque chose à faire : ses journées en parallèle de l'autre, et les moments
+ * communs ensemble. Celui qui arrive le premier à une scène commune attend l'autre (la barrière), sans rien pouvoir faire.
+ */
+export function peutAgir(c: Campagne, j: IdJoueur): boolean {
+  if (c.morts.includes('a_choisir')) return c.morts[j] === 'a_choisir';
+  if (c.resultat) {
+    const d = c.resultat.decision;
+    if (d && !d.prise) return present(c, j);
+    if (!c.resultat.lu[j]) return true;
+  }
+  if (c.combat) return !c.combat.aTerre[j] && !c.combat.choix[j];
+  if (c.commune) return c.commune.choix[j] === undefined && present(c, j, c.commune.id);
+  if (c.resultatPrive[j] || priveeDue(c, j)) return true;
+  try {
+    valider(c, { j, a: { a: 'continuer' } });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Remet la campagne d'aplomb après un chargement : les scènes dues s'ouvrent. */
@@ -344,6 +376,9 @@ export function rafraichir(c0: Campagne): Campagne {
 /** Ce qui retient le joueur qui n'a pas la main (pour l'écran de passage). */
 export function enAttente(c: Campagne, j: IdJoueur): string | undefined {
   if (finie(c.joueurs[j])) return c.morts[j] === 'spectateur' ? 'Tu suis désormais l’histoire de l’autre.' : undefined;
+  // Pendant la séparation, celui qui est resté croit l'autre mort : l'attente ne doit rien trahir.
+  if (c.separation?.actif && c.separation.absent !== j && (arrive(c, j) || enAvance(c, j))) return 'Les saisons passent. Il y a des nuits où tu crois entendre des pas sur le toit, comme avant.';
+  if (c.separation?.actif && c.separation.absent === j && (arrive(c, j) || enAvance(c, j))) return `Le village n’est plus qu’à quelques jours de marche. ${c.creations[autre(j)].prenom} ne sait rien. Pas encore.`;
   if (arrive(c, j) && !c.commune) return `En attente de ${c.creations[autre(j)].prenom} : un moment que vous vivrez ensemble approche.`;
   if (enAvance(c, j)) return `En attente de ${c.creations[autre(j)].prenom}, qui a une année de retard sur toi.`;
   return undefined;
@@ -362,6 +397,7 @@ function apresAction(c: Campagne): void {
   verifierMorts(c);
   verifierFuite(c);
   verifierSeuils(c);
+  planifierEchos(c);
   ouvrirBarriere(c);
   // Les deux vies sont finies (et aucun mort n'attend de choisir) : la campagne se conclut.
   if (!c.fin && c.joueurs.every(finie) && !c.morts.includes('a_choisir') && !c.combat) c.fin = conclureCampagne(c);
@@ -389,14 +425,22 @@ export function valider(c: Campagne, x: ActionCampagne): void {
     if (!choixDe(c, SCENES[c.commune!.id], j).some((y) => y.id === x.commune)) non(`Choix inconnu : ${x.commune}`);
   } else if ('lu' in x) {
     if (!(c.resultat && !c.resultat.lu[j]) && !c.resultatPrive[j]) non('Rien à lire.');
+    if (c.resultat && !c.resultat.lu[j] && c.resultat.decision && !c.resultat.decision.prise) non('Décidez d’abord ensemble.');
+  } else if ('decision' in x) {
+    const d = c.resultat?.decision;
+    if (!d || d.prise) non('Aucune décision commune en attente.');
+    if (x.version !== d!.version) non('proposition_perimee');
+    if (!SCENES[c.resultat!.id]?.decision?.choix.some((y) => y.id === x.decision)) non(`Choix inconnu : ${x.decision}`);
   } else if ('privee' in x) {
     if (priveeDue(c, j) !== x.privee) non('Aucune scène privée en attente.');
   } else if ('combat' in x) {
     if (!c.combat || c.combat.choix[j] || c.combat.aTerre[j]) non('Pas d’action de combat attendue de toi.');
   } else if ('lien' in x) {
     if (finie(s)) non('Ta vie est terminée.');
+    if (separes(c)) non('Vous êtes séparés : ce que tu crois savoir de l’autre, c’est sa tombe.');
   } else if ('mort' in x) {
     if (c.morts[j] !== 'a_choisir') non('Rien à choisir.');
+    if (!suitesMort(c, j).includes(x.mort)) non('Tué de la main de l’autre : ta mort est définitive.');
   }
 }
 
@@ -410,6 +454,7 @@ function appliquerMut(c: Campagne, x: ActionCampagne): void {
     c.tour = j;
   } else if ('commune' in x) choisirCommuneMut(c, j, x.commune);
   else if ('lu' in x) lireMut(c, j);
+  else if ('decision' in x) deciderMut(c, j, x.decision);
   else if ('privee' in x) choisirPriveeMut(c, j, x.privee, x.choix);
   else if ('combat' in x) choisirCombatMut(c, j, x.combat, x.signe);
   else if ('lien' in x) {
@@ -447,6 +492,11 @@ export function agir(c0: Campagne, j: IdJoueur, fn: (s: GameState) => GameState)
 export const choisirCommune = (c: Campagne, j: IdJoueur, choixId: string) => soumettre(c, { j, commune: choixId });
 /** Lire le résultat (commun ou privé) : quand les deux ont lu un résultat commun, chacun reprend sa vie. */
 export const lireResultat = (c: Campagne, j: IdJoueur) => soumettre(c, { j, lu: true });
+/**
+ * Toucher une option de la décision commune. Si l'autre propose déjà cette option, c'est un accord : elle s'applique aux deux.
+ * Sinon, c'est une proposition (qui remplace la précédente). La version vue par le joueur accompagne le geste.
+ */
+export const decider = (c: Campagne, j: IdJoueur, choix: string, version = c.resultat?.decision?.version ?? 0) => soumettre(c, { j, decision: choix, version });
 export const choisirPrivee = (c: Campagne, j: IdJoueur, choixId: string) => soumettre(c, { j, privee: priveeDue(c, j) ?? '', choix: choixId });
 export const choisirCombat = (c: Campagne, j: IdJoueur, a: ActionCombat, signe?: SigneCombat) => soumettre(c, { j, combat: a, signe });
 export const agirLien = (c: Campagne, j: IdJoueur, x: ActionLien) => soumettre(c, { j, lien: x });
@@ -468,6 +518,8 @@ function lireMut(c: Campagne, j: IdJoueur): void {
     c.resultat.lu[j] = true;
     if (c.resultat.lu[0] && c.resultat.lu[1]) {
       c.resultat = undefined;
+      // Une séparation décidée par la scène commence quand les deux ont lu : chacun a vu ce qu'il devait voir.
+      if (c.separation && !c.separation.actif && !c.separation.fini) c.separation.actif = true;
       if (c.combatEnAttente) {
         const id = c.combatEnAttente;
         c.combatEnAttente = undefined;
@@ -523,6 +575,7 @@ function resoudreCommune(c: Campagne): void {
   const listes: [ChoixCommun[], ChoixCommun[]] = [choixDe(c, sc, 0), choixDe(c, sc, 1)];
   const { issue, un } = issuePour(sc, c1, c2, listes);
   const deux = autre(un);
+  const avant = cliche(c);
   appliquerIssue(c, issue, un, deux);
   const libelle = (j: IdJoueur, id: string) => texteCommun(c, listes[j].find((x) => x.id === id)?.texte ?? '', j, j);
   c.resultat = {
@@ -532,11 +585,81 @@ function resoudreCommune(c: Campagne): void {
     libelles: [libelle(0, c1), libelle(1, c2)],
     // Un mort (revenu ou non) ne lit pas : sa vie est finie.
     lu: [!present(c, 0) , !present(c, 1)],
+    changements: changementsDepuis(c, avant),
+    decision: sc.decision && present(c, 0) && present(c, 1) ? { version: 0 } : undefined,
   };
   if (issue.combat) c.combatEnAttente = issue.combat;
   c.commune = undefined;
   c.vues.push(sc.id);
   c.barrieres.shift();
+}
+
+function deciderMut(c: Campagne, j: IdJoueur, choix: string): void {
+  const r = c.resultat!;
+  const d = r.decision!;
+  const def = SCENES[r.id].decision!;
+  const option = def.choix.find((x) => x.id === choix)!;
+  if (d.proposition && d.proposition.par !== j && d.proposition.choix === choix) {
+    // L'accord : une seule issue, appliquée aux deux, dans une seule action.
+    const avant = cliche(c);
+    appliquerIssue(c, { cle: choix, ...option.issue }, d.proposition.par, j);
+    const plus = changementsDepuis(c, avant);
+    r.changements = [
+      [...(r.changements?.[0] ?? []), ...plus[0]],
+      [...(r.changements?.[1] ?? []), ...plus[1]],
+    ];
+    d.prise = { choix, texte: texteCommun(c, option.issue.texte, d.proposition.par), libelle: texteCommun(c, option.texte) };
+    d.proposition = undefined;
+    return;
+  }
+  d.proposition = { par: j, choix };
+  d.version += 1;
+}
+
+/** Ce qu'il faut retenir avant une issue pour dire ensuite, à chacun, ce qui a changé pour lui. */
+interface Cliche {
+  axes: [Record<AxeLien, number>, Record<AxeLien, number>];
+  accord: number;
+  souvenirs: number;
+  promesses: number;
+  vies: { attributs: Record<string, number>; ryo: number; reputation: number; blessures: string[]; eveils: string[] }[];
+}
+
+function cliche(c: Campagne): Cliche {
+  return {
+    axes: [{ ...c.lien.axes[0] }, { ...c.lien.axes[1] }],
+    accord: c.lien.accord,
+    souvenirs: c.lien.souvenirs.length,
+    promesses: c.lien.promesses.length,
+    vies: c.joueurs.map((s) => ({ attributs: { ...s.attributs }, ryo: s.jauges.ryo, reputation: s.social.reputation, blessures: s.blessures.map((b) => b.id), eveils: Object.keys(s.maitrises).filter((m) => s.maitrises[m].awakened) })),
+  };
+}
+
+/**
+ * Les traces d'une issue, vues par chacun : ce qu'il ressent désormais pour l'autre (ses propres sentiments, pas ceux de
+ * l'autre), l'accord du binôme, les souvenirs qu'il connaît, les promesses, et ce qui a changé dans sa propre vie.
+ */
+function changementsDepuis(c: Campagne, a: Cliche): [Changement[], Changement[]] {
+  const pour = (j: IdJoueur): Changement[] => {
+    const res: Changement[] = [];
+    for (const axe of AXES_LIEN) {
+      const delta = Math.round(c.lien.axes[j][axe] - a.axes[j][axe]);
+      if (Math.abs(delta) >= 2) res.push({ t: 'axe', axe, delta });
+    }
+    const accord = Math.round(c.lien.accord - a.accord);
+    if (accord) res.push({ t: 'accord', delta: accord });
+    for (const sv of c.lien.souvenirs.slice(a.souvenirs)) if (sv.connuDe.includes(j)) res.push({ t: 'souvenir', texte: sv.texte });
+    for (const p of c.lien.promesses.slice(a.promesses)) res.push({ t: 'promesse', texte: texteCommun(c, p.texte, j, j) });
+    const s = c.joueurs[j];
+    const v = a.vies[j];
+    for (const [id, val] of Object.entries(s.attributs)) if (val !== v.attributs[id]) res.push({ t: 'attribut', id, delta: val - v.attributs[id] });
+    if (Math.round(s.jauges.ryo - v.ryo)) res.push({ t: 'ryo', delta: Math.round(s.jauges.ryo - v.ryo) });
+    if (Math.round(s.social.reputation - v.reputation)) res.push({ t: 'reputation', delta: Math.round(s.social.reputation - v.reputation) });
+    for (const b of s.blessures) if (!v.blessures.includes(b.id)) res.push({ t: 'blessure', nom: b.nom });
+    for (const m of Object.keys(s.maitrises)) if (s.maitrises[m].awakened && !v.eveils.includes(m)) res.push({ t: 'eveil', nom: R.maitrises[m]?.nom ?? m });
+    return res;
+  };
+  return [pour(0), pour(1)];
 }
 
 /** Ce qu'une issue change : dans chaque vie (effets solo), dans le lien, les souvenirs, les promesses, la suite. */
@@ -569,6 +692,91 @@ export function vueCommune(c: Campagne, j: IdJoueur): { titre: string; texte: st
     choix: choixDe(c, sc, j).map((x) => ({ id: x.id, texte: texteCommun(c, x.texte, j, j) })),
     autreAChoisi: c.commune.choix[autre(j)] !== undefined,
   };
+}
+
+// ── La page commune ──────────────────────────────────────────
+
+export interface VueJoueurPage {
+  j: IdJoueur;
+  prenom: string;
+  /** Mort sans retour : il ne participe pas. */
+  present: boolean;
+  aChoisi: boolean;
+  aLu: boolean;
+  /** Ce que lui seul voit ou sait : jamais affiché à l'autre. */
+  pensee?: string;
+  /** Ses choix, tant qu'il n'a pas choisi. */
+  choix?: { id: string; texte: string }[];
+  /** Ce que la scène a changé pour lui (après la résolution). */
+  changements: Changement[];
+}
+
+export interface VuePageCommune {
+  etape: 'reactions' | 'resultat';
+  id: string;
+  titre: string;
+  /** Le récit commun, le même pour les deux (vide si la scène se raconte à chacun depuis son point de vue). */
+  texte: string;
+  joueurs: [VueJoueurPage, VueJoueurPage];
+  resultat?: { texte: string; libelles: [string, string] };
+  decision?: { question: string; choix: { id: string; texte: string }[]; version: number; proposition?: { par: IdJoueur; choix: string }; prise?: { choix: string; texte: string; libelle: string } };
+}
+
+const DEPEND_DU_LECTEUR = /\{(moi|autre)\}|:(moi|autre)\}/;
+
+/**
+ * La scène commune comme une page, vue par les deux à la fois : le récit commun, puis une carte par joueur (sa pensée
+ * privée, ses choix tant qu'il n'a pas choisi), puis le résultat, la décision commune et « ce qui a changé ».
+ * Sur un seul appareil, chaque carte se déplie à la demande ; sur deux appareils, chacun ne reçoit que la sienne.
+ */
+export function vuePage(c: Campagne): VuePageCommune | undefined {
+  if (c.combat) return undefined;
+  if (c.commune) {
+    const sc = SCENES[c.commune.id];
+    const brut = texteDe(c, sc);
+    const parLecteur = DEPEND_DU_LECTEUR.test(brut);
+    const joueur = (j: IdJoueur): VueJoueurPage => {
+      const plus = sc.textePour?.(c, j);
+      const pensee = [parLecteur ? texteCommun(c, brut, j, j) : '', plus ? texteCommun(c, plus, j, j) : ''].filter(Boolean).join('\n\n');
+      const aChoisi = c.commune!.choix[j] !== undefined;
+      return {
+        j,
+        prenom: c.creations[j].prenom,
+        present: present(c, j, sc.id),
+        aChoisi,
+        aLu: false,
+        pensee: pensee || undefined,
+        choix: aChoisi ? undefined : choixDe(c, sc, j).map((x) => ({ id: x.id, texte: texteCommun(c, x.texte, j, j) })),
+        changements: [],
+      };
+    };
+    return { etape: 'reactions', id: sc.id, titre: texteCommun(c, sc.titre), texte: parLecteur ? '' : texteCommun(c, brut), joueurs: [joueur(0), joueur(1)] };
+  }
+  if (c.resultat) {
+    const r = c.resultat;
+    const sc = SCENES[r.id];
+    const d = r.decision;
+    const joueur = (j: IdJoueur): VueJoueurPage => ({ j, prenom: c.creations[j].prenom, present: present(c, j), aChoisi: true, aLu: r.lu[j], changements: r.changements?.[j] ?? [] });
+    return {
+      etape: 'resultat',
+      id: r.id,
+      titre: r.titre,
+      texte: '',
+      joueurs: [joueur(0), joueur(1)],
+      resultat: { texte: r.texte, libelles: r.libelles },
+      decision:
+        d && sc?.decision
+          ? {
+              question: texteCommun(c, sc.decision.question),
+              choix: sc.decision.choix.map((x) => ({ id: x.id, texte: texteCommun(c, x.texte) })),
+              version: d.version,
+              proposition: d.proposition,
+              prise: d.prise,
+            }
+          : undefined,
+    };
+  }
+  return undefined;
 }
 
 // ── Les scènes privées ───────────────────────────────────────
@@ -605,6 +813,12 @@ function synchroniserFamille(c: Campagne): void {
       if ((mort.etat === 'mort' || mort.etat === 'disparu') && vivant.etat !== mort.etat) {
         vivant.etat = mort.etat;
         vivant.cause = mort.cause;
+        // Une scène pas encore jouée où ce proche apparaît n'a plus lieu : la nouvelle de sa mort arrive avant.
+        const sj = c.joueurs[j];
+        if (sj.scene.type === 'evenement') {
+          const ev = R.evenements[sj.scene.id];
+          if (ev?.personnages?.some((ref) => (ref.startsWith('@') ? sj.roles[ref.slice(1)] : ref) === id)) sj.scene = { type: 'temps_libre' };
+        }
         const nom = defPnj(c.joueurs[j], id)?.nom ?? 'quelqu’un';
         ajouterJournal(c.joueurs[j], `${nom} est mort·e.`, 3);
         noter(c, j as IdJoueur, `${nom} est mort·e. La nouvelle t’arrive par une lettre, à l’écriture tremblée.`);
@@ -639,6 +853,14 @@ function verifierSeuils(c: Campagne): void {
 
 // ── La mort d'un joueur ──────────────────────────────────────
 
+/**
+ * Ce que peut devenir un joueur mort. Celui que l'autre a tué en duel à mort est mort pour de bon : aucune technique ne le
+ * ramène. Il peut suivre l'histoire, ou laisser entrer un héritier, qui arrivera avec cette mort dans son dos.
+ */
+export function suitesMort(c: Campagne, j: IdJoueur): SuiteMort[] {
+  return c.stats.tueParAutre === j ? ['heritier', 'spectateur'] : ['heritier', 'spectateur', 'retour'];
+}
+
 function choisirMortMut(c: Campagne, j: IdJoueur, suite: SuiteMort): void {
   if (c.morts[j] !== 'a_choisir') throw new Error('Rien à choisir.');
   c.morts[j] = suite;
@@ -656,15 +878,20 @@ function choisirMortMut(c: Campagne, j: IdJoueur, suite: SuiteMort): void {
   c.joueurs[j] = heritier;
   c.creations[j] = heritier.creation;
   // Le lien recommence : l'héritier ne sait rien de ce que l'autre a vécu avec son prédécesseur.
-  c.lien.axes[j] = { ...zero(), respect: 20, admiration: 15, mefiance: 10 };
-  c.lien.axes[autre(j)] = { ...zero(), peur_de_perdre: 30, loyaute: 30, confiance: 15 };
+  // S'il a été tué de la main de l'autre, l'enfant a entendu des choses, et le survivant porte une dette qu'il ne paiera jamais.
+  const tue = c.stats.tueParAutre === j;
+  c.lien.axes[j] = tue ? { ...zero(), respect: 10, mefiance: 35, ressentiment: 15 } : { ...zero(), respect: 20, admiration: 15, mefiance: 10 };
+  c.lien.axes[autre(j)] = tue ? { ...zero(), dette: 40, peur_de_perdre: 10, mefiance: 10 } : { ...zero(), peur_de_perdre: 30, loyaute: 30, confiance: 15 };
   c.lien.accord = 10;
   c.lien.vus = [[], []];
   for (const sv of c.lien.souvenirs) sv.connuDe = sv.connuDe.filter((x) => x !== j);
   c.morts[j] = undefined;
   c.barrieres = c.barrieres.filter((b) => !SCENES[b.id]?.age);
   planifierAges(c);
-  planifierCommune(c, 'mc_heritier', 0);
+  planifierCommune(c, tue ? 'mc_heritier_sang' : 'mc_heritier', 0);
+  // Le fait caché vise désormais l'héritier : c'est lui qui pourra l'apprendre.
+  const f = c.faits.find((x) => x.id === 'duel_mort');
+  if (tue && f) f.cible = j;
 }
 
 // ── Rejeu ────────────────────────────────────────────────────

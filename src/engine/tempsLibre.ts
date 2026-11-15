@@ -157,6 +157,23 @@ function texteDelai(j: number | undefined): string {
   return ` Au tableau encore ${Math.round(j / 30)} mois environ.`;
 }
 
+let REFERENCES: { texte: string; roles: Set<string> } | undefined;
+/** Ce que le contenu cite : les rôles (« @rival ») et les identifiants de personnages. Calculé une seule fois. */
+function references() {
+  if (!REFERENCES) {
+    const texte = JSON.stringify(R.contenu.evenements);
+    REFERENCES = { texte, roles: new Set([...texte.matchAll(/@([a-zA-Z_]+)/g)].map((m) => m[1])) };
+  }
+  return REFERENCES;
+}
+
+/** Un personnage vaut qu'on passe du temps avec lui si au moins une scène peut le faire revenir (par son nom ou son rôle). */
+export function lienUtile(s: GameState, id: string): boolean {
+  const r = references();
+  if (r.texte.includes(`"${id}"`) || r.texte.includes(`{${id}}`)) return true;
+  return Object.entries(s.roles).some(([role, pnj]) => pnj === id && r.roles.has(role));
+}
+
 export function genererActivites(s: GameState): Activite[] {
   const res: Activite[] = [];
   const d = dureeBase(s);
@@ -305,6 +322,8 @@ export function genererActivites(s: GameState): Activite[] {
 
   for (const [id, st] of Object.entries(s.pnj)) {
     if (!st.rencontre || st.etat === 'mort' || st.etat === 'disparu' || id === parent) continue;
+    // Un lien qui n'apporte rien ne s'entretient pas : seuls ceux qu'une scène peut faire revenir sont proposés.
+    if (!lienUtile(s, id)) continue;
     const def = defPnj(s, id);
     if (!def || ROLES_NON_SOCIAUX.includes(def.role)) continue;
     if (def.village && def.village !== s.creation.village && !s.relations[id]) continue;

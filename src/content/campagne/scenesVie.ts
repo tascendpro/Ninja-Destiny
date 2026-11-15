@@ -626,8 +626,8 @@ export const SCENES_VIE: SceneCommuneDef[] = [
       { id: 'silence', texte: 'Ne rien dire', famille: 'observer' },
     ],
     issues: [
-      { cle: 'promettre+promettre', texte: 'Vous le promettez sur sa tombe : désormais, chacun sera l’aîné de l’autre.', lien: { les2: { loyaute: 12 } }, promesse: { id: 'aine', texte: 'Être l’aîné de l’autre, désormais.' }, souvenir: { id: 'aine', texte: 'La promesse sur la tombe d’{aine}.', poids: 5, tonalite: 'tragique' } },
-      { cle: 'defaut', texte: 'Le silence est assez grand pour vous deux.', lien: { les2: { peur_de_perdre: 10 } }, souvenir: { id: 'aine', texte: 'Le silence sur la tombe d’{aine}.', poids: 5, tonalite: 'tragique' } },
+      { cle: 'promettre+promettre', texte: 'Vous le promettez sur sa tombe : désormais, chacun sera l’aîné de l’autre.', effets: { les2: [{ eveilDanger: 40 }] }, lien: { les2: { loyaute: 12 } }, promesse: { id: 'aine', texte: 'Être l’aîné de l’autre, désormais.' }, souvenir: { id: 'aine', texte: 'La promesse sur la tombe d’{aine}.', poids: 5, tonalite: 'tragique' } },
+      { cle: 'defaut', texte: 'Le silence est assez grand pour vous deux.', effets: { les2: [{ eveilDanger: 40 }] }, lien: { les2: { peur_de_perdre: 10 } }, souvenir: { id: 'aine', texte: 'Le silence sur la tombe d’{aine}.', poids: 5, tonalite: 'tragique' } },
     ],
   },
 
@@ -671,6 +671,89 @@ export const SCENES_VIE: SceneCommuneDef[] = [
     ],
   },
 ];
+
+
+/** L'héritier de celui que l'autre a tué : la place de l'héritier dans la campagne. */
+const heritierDe = (c: Campagne) => c.stats.tueParAutre;
+/** L'héritier apprend la vérité : le fait caché devient le sien. */
+function apprendre(c: Campagne): void {
+  const f = c.faits.find((x) => x.id === 'duel_mort');
+  const h = heritierDe(c);
+  if (f && h !== undefined && !f.connus.includes(h)) f.connus.push(h);
+}
+
+export const SCENE_HERITIER_SANG: SceneCommuneDef = {
+  id: 'mc_heritier_sang',
+  titre: 'Le même regard',
+  dynamique: true,
+  texte:
+    'Un enfant se présente à la porte, un bandeau trop grand sur le front. « On m’a dit que vous l’aviez connu. Que vous étiez là, à la fin. » Il a le même regard. Exactement le même. Celui qui vous fixait, ce jour-là, juste avant de tomber.',
+  textePour: (c, j) =>
+    j === heritierDe(c)
+      ? 'Au village, on dit qu’il est mort en duel. On ne dit pas contre qui. Quand tu prononces son nom, la personne en face de toi détourne les yeux une demi-seconde de trop.'
+      : 'Tu sais exactement comment il est mort. Tu étais là. C’est toi. Et cet enfant vient te demander de lui raconter.',
+  choix: [],
+  choixPour: (c, j) =>
+    j === heritierDe(c)
+      ? [
+          { id: 'questionner', texte: '« Vous étiez là. Qui l’a tué ? »', famille: 'observer' },
+          { id: 'accueillir', texte: 'Ne rien demander, et rester', famille: 'proteger' },
+          { id: 'defier', texte: '« Un jour, je serai plus fort que lui. Plus fort que vous. »', famille: 'agir' },
+        ]
+      : [
+          { id: 'avouer', texte: 'Lui dire la vérité : c’est toi', famille: 'parler' },
+          { id: 'mentir', texte: 'Lui raconter une autre histoire', famille: 'partir' },
+          { id: 'veiller', texte: 'Ne rien dire, et veiller sur lui en silence', famille: 'proteger' },
+        ],
+  issues: [
+    {
+      cle: 'avouer+questionner',
+      texte: '« C’est moi. » L’enfant ne pleure pas. Il te regarde longtemps, comme on apprend un visage par cœur. « Pourquoi ? » Tu lui dis pourquoi. Il écoute jusqu’au bout, puis il s’en va sans claquer la porte. Le lendemain, il revient. Il ne dit pas pourquoi non plus.',
+      lien: { deux: { ressentiment: 25, respect: 15 }, un: { dette: -10 } },
+      souvenir: { id: 'heritier', texte: 'Le jour où tu as dit la vérité à l’héritier, et où il est revenu le lendemain.', poids: 5, tonalite: 'tragique' },
+      apres: apprendre,
+    },
+    {
+      cle: 'avouer+*',
+      texte: 'Tu le dis avant qu’il demande quoi que ce soit. « C’est moi qui l’ai tué. » L’enfant recule d’un pas, comme si les mots pouvaient le frapper. Ils le peuvent. Il part en courant. Tu ne sais pas s’il reviendra, et tu ne sais pas si tu le veux.',
+      lien: { deux: { ressentiment: 30, mefiance: 10 }, un: { dette: -5, peur_de_perdre: 5 } },
+      souvenir: { id: 'heritier', texte: 'L’aveu à l’héritier, et la porte restée ouverte derrière lui.', poids: 5, tonalite: 'tragique' },
+      apres: apprendre,
+    },
+    {
+      cle: 'mentir+questionner',
+      texte: '« Des ninjas de la Brume. Une embuscade. » L’enfant hoche la tête. Il ne te croit pas. Tu le vois à la façon dont il range ta réponse quelque part, pour plus tard, comme une pièce qu’on garde pour la faire examiner.',
+      lien: { deux: { mefiance: 15 }, un: { dette: 10 } },
+      apres: (c) => {
+        const f = c.faits.find((x) => x.id === 'duel_mort');
+        if (f) f.preuves += 1;
+      },
+    },
+    {
+      cle: 'mentir+*',
+      texte: 'Tu lui racontes une belle mort, une mort de héros, contre des ennemis sans visage. Il y croit. Il te remercie, même. Ce merci-là, tu le porteras plus longtemps que tout le reste.',
+      lien: { deux: { confiance: 10, admiration: 5 }, un: { dette: 15 } },
+    },
+    {
+      cle: 'veiller+accueillir',
+      texte: 'Tu ne dis rien. Il ne demande rien. Il revient le lendemain, et le jour d’après, et tu lui apprends à tenir un kunai comme on te l’a appris. Un jour, il saura. Ce jour-là, tu espères qu’il aura appris de toi autre chose que la façon de frapper.',
+      lien: { deux: { confiance: 8, respect: 8 }, un: { loyaute: 8, dette: 5 } },
+      souvenir: { id: 'heritier', texte: 'L’héritier que tu entraînes sans lui avoir dit la vérité.', poids: 4, tonalite: 'amer' },
+    },
+    {
+      cle: 'defier+*',
+      texte: '« Un jour, je serai plus fort. » Il le dit sans savoir à qui il parle vraiment. Toi, tu le sais. Tu hoches la tête. « Je t’attendrai. »',
+      // « un » est l'héritier ici : c'est son choix qui est cité dans la clé.
+      lien: { un: { rivalite: 20 }, deux: { peur_de_perdre: 5, dette: 5 } },
+      promesse: { id: 'heritier_defi', texte: 'L’héritier a juré de devenir plus fort que celui qui a tué son prédécesseur.' },
+    },
+    {
+      cle: 'defaut',
+      texte: 'Vous restez un long moment face à face, sans trouver les mots. L’enfant finit par s’incliner, maladroitement, et s’en va. Il a laissé derrière lui l’odeur de la même maison. Tu ne dors pas, cette nuit-là.',
+      lien: { deux: { mefiance: 5 }, un: { dette: 10 } },
+    },
+  ],
+};
 
 /** La trahison découverte : elle est connue des deux, les promesses de fidélité tombent, les souvenirs se recolorent. */
 function revele(c: Campagne): void {

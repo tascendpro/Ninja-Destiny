@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import type { ActionLien, Campagne, IdJoueur, SigneCombat, SuiteMort } from '../../engine/campagne/types';
-import { LIBELLES_LIEN, SIGNES, actionsLien, motsDuLien, souvenirsDe, vueCombatDuo, vueCommune, vuePrivee } from '../../engine/campagne/moteur';
+import { LIBELLES_LIEN, SIGNES, actionsLien, suitesMort, motsDuLien, souvenirsDe, vueCombatDuo, vueCommune, vuePrivee } from '../../engine/campagne/moteur';
 import { R } from '../../engine/registre';
 import { projeter, type CartePublique } from '../../engine/campagne/projection';
 import { lieuCourant } from '../../engine/moteur';
@@ -15,7 +15,7 @@ import { ParagrapheRecit } from '../paroles';
 import { Estampe } from '../Recit';
 
 /** Le village de celui qui a la main : les scènes à deux n'ont pas de lieu à elles. */
-function Decor({ c, j }: { c: Campagne; j: IdJoueur }) {
+export function Decor({ c, j }: { c: Campagne; j: IdJoueur }) {
   const s = c.joueurs[j];
   const anime = typeof document === 'undefined' || document.documentElement.dataset.animations !== 'reduites';
   const theme = typeof document !== 'undefined' && document.documentElement.dataset.ambiance === 'washi' ? 'washi' : 'nuit';
@@ -42,7 +42,7 @@ export function EcranPassage({ c, j, message, onConfirmer }: { c: Campagne; j: I
   );
 }
 
-function Paragraphes({ texte }: { texte: string }) {
+export function Paragraphes({ texte }: { texte: string }) {
   return (
     <>
       {texte.split('\n\n').map((p, i) => (
@@ -249,10 +249,14 @@ export function ChoixMort({ c, j, onChoisir }: { c: Campagne; j: IdJoueur; onCho
           <strong>Le spectateur</strong>
           <p>Tu suis l’histoire de {autre} jusqu’au bout.</p>
         </button>
-        <button className="option" onClick={() => onChoisir('retour')}>
-          <strong>Le retour</strong>
-          <p>Un jour, une technique interdite te ramènera, contre ton gré, face à {autre}. Tu pourras essayer de résister.</p>
-        </button>
+        {suitesMort(c, j).includes('retour') ? (
+          <button className="option" onClick={() => onChoisir('retour')}>
+            <strong>Le retour</strong>
+            <p>Un jour, une technique interdite te ramènera, contre ton gré, face à {autre}. Tu pourras essayer de résister.</p>
+          </button>
+        ) : (
+          <p className="choix-mort-definitive">C’est {autre} qui t’a tué. Cette mort-là est définitive : rien ni personne ne te ramènera.</p>
+        )}
       </div>
     </div>
   );

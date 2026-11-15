@@ -2,7 +2,7 @@ import { activite, chapitreSuivant, chapitreSuivantDisponible, choisir, choixVis
 import { vueAffrontement } from '../src/engine/combat/affrontement';
 import { genererActivites } from '../src/engine/tempsLibre';
 import { R } from '../src/engine/registre';
-import { actionsLien, agir, agirLien, choisirCombat, choisirCommune, choisirMort, choisirPrivee, joueurActif, lireNotes, lireResultat, vueCommune, vuePrivee } from '../src/engine/campagne/moteur';
+import { SCENES, actionsLien, agir, agirLien, choisirCombat, choisirCommune, choisirMort, choisirPrivee, decider, joueurActif, lireNotes, lireResultat, vueCommune, vuePrivee } from '../src/engine/campagne/moteur';
 import type { Campagne, IdJoueur, TypeLien } from '../src/engine/campagne/types';
 import { nouvelleCampagne } from '../src/engine/campagne/moteur';
 import { creation } from './aide';
@@ -78,7 +78,12 @@ export function jouer(c: Campagne, graine: number, jusqua: (c: Campagne) => bool
     if (j === null) break;
     const profil = profils[j];
     if (c.morts[j] === 'a_choisir') c = choisirMort(c, j, (['heritier', 'spectateur', 'retour'] as const)[pick(3)]);
-    else if (c.resultat && !c.resultat.lu[j]) c = lireResultat(c, j);
+    else if (c.resultat?.decision && !c.resultat.decision.prise) {
+      // La décision commune : accepter la proposition de l'autre, le plus souvent, ou en proposer une autre.
+      const options = SCENES[c.resultat.id].decision!.choix;
+      const prop = c.resultat.decision.proposition;
+      c = decider(c, j, prop && pick(3) > 0 ? prop.choix : options[pick(options.length)].id);
+    } else if (c.resultat && !c.resultat.lu[j]) c = lireResultat(c, j);
     else if (c.combat) {
       const s = c.joueurs[j];
       const v = vueAffrontement(s)!;

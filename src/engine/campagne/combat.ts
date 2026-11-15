@@ -21,7 +21,7 @@ import { natureAction, vieillirTerrain } from '../combat/terrain';
 import { texteTechniqueTouche } from '../combat/impacts';
 import { COMBATS_DUO } from '../../content/campagne/combats';
 import type { Campagne, CombatDuoDef, IdJoueur, IssueCombat, SigneCombat } from './types';
-import { autre, bouger, borne, graineFlux, hash01, souvenir, texteCommun } from './outils';
+import { autre, bouger, borne, fait, graineFlux, hash01, noter, souvenir, texteCommun } from './outils';
 
 export const COMBATS: Record<string, CombatDuoDef> = Object.fromEntries(COMBATS_DUO.map((d) => [d.id, d]));
 
@@ -410,6 +410,10 @@ function finirDuel(c: Campagne, vainqueur: IdJoueur, abandon = false): void {
     verifierFin(s);
     texte = texteCommun(c, '{un} reste debout. {deux} ne se relève pas. Il n’y a pas de témoin, pas de juge, pas de gloire : seulement {un}, seul{e:un}, et le silence d’après.', vainqueur);
     souvenir(c, 'duel_mort', texteCommun(c, 'Le duel à mort, où {un} est resté debout.', vainqueur), 5, 'tragique', [vainqueur]);
+    // Une mort sans témoin n'est pas une mort sans suite : le survivant sait, le village cherche.
+    fait(c, { id: 'duel_mort', texte: texteCommun(c, 'Tu as tué {autre} en duel, loin de tout témoin.', vainqueur, vainqueur), connus: [vainqueur], preuves: 2, cible: vaincu, texteCible: texteCommun(c, '{un} a tué ton prédécesseur en duel, loin de tout témoin.', vainqueur) });
+    c.repercussions.push({ jour: c.joueurs[vainqueur].jour + 120 + Math.floor(hash01(c, 'enquete_duel') * 240), cible: vainqueur, type: 'enquete', faitId: 'duel_mort' });
+    noter(c, vainqueur, texteCommun(c, 'Tu as lavé tes mains trois fois. Le sang de {autre} est parti à la troisième. Ce qui reste, ce n’est pas sur tes mains.', vainqueur, vainqueur));
   } else {
     // Le vainqueur gagne trois points de stat, le vaincu un : on apprend aussi en perdant.
     c.joueurs[vainqueur].pointsStat += 3;

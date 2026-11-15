@@ -113,11 +113,13 @@ const effetsLecon: Effect[] = [
 ];
 const texteLecon: Texte = [
   ...Object.entries(LECON_PAR_CLAN).map(([clan, l]) => ({ si: { clan }, texte: l.maitre })),
-  { si: { clan: 'sans_clan' }, texte: '{@aine} t’emmène au terrain vague derrière la maison, là où personne ne vient. « On n’a pas de clan pour nous apprendre. Alors c’est moi qui t’apprends. Ce que je sais, je l’ai volé en regardant les autres. Regarde bien, toi aussi. »' },
+  { si: { tout: [{ clan: 'sans_clan' }, { non: AINE }] }, texte: 'Personne ne t’emmène nulle part. Tu vas seul{e} au terrain vague derrière la maison, là où personne ne vient, avec ce que tu as vu par-dessus la palissade du terrain d’un clan : trois gestes, retenus de travers. Pas de clan pour t’apprendre. Alors tu apprendras en volant.' },
+  { si: { tout: [{ clan: 'sans_clan' }, AINE] }, texte: '{@aine} t’emmène au terrain vague derrière la maison, là où personne ne vient. « On n’a pas de clan pour nous apprendre. Alors c’est moi qui t’apprends. Ce que je sais, je l’ai volé en regardant les autres. Regarde bien, toi aussi. »' },
 ];
 const reussiteLecon: Texte = [
   ...Object.entries(LECON_PAR_CLAN).map(([clan, l]) => ({ si: { clan }, texte: l.reussite })),
-  { si: { clan: 'sans_clan' }, texte: 'Il te faut tout l’après-midi. Puis la technique sort, maladroite, imparfaite, mais à toi. {@aine} te frappe dans le dos si fort que tu tousses. « Personne ne nous l’a donnée. On l’a prise. Ça vaut deux fois plus. »' },
+  { si: { tout: [{ clan: 'sans_clan' }, { non: AINE }] }, texte: 'Il te faut tout l’après-midi. Puis la technique sort, maladroite, imparfaite, mais à toi. Personne n’est là pour le voir. Tu ris quand même, tout seul{e}, sur le terrain vide : personne ne te l’a donnée. Tu l’as prise.' },
+  { si: { tout: [{ clan: 'sans_clan' }, AINE] }, texte: 'Il te faut tout l’après-midi. Puis la technique sort, maladroite, imparfaite, mais à toi. {@aine} te frappe dans le dos si fort que tu tousses. « Personne ne nous l’a donnée. On l’a prise. Ça vaut deux fois plus. »' },
 ];
 
 export const APPRENTISSAGE: EventDef[] = [

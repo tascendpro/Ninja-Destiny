@@ -177,7 +177,8 @@ describe('Les duels entre vous', () => {
     expect(c.joueurs[mort].statut).not.toBe('mort');
     expect(Math.floor((c.joueurs[mort].jour - c.joueurs[mort].naissance) / 360)).toBe(6);
     expect(c.joueurs[mort].jour).toBe(survivant.jour);
-    expect(c.barrieres.some((b) => b.id === 'mc_heritier') || c.commune?.id === 'mc_heritier').toBe(true);
+    // Tué de la main de l'autre : l'héritier arrive par la scène qui le dit (« mc_heritier_sang »).
+    expect(c.barrieres.some((b) => b.id.startsWith('mc_heritier')) || !!c.commune?.id.startsWith('mc_heritier')).toBe(true);
   });
 });
 
