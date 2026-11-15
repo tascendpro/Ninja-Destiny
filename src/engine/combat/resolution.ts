@@ -688,6 +688,11 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
       marquerTerrain(sc, undefined, syn);
       sc.chainesVues = { ...(sc.chainesVues ?? {}), [syn.cle]: (sc.chainesVues?.[syn.cle] ?? 0) + 1 };
       s.drapeaux['enchainements'] = (Number(s.drapeaux['enchainements']) || 0) + 1;
+      // Deux natures mêlées de ses propres mains (pas par le seul terrain) : c'est ainsi qu'on finit par les fondre.
+      if (!syn.parTerrain && syn.cle.includes('>')) {
+        const paire = `mele:${syn.cle.split('>').sort().join('+')}`;
+        s.drapeaux[paire] = (Number(s.drapeaux[paire]) || 0) + 1;
+      }
     }
     const interromp = tac.includes('interrompt') && (sc.intention === 'preparer' || sc.intention === 'majeure');
     const ouvertureAvant = sc.ouverture;

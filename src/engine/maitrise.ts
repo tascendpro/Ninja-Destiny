@@ -269,7 +269,7 @@ export function applyCombatExperience(s: GameState, ids: string[], ctx: Ctx): vo
   }
 }
 
-function eveiller(ms: MasteryState, jour: number, ageAns: number): void {
+export function eveiller(ms: MasteryState, jour: number, ageAns: number): void {
   ms.awakened = true;
   ms.awakenedAtDay = jour;
   ms.awakenedAtAge = ageAns;

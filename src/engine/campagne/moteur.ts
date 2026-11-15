@@ -15,6 +15,8 @@ import { SCENES_SOUVENIRS } from '../../content/campagne/scenesSouvenirs';
 import { SCENES_COMPLICES } from '../../content/campagne/scenesComplices';
 import { SCENE_ECHO_PROMESSE, SCENE_ECHO_SOUVENIR, planifierEchos } from '../../content/campagne/echos';
 import { SCENES_MORT_SIMULEE, SCENE_RETOUR_SEPARATION } from '../../content/campagne/mortSimulee';
+import { SCENES_SECRETS_AUTRE } from '../../content/campagne/secretsAutre';
+import { SCENES_LAMES } from '../../content/campagne/lames';
 import { SCENES_ENFANCE } from '../../content/campagne/scenesEnfance';
 import { SCENES_GENIN } from '../../content/campagne/scenesGenin';
 import { SCENES_ADULTES } from '../../content/campagne/scenesAdultes';
@@ -31,7 +33,7 @@ export { texteCommun } from './outils';
 export { vueCombatDuo, SIGNES } from './combat';
 export { actionsLien, ensemble } from './lien';
 
-export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, SCENE_HERITIER_SANG, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES, SCENE_ECHO_SOUVENIR, SCENE_ECHO_PROMESSE, ...SCENES_MORT_SIMULEE].map((s) => [s.id, s]));
+export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, SCENE_HERITIER_SANG, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES, SCENE_ECHO_SOUVENIR, SCENE_ECHO_PROMESSE, ...SCENES_MORT_SIMULEE, ...SCENES_SECRETS_AUTRE, ...SCENES_LAMES].map((s) => [s.id, s]));
 
 export const LIBELLES_LIEN: Record<TypeLien, string> = {
   freres: 'Frères et sœurs',

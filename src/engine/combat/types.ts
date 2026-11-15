@@ -249,6 +249,8 @@ export interface EntreeManche {
   geste?: { nom: string; kanji: string };
   /** Journal technique interne, pour le débogage (§0.3.18). */
   technique: string;
+  /** La nature de chakra de l'action jouée (son effet à l'écran). */
+  nature?: string;
 }
 
 export interface LectureEtat {

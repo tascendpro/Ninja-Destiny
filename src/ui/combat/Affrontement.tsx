@@ -144,6 +144,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
         <h1 className="titre-scene">{accorder(v.titre, p)}</h1>
 
         {transition && <TransitionManche key={transition.manche} j={transition} />}
+        {transition?.nature && <EffetNature key={`n${transition.manche}`} nature={transition.nature} />}
         {/* 1. Face-à-face : toi à gauche, l'adversaire à droite */}
         <div className="aff-duel" ref={haut}>
           <div className={`aff-carte joueur${transition?.subi ? ' frappee' : ''}`} key={`cj${transition?.manche ?? 0}`}>
@@ -463,6 +464,56 @@ function Replique({ nom, texte }: { nom: string; texte: string }) {
 }
 
 /** Le passage d'une manche à l'autre : un coup de pinceau, le numéro, l'issue, l'enchaînement. Il ne bloque rien. */
+/** L'effet d'une nature de chakra, le temps d'un éclair : il traverse l'écran sans jamais bloquer un bouton. */
+function EffetNature({ nature }: { nature: string }) {
+  return (
+    <div className={`nature-fx nature-fx-${nature}`} style={{ '--nfx': `var(--n-${nature}, var(--or))` } as React.CSSProperties} aria-hidden="true">
+      {nature === 'raiton' && (
+        <svg viewBox="0 0 400 800" preserveAspectRatio="none">
+          <path className="nfx-trait" d="M250 0 L170 260 L235 270 L120 520 L190 530 L80 800" />
+          <path className="nfx-trait nfx-fin" d="M235 270 L320 380 M120 520 L40 600" />
+        </svg>
+      )}
+      {nature === 'katon' && (
+        <svg viewBox="0 0 400 400">
+          {[0, 1, 2].map((i) => (
+            <circle key={i} className="nfx-onde" cx="200" cy="200" r="60" style={{ animationDelay: `${i * 0.12}s` }} />
+          ))}
+          {Array.from({ length: 12 }, (_, i) => (
+            <circle key={`b${i}`} className="nfx-braise" cx="200" cy="200" r="5" style={{ '--a': `${i * 30}deg`, animationDelay: `${(i % 4) * 0.05}s` } as React.CSSProperties} />
+          ))}
+        </svg>
+      )}
+      {nature === 'suiton' && (
+        <svg viewBox="0 0 800 300" preserveAspectRatio="none">
+          <path className="nfx-vague" d="M-50 220 C80 120 180 300 320 200 S560 120 700 200 S900 260 900 260 L900 300 L-50 300 Z" />
+          <path className="nfx-vague nfx-vague2" d="M-50 240 C100 170 220 290 360 230 S600 170 760 230 S900 270 900 270 L900 300 L-50 300 Z" />
+        </svg>
+      )}
+      {nature === 'fuuton' && (
+        <svg viewBox="0 0 400 400">
+          {[0, 1, 2].map((i) => (
+            <path key={i} className="nfx-lame" d={`M40 ${120 + i * 80} Q200 ${60 + i * 80} 360 ${140 + i * 80}`} style={{ animationDelay: `${i * 0.08}s` }} />
+          ))}
+        </svg>
+      )}
+      {nature === 'doton' && (
+        <svg viewBox="0 0 400 300" preserveAspectRatio="none">
+          {[40, 110, 190, 260, 330].map((x, i) => (
+            <path key={x} className="nfx-roc" d={`M${x - 30} 300 L${x} ${150 - (i % 2) * 50} L${x + 30} 300 Z`} style={{ animationDelay: `${i * 0.05}s` }} />
+          ))}
+        </svg>
+      )}
+      {nature === 'fusion' && (
+        <svg viewBox="0 0 400 400">
+          <circle className="nfx-onde" cx="200" cy="200" r="80" />
+          <circle className="nfx-onde nfx-fusion" cx="200" cy="200" r="40" style={{ animationDelay: '0.1s' }} />
+        </svg>
+      )}
+    </div>
+  );
+}
+
 function TransitionManche({ j }: { j: Entree }) {
   const issue = j.issue ? ISSUES[j.issue] : undefined;
   const combo = j.geste?.nom ?? j.synergie?.nom;

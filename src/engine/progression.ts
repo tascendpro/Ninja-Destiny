@@ -4,6 +4,9 @@
 import type { AttributId, GameState, GainAnnuel } from './types';
 import { ATTRIBUTS } from './types';
 import { Ctx, ajouterJournal } from './etat';
+import { R } from './registre';
+import { alea, aleaEntier } from './rng';
+import { eveiller, nouvelleMaitrise } from './maitrise';
 
 export type Merite = 'combat' | 'epreuve' | 'entrainement' | 'etude';
 
@@ -53,6 +56,7 @@ export function gainsAnnuels(s: GameState, nouvelAge: number): GainAnnuel[] {
 /** Anniversaire : les mérites deviennent des points à répartir, puis le compteur repart à zéro. */
 export function anniversaire(s: GameState, nouvelAge: number, ctx?: Ctx): void {
   if (nouvelAge < 7 || s.statut === 'mort') return;
+  fusionsParMaitrise(s, nouvelAge, ctx);
   const gains = gainsAnnuels(s, nouvelAge);
   const total = gains.reduce((a, x) => a + x.points, 0);
   s.merites = { missionsBase: missionsReussies(s) };
@@ -62,6 +66,30 @@ export function anniversaire(s: GameState, nouvelAge: number, ctx?: Ctx): void {
   if (s.anniversaires.length > 30) s.anniversaires.shift();
   ctx?.changements.push({ t: 'points', age: nouvelAge, total, gains });
   ajouterJournal(s, `${nouvelAge} ans : ${total} points de stat gagnés (${gains.map((x) => `${x.source} ${x.points}`).join(', ')}).`, 1);
+}
+
+/** Les combinaisons à maîtriser avant qu'une fusion naisse du travail, sans lignée. */
+export const FUSION_PAR_MAITRISE = { palier: 4, enchainements: 6, chance: 0.33 };
+
+/**
+ * Une fusion qui naît du travail, sans lignée : il faut maîtriser les deux natures (palier 4) et les avoir mêlées
+ * soi-même en combat, encore et encore. Alors, un anniversaire, la pierre fond sous les paumes. Rare, jamais donné.
+ */
+export function fusionsParMaitrise(s: GameState, nouvelAge: number, ctx?: Ctx): void {
+  for (const def of Object.values(R.maitrises)) {
+    const comp = def.composantes as [string, string] | undefined;
+    if (!comp || s.maitrises[def.id]) continue;
+    if (comp.some((e) => (s.maitrises[`nature_${e}`]?.tier ?? 0) < FUSION_PAR_MAITRISE.palier)) continue;
+    if ((Number(s.drapeaux[`mele:${[...comp].sort().join('+')}`]) || 0) < FUSION_PAR_MAITRISE.enchainements) continue;
+    if (alea(s) >= FUSION_PAR_MAITRISE.chance) continue;
+    const ms = nouvelleMaitrise(def, aleaEntier(s, 45, 70), 'creation');
+    eveiller(ms, s.jour, nouvelAge);
+    s.maitrises[def.id] = ms;
+    s.drapeaux[`eveil:${def.id}`] = nouvelAge;
+    s.drapeaux['fusion'] = def.id;
+    ctx?.changements.push({ t: 'eveil', maitrise: def.id });
+    ajouterJournal(s, `Des années à mêler ${R.elements[comp[0]]?.nom.split(' ')[0]} et ${R.elements[comp[1]]?.nom.split(' ')[0]}, et un matin les deux natures ne font plus qu’une : ${def.nom}. Sans lignée, sans héritage. Par le travail.`, 3);
+  }
 }
 
 /** Répartit des points : +n sur chaque attribut demandé, si la bourse de points suffit. */

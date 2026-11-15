@@ -276,6 +276,8 @@ export function jouerAffrontement(s: GameState, a: ActionCombat, ctx: Ctx): Conc
   const annonce = sc.annonce.texte;
   const res = resoudre(s, sc, d, a, r);
   const entree = composerManche(s, sc, d, a, res, annonce, r.texte, r.replique);
+  const natureFx: string | undefined = natureAction(a.choix) ?? ((R.maitrises[a.choix]?.element as string | undefined) === 'fusion' ? 'fusion' : undefined);
+  if (natureFx) entree.nature = natureFx;
   sc.journal.push(entree);
   sc.actionsJoueur.push(a.choix);
   sc.famillesJoueur = [...(sc.famillesJoueur ?? []), a.famille];

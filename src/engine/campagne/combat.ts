@@ -20,6 +20,7 @@ import { CONTEXTES, indexNiveau } from '../combat/contextes';
 import { natureAction, vieillirTerrain } from '../combat/terrain';
 import { texteTechniqueTouche } from '../combat/impacts';
 import { COMBATS_DUO } from '../../content/campagne/combats';
+import { ID_DUEL_LAME, donnerLame } from '../../content/campagne/lames';
 import type { Campagne, CombatDuoDef, IdJoueur, IssueCombat, SigneCombat } from './types';
 import { autre, bouger, borne, fait, graineFlux, hash01, noter, souvenir, texteCommun } from './outils';
 
@@ -424,6 +425,11 @@ function finirDuel(c: Campagne, vainqueur: IdJoueur, abandon = false): void {
       : texteCommun(c, '{deux} pose un genou à terre. {un} lui tend la main ; {deux} la prend. Vous restez un moment assis dans la poussière, à reprendre votre souffle, à refaire le combat à voix haute.', vainqueur);
     texte += texteCommun(c, ` Duels : {j1} ${c.lien.duels[0]}, {j2} ${c.lien.duels[1]}. {un} gagne 3 points de stat, {deux} en gagne 1.`, vainqueur);
     if (!c.lien.souvenirs.some((s) => s.id === 'premier_duel')) souvenir(c, 'premier_duel', texteCommun(c, 'Votre premier duel : {un} l’a emporté.', vainqueur), 3, 'fier');
+  }
+  // Le duel pour une lame : le vainqueur la prend.
+  if (def.id === ID_DUEL_LAME) {
+    texte += texteCommun(c, ' {un} arrache l’épée du sable. Elle est à {lui:un}, désormais.', vainqueur);
+    donnerLame(c, vainqueur);
   }
   const issue: IssueCombat = { ...def.victoire, texte };
   terminer(c, issue, `${def.letal ? 'Duel à mort' : 'Duel'} : ${nom(vainqueur)} l’emporte`);

@@ -2,6 +2,7 @@ import type { EventDef, TechniqueAdverse } from '../../engine/types';
 import type { AdversaireDef, Replique } from '../../engine/combat/types';
 import type { Campagne, CombatDuoDef } from '../../engine/campagne/types';
 import { PROFIL } from './akatsuki';
+import { ADVERSAIRES_LAMES, COMBATS_LAMES, EVENEMENTS_LAMES } from './lames';
 
 /**
  * Les combats de la campagne à deux : côte à côte contre un adversaire ajusté au binôme, ou l'un contre l'autre.
@@ -348,3 +349,8 @@ export const COMBATS_DUO: CombatDuoDef[] = [
     defaite: { texte: 'Le repaire se referme sur vous comme un poing. Vous en sortez vivants, de justesse, par un conduit d’eau, sans rien avoir brisé. L’Aube se lèvera encore.', effets: [{ blessure: { id: 'aube', nom: 'Le repaire de l’Aube', gravite: 3, jours: 70 } }], accord: 5, souvenir: 'Le repaire de l’Aube, et le conduit d’eau qui vous a sauvés.' },
   },
 ];
+
+// Les épées légendaires qu'un homme porte encore (quête à deux, combat à mort, partage ou duel).
+ADVERSAIRES_CAMPAGNE.push(...ADVERSAIRES_LAMES);
+EVENEMENTS_CAMPAGNE.push(...EVENEMENTS_LAMES);
+COMBATS_DUO.push(...COMBATS_LAMES);
