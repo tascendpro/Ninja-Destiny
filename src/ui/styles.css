@@ -7843,7 +7843,8 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: 55;
+  mix-blend-mode: screen;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -8156,4 +8157,166 @@ body::before {
   .aff-menu-kanji {
     font-size: 1.5rem;
   }
+}
+
+/* ── La collection des fins : celles vécues, et les autres, à aller chercher ── */
+.fins-collection h3 small {
+  color: var(--brume);
+  font-weight: 400;
+  margin-left: 6px;
+}
+.fins-grille {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 8px;
+}
+.fin-tuile {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px dashed var(--trait);
+  border-radius: var(--rayon-m);
+  background: var(--encre-2);
+  opacity: 0.7;
+}
+.fin-tuile.vue {
+  opacity: 1;
+  border-style: solid;
+  background: var(--ardoise);
+}
+.fin-tuile.ici {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 18px -6px var(--accent);
+  animation: passage-sceau 0.6s ease both;
+}
+.fin-tuile-sceau {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font-family: var(--mincho);
+  background: var(--trait-doux);
+  color: var(--brume);
+  transform: rotate(-4deg);
+}
+.fin-tuile.vue .fin-tuile-sceau {
+  background: var(--vermillon);
+  color: var(--texte-bouton);
+}
+.fin-tuile-corps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.fin-tuile-corps small {
+  color: var(--brume);
+  font-size: var(--t-xs);
+  line-height: 1.35;
+}
+
+/* ── L'arrivée de l'autre dans le groupe : deux sceaux qui se rejoignent, un cercle d'encre, le lien ── */
+.salon-arrivee {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--encre) 82%, transparent);
+  backdrop-filter: blur(3px);
+  animation: arrivee-fond 2.6s ease both;
+  cursor: pointer;
+}
+.salon-arrivee > * {
+  grid-area: 1 / 1;
+}
+.salon-arrivee-cercle {
+  width: min(70vw, 260px);
+  height: min(70vw, 260px);
+}
+.salon-arrivee-cercle circle {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 503;
+  stroke-dashoffset: 503;
+  transform: rotate(-90deg);
+  transform-origin: 100px 100px;
+  filter: drop-shadow(0 0 10px var(--accent));
+  animation: arrivee-cercle 1.1s 0.55s cubic-bezier(0.6, 0, 0.2, 1) forwards;
+}
+.salon-arrivee-sceau {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  font-family: var(--mincho);
+  font-size: 2rem;
+  color: #fff;
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.7);
+}
+.salon-arrivee-sceau.gauche {
+  background: var(--joueur-0);
+  animation: arrivee-gauche 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.salon-arrivee-sceau.droite {
+  background: var(--joueur-1);
+  animation: arrivee-droite 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.salon-arrivee-lien {
+  font-family: var(--mincho);
+  font-size: clamp(4rem, 22vw, 6.5rem);
+  color: var(--accent);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 70%, transparent);
+  opacity: 0;
+  animation: arrivee-lien 0.6s 0.75s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+.salon-arrivee p {
+  align-self: end;
+  margin: 0 16px 22vh;
+  font-family: var(--mincho);
+  font-size: var(--t-xl);
+  text-align: center;
+  opacity: 0;
+  animation: encre 0.6s 1s ease forwards;
+}
+@keyframes arrivee-fond {
+  0% { opacity: 0; }
+  10%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes arrivee-gauche {
+  0% { transform: translateX(-60vw) rotate(-20deg); opacity: 0; }
+  70% { transform: translateX(-34px) rotate(-6deg); opacity: 1; }
+  100% { transform: translateX(-46px) rotate(-6deg) scale(0.9); opacity: 0.0; }
+}
+@keyframes arrivee-droite {
+  0% { transform: translateX(60vw) rotate(20deg); opacity: 0; }
+  70% { transform: translateX(34px) rotate(6deg); opacity: 1; }
+  100% { transform: translateX(46px) rotate(6deg) scale(0.9); opacity: 0.0; }
+}
+@keyframes arrivee-cercle {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes arrivee-lien {
+  from { transform: scale(2.2) rotate(-12deg); opacity: 0; }
+  to { transform: scale(1) rotate(-4deg); opacity: 1; }
+}
+:root[data-animations='reduites'] .salon-arrivee-sceau {
+  display: none;
+}
+:root[data-animations='reduites'] .salon-arrivee-lien,
+:root[data-animations='reduites'] .salon-arrivee p {
+  opacity: 1;
+}
+:root[data-animations='reduites'] .salon-arrivee-cercle circle {
+  stroke-dashoffset: 0;
 }

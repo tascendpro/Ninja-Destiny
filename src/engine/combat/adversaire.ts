@@ -100,8 +100,17 @@ export function scoresIntentions(s: GameState, sc: EtatAffrontement, d: Adversai
   // Situation : ce qu'il peut faire, et ce que sa santé lui dicte.
   if (!techs.length || sc.adv.chakra < 8) sc0.technique = 0;
   if (!majeureDe(sc, d) || sc.adv.chakra < 20) sc0.preparer = 0;
-  if (pct < d.seuils.fuite / 100) sc0.fuir += 60;
-  if (pct < d.seuils.reddition / 100) sc0.parler += 40;
+  // Personne ne fuit avant la troisième manche ; ensuite, le cran de cette rencontre décide.
+  const cran = sc.cran ?? 'ordinaire';
+  const mult = { lache: 1.6, ordinaire: 1, tenace: 0.45, acharne: 0 }[cran];
+  if (sc.manche >= 3 && pct < (d.seuils.fuite * mult) / 100) sc0.fuir += 60;
+  if (sc.manche >= 3 && pct < (d.seuils.reddition * mult) / 100) sc0.parler += 40;
+  // L'acharné qui tombe ne recule pas : il jette tout ce qui lui reste.
+  if (cran === 'acharne' && pct < 0.3) {
+    sc0.attaque += 25;
+    sc0.preparer += 20;
+    sc0.fuir = 0;
+  }
   if (sc.contexte === 'entrainement' || sc.contexte === 'examen') sc0.fuir = 0;
   if (sc.contexte === 'embuscade') sc0.parler = 0;
   // Lecture : il voit que tu répètes, il attend ; il voit que tu te terres, il prépare.

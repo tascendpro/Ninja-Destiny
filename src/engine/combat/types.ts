@@ -272,7 +272,15 @@ export interface AnnonceEtat {
   mortelle?: boolean;
 }
 
+/**
+ * Le cran de l'adversaire, propre à cette rencontre : deux combats contre le même genre d'ennemi ne finissent pas pareil.
+ * Le lâche fuit tôt ; le tenace tient bien plus longtemps ; l'acharné ne fuit ni ne se rend, et redouble quand il tombe.
+ */
+export type Cran = 'lache' | 'ordinaire' | 'tenace' | 'acharne';
+
 export interface EtatAffrontement {
+  /** Son cran, tiré à l'ouverture du combat (absent : ordinaire). */
+  cran?: Cran;
   type: 'affrontement';
   evenementId: string;
   choixId: string;

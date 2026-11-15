@@ -41,6 +41,19 @@ export default function Salon({ onDemarrer, onRetour }: { onDemarrer: (p: Partie
   const passe: PasseCommun = passesDuLien(type).some((x) => x.id === passeChoisi) ? passeChoisi : passesDuLien(type)[0].id;
   const [copie, setCopie] = useState(false);
   const brouillon = useRef<number | undefined>(undefined);
+  // L'arrivée de l'autre dans le groupe : un moment à part, sur les deux écrans.
+  const [arrivee, setArrivee] = useState<string | null>(null);
+  const dejaLa = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!partie) return;
+    if (dejaLa.current === false && partie.inviteLa) setArrivee(partie.siege === 0 ? 'L’autre joueur a rejoint le groupe' : 'Tu as rejoint le groupe');
+    dejaLa.current = partie.inviteLa;
+  }, [partie?.inviteLa, partie?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!arrivee) return;
+    const t = window.setTimeout(() => setArrivee(null), 2600);
+    return () => window.clearTimeout(t);
+  }, [arrivee]);
   const lancement = useRef(false);
 
   // La partie bouge (l'autre rejoint, choisit, crée son ninja) : on suit, en direct.
@@ -127,8 +140,28 @@ export default function Salon({ onDemarrer, onRetour }: { onDemarrer: (p: Partie
       </>
     );
 
+  const Arrivee = () =>
+    arrivee ? (
+      <div className="salon-arrivee" role="status" onClick={() => setArrivee(null)}>
+        <svg className="salon-arrivee-cercle" viewBox="0 0 200 200" aria-hidden="true">
+          <circle cx="100" cy="100" r="80" />
+        </svg>
+        <span className="salon-arrivee-sceau gauche" aria-hidden="true">
+          壱
+        </span>
+        <span className="salon-arrivee-sceau droite" aria-hidden="true">
+          弐
+        </span>
+        <span className="salon-arrivee-lien" aria-hidden="true">
+          絆
+        </span>
+        <p>{arrivee}</p>
+      </div>
+    ) : null;
+
   return (
     <main className="creation salon">
+      <Arrivee />
       <p className="creation-joueur">À deux · chacun son téléphone{service.nom === 'local' ? ' (essai : deux onglets de ce navigateur)' : ''}</p>
 
       {!partie && !saisie && (
@@ -164,7 +197,12 @@ export default function Salon({ onDemarrer, onRetour }: { onDemarrer: (p: Partie
               onChange={(e) => setCode(e.target.value.toUpperCase())}
             />
           </div>
-          <button className="btn-principal" disabled={nettoyerCode(code).length !== 6 || envoi} onClick={() => void essayer(async () => setPartie(await service.rejoindre(code)))}>
+          <button className="btn-principal" disabled={nettoyerCode(code).length !== 6 || envoi} onClick={() =>
+            void essayer(async () => {
+              dejaLa.current = false;
+              setPartie(await service.rejoindre(code));
+            })
+          }>
             {envoi ? 'Connexion…' : 'Rejoindre'}
           </button>
         </>

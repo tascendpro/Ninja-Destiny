@@ -214,10 +214,16 @@ export function attaquesSpeciales(s: GameState, t: CheckDef, max = 3, transforma
     .map((x) => x.id);
 }
 
+/** Combien une aptitude pèse dans une épreuve, autour de la valeur d'un enfant ordinaire (35). */
+export const POIDS_APTITUDES = 1.4;
+
 export function evaluerEpreuve(s: GameState, t: CheckDef): EvaluationEpreuve {
   const poids = Object.entries(t.attributs);
   const total = poids.reduce((a, [, w]) => a + (w ?? 0), 0) || 1;
-  let score = poids.reduce((a, [k, w]) => a + (s.attributs[k as keyof typeof s.attributs] ?? 0) * (w ?? 0), 0) / total;
+  const moyenne = poids.reduce((a, [k, w]) => a + (s.attributs[k as keyof typeof s.attributs] ?? 0) * (w ?? 0), 0) / total;
+  // Les aptitudes doivent se sentir : chaque point au-dessus de 35 compte 40 % de plus (et une aptitude négligée se paie).
+  // Sans cela, les points répartis aux anniversaires ne déplaçaient le pourcentage que d'un ou deux.
+  let score = 35 + (moyenne - 35) * POIDS_APTITUDES;
 
   for (const [id, w] of Object.entries(maitrisesDuTest(s, t))) {
     score += tierEffectif(s.maitrises[id], s.jour) * 6 * w;

@@ -22,6 +22,23 @@ const STELES: Record<EndingDef['type'], { kanji: string; libelle: string }> = {
   chapitre: { kanji: '章', libelle: 'Chapitre clos' },
 };
 
+/** Les vraies fins (les fins de chapitre ne sont que des haltes), et ce qui y mène, dit à demi-mot. */
+const FINS_VRAIES = R.contenu.fins.filter((f) => f.type !== 'chapitre');
+const INDICES: Record<string, string> = {
+  mort: 'Il y a mille façons de tomber.',
+  regicide: 'Un déserteur, une nuit, et le Kage à portée de lame.',
+  seigneur_routes: 'Les routes appartiennent à ceux qui les tiennent.',
+  vie_civile: 'Rendre son kunai, un matin, et vivre autrement.',
+  exil: 'Le village peut aussi te chasser.',
+  aube: 'Un manteau à nuages rouges, porté jusqu’au bout.',
+  capture: 'Être pris vivant, et ne jamais en sortir.',
+  retrait_precoce: 'Ranger le bandeau dans un coffre, jeune.',
+  legende: 'Devenir ce qu’on raconte aux enfants, le soir.',
+  retraite: 'Vieillir. Simplement vieillir, dans un monde qui tue les ninjas.',
+  sacrifice: 'Donner sa vie pour que d’autres continuent.',
+  legende_route: 'Devenir une légende, loin de tout village.',
+};
+
 export default function Fin({
   etat,
   meta,
@@ -219,6 +236,30 @@ export default function Fin({
         </span>
         <span>versés à ta bourse. Dépense-les à la boutique pour avantager ta prochaine vie.</span>
       </p>
+
+      {/* Toutes les fins du jeu : celles qu'on a vécues, et les autres, avec de quoi donner envie d'aller les chercher. */}
+      <section className="groupe fins-collection">
+        <h3>
+          Les fins de Ninja Destiny <small>{FINS_VRAIES.filter((f) => meta.finsObtenues.includes(f.id) || f.id === etat.fin?.id).length} / {FINS_VRAIES.length}</small>
+        </h3>
+        <ul className="fins-grille">
+          {FINS_VRAIES.map((f) => {
+            const vue = meta.finsObtenues.includes(f.id) || f.id === etat.fin?.id;
+            const ici = f.id === etat.fin?.id;
+            return (
+              <li key={f.id} className={`fin-tuile${vue ? ' vue' : ''}${ici ? ' ici' : ''}`}>
+                <span className="fin-tuile-sceau" aria-hidden="true">
+                  {vue ? STELES[f.type]?.kanji ?? '終' : '？'}
+                </span>
+                <span className="fin-tuile-corps">
+                  <strong>{vue ? accorder(f.titre, P) : '???'}</strong>
+                  <small>{ici ? 'Ta fin, cette fois.' : vue ? 'Déjà vécue.' : INDICES[f.id] ?? 'Une autre vie la mène peut-être là.'}</small>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
       <section className="groupe">
         <h3>Note finale : {note.note}</h3>

@@ -267,6 +267,9 @@ function resoudreEquipe(c: Campagne): void {
     const e = entrees[j] ?? { manche: x.manche, annonce: x.annonce.texte, action: 'À terre', execution: 'Tu es à terre. Tu entends le combat continuer sans toi.', reponse: '', impact: '', lecture: '', repliques: [], technique: 'a_terre' };
     const o = autre(j);
     e.impact = [e.impact, resume[o] ? `Pendant ce temps — ${resume[o]}` : '', resume[j] && entrees[j] ? '' : resume[j]].filter(Boolean).join(' ');
+    // L'effet de la nature jouée, à l'écran de chacun (son propre geste).
+    const nat = cb.choix[j] ? natureAction(cb.choix[j]!.choix) : undefined;
+    if (nat && entrees[j]) e.nature = nat;
     x.journal.push(e);
     x.adv = { ...partage.adv };
     if (x.joueur.endurance <= 0 && !cb.aTerre[j]) cb.aTerre[j] = true;
@@ -378,7 +381,7 @@ function resoudreDuel(c: Campagne): void {
     const o = autre(j);
     x.joueur.endurance = Math.max(0, x.joueur.endurance - subi[j]);
     x.adv.endurance = Math.max(0, x.adv.endurance - subi[o]);
-    x.journal.push({ manche: x.manche, annonce: x.annonce.texte, action: nomAction(choix[j]), execution: `${nomAction(choix[j])}.`, reponse: `${nom(o)} : ${nomAction(choix[o])}.`, impact: [...recit[j]].join(' '), lecture: '', repliques: [], inflige: subi[o], subi: subi[j], technique: 'duel' });
+    x.journal.push({ manche: x.manche, annonce: x.annonce.texte, action: nomAction(choix[j]), execution: `${nomAction(choix[j])}.`, reponse: `${nom(o)} : ${nomAction(choix[o])}.`, impact: [...recit[j]].join(' '), lecture: '', repliques: [], inflige: subi[o], subi: subi[j], technique: 'duel', ...(natureAction(choix[j]!.choix) ? { nature: natureAction(choix[j]!.choix) } : {}) });
   }
   cb.choix = [undefined, undefined];
   cb.signes = [undefined, undefined];

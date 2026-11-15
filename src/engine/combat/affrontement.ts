@@ -1,6 +1,7 @@
 // L'Affrontement Racine : ouverture, boucle de manche, conclusion, vue pour l'interface.
 // Un seul moteur : même état, même hasard, même rejeu que le reste du jeu (§0.3.3).
 
+import type { Cran } from './types';
 import type { Changement, ChoiceDef, ElementId, EventDef, GameState, Issue, Outcome } from '../types';
 import { R } from '../registre';
 import { alea } from '../rng';
@@ -168,7 +169,11 @@ export function creerAffrontement(
   const st = statsAdversaire(s, d);
   const endJ = enduranceJoueur(s);
   const endA = o.enduranceAdv ?? st.endurance;
+  // Le cran de cet adversaire-ci : un hasard propre à la rencontre, sans toucher au tirage du combat.
+  const h = (Math.imul((s.seed ^ s.jour ^ o.adversaireId.length * 2654435761) >>> 0, 2246822519) >>> 0) % 100;
+  const cran: Cran = d.seuils.fuite === 0 && d.seuils.reddition === 0 ? 'acharne' : h < 18 ? 'lache' : h < 62 ? 'ordinaire' : h < 88 ? 'tenace' : 'acharne';
   return {
+    cran,
     type: 'affrontement',
     evenementId: o.evenementId,
     choixId: 'campagne',
@@ -739,6 +744,9 @@ export function vueAffrontement(s: GameState): VueAffrontement | undefined {
     if (tt) lecture.push(`Technique vue : ${tt.nom}.`);
   }
   // Ce que le lieu annonce : le plafond qui gronde, le feu qui cherche à prendre.
+  // Son cran se devine au bout de deux manches.
+  if (sc.manche >= 2 && sc.cran && sc.cran !== 'ordinaire')
+    lecture.push(accorderAdv({ lache: '{Il} jette des coups d’œil vers la sortie : {il} ne tiendra pas longtemps.', tenace: '{Il} encaisse sans broncher. {Il} ne lâchera pas facilement.', acharne: 'Rien dans ses yeux ne parle de reculer : {il} ira jusqu’au bout.' }[sc.cran], genre));
   lecture.push(...avertissements(s, sc));
   const fam = familles(s, sc).map((f) => ({ ...f, actions: f.actions.map((a) => ({ ...a, detail: accorderAdv(a.detail, genre) })) }));
   return {
