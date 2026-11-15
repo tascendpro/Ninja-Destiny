@@ -39,7 +39,7 @@ export const SCENES_RANGS: SceneCommuneDef[] = [
       { cle: 'travailler+travailler', texte: 'Le soir, sur le même tapis, les mêmes rouleaux. Vous finissez premiers ex aequo à l’examen du trimestre, et le maître doit admettre qu’il ne sait plus lequel féliciter.', lien: { les2: { confiance: 5, respect: 4 } }, effets: { les2: [{ stat: 'attributs.intellect', delta: 2 }] }, accord: 4, souvenir: { id: 'meme_classe', texte: 'Le même pupitre à l’Académie, et les révisions du soir.', poids: 3, tonalite: 'chaud' } },
       { cle: 'premier+premier', texte: 'Deux mains levées en même temps, à chaque question, pendant toute une année. Le maître finit par interroger quelqu’un d’autre, par principe. Vous terminez premier et deuxième, et vous ne serez jamais d’accord sur l’ordre.', lien: { les2: { rivalite: 8, respect: 4 } }, effets: { les2: [{ stat: 'attributs.intellect', delta: 1 }] }, accord: 2, souvenir: { id: 'meme_classe', texte: 'Deux mains levées en même temps, toute une année.', poids: 3, tonalite: 'fier' } },
       { cle: 'souffler+premier', texte: '{un} souffle la réponse à {deux} ; {deux} lève la main avant {un} sur la question suivante. Le maître a tout vu. Il ne dit rien, mais il note quelque chose dans son carnet.', lien: { un: { ressentiment: 4 }, deux: { dette: 4 } }, accord: 1 },
-      { cle: 'souffler+*', texte: '{un} souffle les réponses, discrètement, toute l’année. Un jour, le maître l’entend. Il punit {un}, pas {deux}. {deux} ne l’oubliera pas.', lien: { deux: { dette: 6, loyaute: 4 }, un: { loyaute: 3 } }, accord: 3 },
+      { cle: 'souffler+*', texte: '{un} souffle les réponses, discrètement, toute l’année. Un jour, le maître l’entend. Il punit {un}, pas {deux}. {deux} ne l’oubliera pas.', lien: { deux: { dette: 6, loyaute: 4 }, un: { loyaute: 3 } }, accord: 3, suite: { scene: 'mc_suite_pupitre', dans: 2 * 360 } },
       { cle: 'defaut', texte: 'Une année passe, au même pupitre. Vous connaissez par cœur l’écriture de l’autre, ses tics, la façon dont {il:un} mord son pinceau quand {il:un} réfléchit.', lien: { les2: { confiance: 3 } }, accord: 2 },
     ],
   },
@@ -64,7 +64,7 @@ export const SCENES_RANGS: SceneCommuneDef[] = [
     issues: [
       { cle: 'ensemble+ensemble', texte: 'Vous le demandez tous les deux, le même matin, sans vous être concertés. Le chūnin soupire, barre deux noms, les réécrit sur la même ligne. Même équipe.', lien: { les2: { loyaute: 6, confiance: 3 } }, accord: 6, souvenir: { id: 'meme_equipe', texte: 'Le jour où vous avez demandé la même équipe, sans vous concerter.', poids: 4, tonalite: 'chaud' }, apres: (c) => (c.memeEquipe = true) },
       { cle: 'separes+separes', texte: 'Vous avez demandé la même chose : être séparés. Pour des raisons différentes, peut-être. Deux équipes, deux sensei, deux chemins qui ne se croiseront plus qu’en mission.', lien: { les2: { rivalite: 4, respect: 2 } }, accord: -2, apres: (c) => (c.memeEquipe = false) },
-      { cle: 'ensemble+separes', texte: '{un} a demandé à être avec {deux}. {deux} a demandé le contraire. Le chūnin, pour une fois, écoute le second. Deux équipes. {un} l’apprend en lisant la liste, et ne dit rien.', lien: { un: { ressentiment: 8, peur_de_perdre: 4 }, deux: { dette: 4 } }, accord: -3, apres: (c) => (c.memeEquipe = false) },
+      { cle: 'ensemble+separes', texte: '{un} a demandé à être avec {deux}. {deux} a demandé le contraire. Le chūnin, pour une fois, écoute le second. Deux équipes. {un} l’apprend en lisant la liste, et ne dit rien.', lien: { un: { ressentiment: 8, peur_de_perdre: 4 }, deux: { dette: 4 } }, accord: -3, apres: (c) => (c.memeEquipe = false), suite: { scene: 'mc_suite_place', dans: 3 * 360 } },
       {
         cle: 'defaut',
         texte: 'Le village décide. Le chūnin lit la liste lentement, et vous retenez votre souffle tous les deux.',
@@ -95,9 +95,9 @@ export const SCENES_RANGS: SceneCommuneDef[] = [
       { id: 'ordres', texte: 'Attendre les ordres du sensei', famille: 'observer' },
     ],
     issues: [
-      { cle: 'couvrir+couvrir', texte: 'Dos à dos, sans un mot. Le sensei, de loin, sourit pour la première fois.', lien: { les2: { confiance: 6 } }, accord: 5, combat: 'combat_frontiere' },
-      { cle: 'foncer+couvrir', texte: '{un} fonce ; {deux} le couvre, sans qu’on lui demande. C’est exactement ce que le sensei voulait voir.', lien: { un: { dette: 4 }, deux: { loyaute: 4 } }, accord: 4, combat: 'combat_frontiere' },
-      { cle: 'foncer+foncer', texte: 'Vous foncez tous les deux sur le même homme. Le sensei jure. Il va falloir réparer ça au milieu du combat.', lien: { les2: { rivalite: 4 } }, accord: 1, combat: 'combat_frontiere' },
+      { cle: 'couvrir+couvrir', texte: 'Dos à dos, sans un mot. Le sensei, de loin, sourit pour la première fois.', lien: { les2: { confiance: 6 } }, accord: 5, combat: 'combat_frontiere', suite: { scene: 'mc_suite_convoi', dans: 3 * 360 } },
+      { cle: 'foncer+couvrir', texte: '{un} fonce ; {deux} le couvre, sans qu’on lui demande. C’est exactement ce que le sensei voulait voir.', lien: { un: { dette: 4 }, deux: { loyaute: 4 } }, accord: 4, combat: 'combat_frontiere', suite: { scene: 'mc_suite_convoi', dans: 3 * 360 } },
+      { cle: 'foncer+foncer', texte: 'Vous foncez tous les deux sur le même homme. Le sensei jure. Il va falloir réparer ça au milieu du combat.', lien: { les2: { rivalite: 4 } }, accord: 1, combat: 'combat_frontiere', suite: { scene: 'mc_suite_convoi', dans: 3 * 360 } },
       { cle: 'defaut', texte: 'Le sensei donne ses ordres, sèchement. Vous obéissez, chacun à sa place.', accord: 3, combat: 'combat_frontiere' },
     ],
   },
@@ -210,3 +210,143 @@ export function planifierRangs(c: Campagne): void {
     return;
   }
 }
+
+/** Qui était « un » dans la scène d'origine (celui qui a soufflé, celui qu'on a refusé…). */
+const origine = (c: Campagne, id: string): IdJoueur => c.suites?.[id] ?? 0;
+const nomDe = (c: Campagne, j: IdJoueur) => c.creations[j].prenom;
+
+/** Les suites : des scènes qui rappellent un moment commun et changent concrètement le cours des choses. */
+export const SCENES_SUITES: SceneCommuneDef[] = [
+  {
+    id: 'mc_suite_pupitre',
+    titre: 'La dette du pupitre',
+    dynamique: true,
+    si: vivants,
+    texte: (c) => {
+      const souffleur = origine(c, 'mc_suite_pupitre');
+      return `L’examen écrit de fin d’Académie. Trois heures, un surveillant qui fait les cent pas. À la quatrième question, ${nomDe(c, souffleur)} pose son pinceau : la page est blanche. Deux pupitres plus loin, ${nomDe(c, autre(souffleur))} connaît la réponse. Il y a deux ans, c’était l’inverse, et c’est ${nomDe(c, souffleur)} qui avait pris la punition.`;
+    },
+    choixPour: (c, j) =>
+      (j === autre(origine(c, 'mc_suite_pupitre'))
+        ? [
+            { id: 'rendre', texte: 'Rendre la pareille : souffler la réponse, quel qu’en soit le prix', famille: 'proteger' },
+            { id: 'regle', texte: 'Ne rien faire : ce n’est plus un jeu, c’est l’examen', famille: 'observer' },
+          ]
+        : [
+            { id: 'attendre', texte: 'Regarder vers l’autre', famille: 'parler' },
+            { id: 'seul', texte: 'Fixer ta page, et chercher seul', famille: 'agir' },
+          ]) as SceneCommuneDef['choix'],
+    choix: [],
+    issues: [
+      {
+        cle: 'rendre+attendre',
+        texte: 'Un mot, articulé sans voix. {deux} écrit. Le surveillant se retourne une seconde trop tard. La dette est payée. Vous le savez tous les deux, et vous n’en parlerez jamais.',
+        lien: { les2: { loyaute: 8, confiance: 5 }, un: { dette: -6 } },
+        effets: { deux: [{ stat: 'social.reputation', delta: 2 }] },
+        accord: 5,
+        souvenir: { id: 'dette_pupitre', texte: 'L’examen où la dette du pupitre a été payée, sans un mot.', poids: 4, tonalite: 'chaud' },
+      },
+      {
+        cle: 'rendre+seul',
+        texte: '{un} souffle ; {deux} ne lève pas la tête, et trouve seul. Le surveillant, lui, a entendu le souffle. Il ne sait pas à qui il était destiné, et c’est {un} qui est noté pour tricherie.',
+        lien: { deux: { respect: 6, dette: 4 }, un: { loyaute: 4 } },
+        effets: { un: [{ stat: 'social.reputation', delta: -4 }], deux: [{ stat: 'attributs.intellect', delta: 2 }] },
+        accord: 2,
+      },
+      {
+        cle: 'regle+*',
+        texte: '{un} ne bouge pas. {deux} rend une page à moitié vide. À la sortie, ni l’un ni l’autre ne parle de la punition d’il y a deux ans. Elle est là quand même, entre vous.',
+        lien: { deux: { ressentiment: 8 }, un: { mefiance: 2 } },
+        effets: { deux: [{ stat: 'social.reputation', delta: -2 }] },
+        accord: -3,
+      },
+      { cle: 'defaut', texte: 'L’examen passe. Les comptes, eux, restent ouverts.', lien: { les2: { confiance: 1 } } },
+    ],
+  },
+  {
+    id: 'mc_suite_place',
+    titre: 'La place que tu m’as refusée',
+    dynamique: true,
+    si: vivants,
+    texte: (c) => {
+      const refuse = origine(c, 'mc_suite_place');
+      return `Trois ans ont passé depuis la répartition des équipes. Ce soir, après une mission ratée, ${nomDe(c, refuse)} a bu un peu trop, et pose enfin la question à ${nomDe(c, autre(refuse))} : « Pourquoi tu as demandé à ne pas être avec moi ? »`;
+    },
+    choixPour: (c, j) =>
+      (j === origine(c, 'mc_suite_place')
+        ? [
+            { id: 'ecouter', texte: 'Écouter la réponse, quelle qu’elle soit', famille: 'observer' },
+            { id: 'exiger', texte: 'Exiger la vérité, maintenant, dehors', famille: 'agir' },
+          ]
+        : [
+            { id: 'verite', texte: 'Dire la vérité : tu avais peur de le perdre en mission', famille: 'parler' },
+            { id: 'ambition', texte: 'Dire la vérité : tu voulais réussir sans lui', famille: 'agir' },
+            { id: 'esquiver', texte: '« C’était il y a longtemps. »', famille: 'partir' },
+          ]) as SceneCommuneDef['choix'],
+    choix: [],
+    issues: [
+      {
+        cle: 'ecouter+verite',
+        texte: '« J’avais peur. Si on était ensemble, et que tu tombais… » {un} écoute jusqu’au bout. Trois ans de rancune s’en vont en une phrase. Il en reste une autre : on aurait pu se le dire avant.',
+        lien: { un: { ressentiment: -12, confiance: 8 }, deux: { peur_de_perdre: 6 } },
+        accord: 6,
+        souvenir: { id: 'place_refusee', texte: 'Le soir où tu as enfin su pourquoi l’autre t’avait refusé dans son équipe.', poids: 4, tonalite: 'chaud' },
+      },
+      {
+        cle: 'exiger+ambition',
+        texte: '« Je voulais réussir sans toi. » Dehors, sous la lune, les mots deviennent des poings. Ce soir-là, ce n’est plus une question de rancune : il faut que l’un des deux tombe.',
+        lien: { les2: { rivalite: 12, ressentiment: 6 } },
+        combat: 'duel_honneur',
+      },
+      {
+        cle: 'ecouter+ambition',
+        texte: '« Je voulais réussir sans toi. » {un} hoche la tête, lentement. C’est dur à entendre. C’est honnête. Il y a une forme de respect, dans la douleur.',
+        lien: { un: { respect: 6, ressentiment: -4 }, deux: { respect: 4 } },
+        accord: 2,
+      },
+      {
+        cle: 'defaut',
+        texte: '« C’était il y a longtemps. » {un} n’insiste pas. Mais la question reste dans la pièce quand vous en sortez.',
+        lien: { les2: { mefiance: 4 } },
+        accord: -2,
+      },
+    ],
+  },
+  {
+    id: 'mc_suite_convoi',
+    titre: 'Le village du sel',
+    dynamique: true,
+    si: vivants,
+    texte: 'Un gamin couvert de poussière vous attend devant la porte du village, un message serré dans le poing. Il vient du village du sel, celui dont vous aviez escorté le convoi, à vos débuts. « Les mêmes hommes reviennent. Ils parlent de vous. Ils savent où vous passerez demain. »',
+    choix: [
+      { id: 'prevenir', texte: 'Prévenir le village et changer de route', famille: 'observer' },
+      { id: 'piege', texte: 'Leur tendre un piège à votre tour', famille: 'agir' },
+      { id: 'ignorer', texte: 'Ignorer : un gamin, une rumeur', famille: 'partir' },
+    ],
+    issues: [
+      {
+        cle: 'piege+piege',
+        texte: 'Ils attendaient deux genin. Ils trouvent deux ninjas qui les attendaient. Le village du sel, lui, n’oubliera pas que vous êtes revenus pour lui.',
+        lien: { les2: { confiance: 4 } },
+        accord: 4,
+        effets: { les2: [{ stat: 'social.reputation', delta: 4 }] },
+        combat: 'combat_frontiere',
+        souvenir: { id: 'village_sel', texte: 'Le village du sel, qui vous a prévenus, et que vous avez défendu deux fois.', poids: 4, tonalite: 'fier' },
+      },
+      {
+        cle: 'prevenir+*',
+        texte: 'Vous changez de route, et vous prévenez le village. L’embuscade attend dans le vide pendant deux jours. Au bureau des missions, on note que votre binôme a « le sens du terrain ».',
+        lien: { les2: { respect: 3 } },
+        accord: 3,
+        effets: { les2: [{ stat: 'social.reputation', delta: 2 }, { stat: 'attributs.perception', delta: 1 }] },
+      },
+      {
+        cle: 'ignorer+ignorer',
+        texte: 'Une rumeur, un gamin. Vous passez par la route prévue. Ils sont là. Ils étaient prévenus de votre arrivée, eux.',
+        lien: { les2: { mefiance: 2 } },
+        combat: 'combat_frontiere',
+      },
+      { cle: 'defaut', texte: 'Vous ne vous mettez pas d’accord, et vous choisissez une route au milieu. Ils y sont aussi.', combat: 'combat_frontiere' },
+    ],
+  },
+];

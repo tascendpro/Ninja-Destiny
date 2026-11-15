@@ -33,21 +33,23 @@ export function actionsLien(c: Campagne, j: IdJoueur) {
   const enseignables = Object.keys(s.maitrises)
     .filter((id) => R.maitrises[id]?.technique && s.maitrises[id].tier >= 3 && !(o.maitrises[id]?.tier >= 1) && R.maitrises[id].kind === 'jutsu')
     .slice(0, 8);
+  // Pendant une mort simulée, l'autre n'existe plus pour toi : aucune action envers lui n'est proposée.
+  const separes = !!c.separation?.actif;
   return {
-    proche,
-    donner: s.jauges.ryo >= 10,
-    enseignables: proche ? enseignables : [],
-    duel: proche && !c.proposition,
-    technique: proche && !c.proposition && c.lien.accord >= 50 && c.lien.techniquesDuo.length < 3,
+    proche: proche && !separes,
+    donner: !separes && s.jauges.ryo >= 10,
+    enseignables: proche && !separes ? enseignables : [],
+    duel: proche && !separes && !c.proposition,
+    technique: proche && !separes && !c.proposition && c.lien.accord >= 50 && c.lien.techniquesDuo.length < 3,
     nomsDuo: nomsDuo(c),
     // Agir contre l'autre : jamais pendant l'enfance.
-    denoncer: age >= 12 && ageA(o) >= 12 && !finie(o),
-    nuire: age >= 16 && ageA(o) >= 16 && !finie(o),
+    denoncer: !separes && age >= 12 && ageA(o) >= 12 && !finie(o),
+    nuire: !separes && age >= 16 && ageA(o) >= 16 && !finie(o),
     cibles: (['parent', 'sensei', 'ami'] as const).filter((r) => {
       const id = o.roles[r === 'ami' ? 'coequipierA' : r];
       return !!id && (o.pnj[id]?.etat === 'vivant' || o.pnj[id]?.etat === 'blesse');
     }),
-    enqueter: age >= 12,
+    enqueter: !separes && age >= 12,
     proposition: c.proposition && c.proposition.de !== j ? c.proposition : undefined,
   };
 }

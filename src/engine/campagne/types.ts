@@ -85,6 +85,8 @@ export interface IssueCommune {
   promesse?: { id: string; texte: string };
   /** Un combat à deux qui suit la scène (lu par les deux d'abord). */
   combat?: string;
+  /** Une suite, des années plus tard : une scène qui rappelle celle-ci et change le cours des choses. */
+  suite?: { scene: string; dans: number };
   /** Ce que l'issue change dans la campagne (fil de trahison, faits, scènes à venir). */
   apres?: (c: Campagne, un: IdJoueur) => void;
 }
@@ -375,6 +377,8 @@ export interface Campagne {
   /** Les scènes déjà jouées (les scènes de seuil et dynamiques ne reviennent pas). */
   vues: string[];
   stats: StatsBinome;
+  /** Les suites programmées, et qui était « un » dans la scène d'origine. */
+  suites?: Record<string, IdJoueur>;
   /** Affectés à la même équipe de genin (undefined : pas encore décidé). */
   memeEquipe?: boolean;
   /** Une épée légendaire gagnée à deux, qui attend de savoir qui la prendra. */

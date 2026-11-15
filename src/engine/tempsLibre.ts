@@ -92,9 +92,16 @@ export function naturesActivite(a: { id: string }): string[] {
   return [];
 }
 
+/**
+ * Une période de temps libre : une saison jusqu'à 15 ans (l'enfance et les débuts de genin passent vite), puis un mois,
+ * quand la vie devient plus dense et que chaque mission compte.
+ */
 export function dureeBase(s: GameState): number {
-  return age(s) < 12 ? 90 : 30;
+  return age(s) < 15 ? 90 : 30;
 }
+
+/** Au-delà de ce nombre de missions de rang D réussies, les corvées quittent le tableau : place aux missions C. */
+export const CORVEES_MAX = 3;
 
 function texteBlocage(s: GameState, id: string): string {
   switch (blocagePalier(porteurJoueur(s), id)) {
@@ -362,8 +369,11 @@ export function genererActivites(s: GameState): Activite[] {
   }
 
   if (rangIndex(s.rang) >= rangIndex('genin') && s.statut === 'actif') {
+    const corvees = R.contenu.missions.filter((m) => m.rang === 'D' && s.missions[m.id] === 'reussie').length;
     for (const m of R.contenu.missions) {
       if (s.missions[m.id] !== undefined || !evaluer(m.si, s)) continue;
+      // Tu as fait tes classes : les corvées de rang D ne sont plus proposées.
+      if (m.rang === 'D' && corvees >= CORVEES_MAX) continue;
       res.push({
         id: `mission:${m.id}`,
         libelle: `Mission ${m.rang} — ${m.titre}`,

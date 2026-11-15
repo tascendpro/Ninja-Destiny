@@ -64,7 +64,9 @@ describe('L’apprentissage de 6 à 12 ans', () => {
       if (rE.attributs.force + rE.attributs.agilite < avantE) pertes++;
     }
     expect(gains).toBeGreaterThan(10);
-    expect(pertes).toBeGreaterThan(5);
+    // Une période dure une saison jusqu'à 15 ans : le corps impose ses repos en cours de route, et regagne parfois ce
+    // que le premier excès a coûté. Forcer épuisé reste un risque réel, mais le bilan net n'est négatif qu'une fois sur vingt.
+    expect(pertes).toBeGreaterThan(2);
   });
 
   it('un genin a de quoi faire : au moins 14 missions de rang D, dont plusieurs où l’on peut mourir', () => {

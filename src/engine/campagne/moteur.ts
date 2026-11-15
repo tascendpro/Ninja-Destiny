@@ -17,7 +17,7 @@ import { SCENE_ECHO_PROMESSE, SCENE_ECHO_SOUVENIR, planifierEchos } from '../../
 import { SCENES_MORT_SIMULEE, SCENE_RETOUR_SEPARATION } from '../../content/campagne/mortSimulee';
 import { SCENES_SECRETS_AUTRE } from '../../content/campagne/secretsAutre';
 import { SCENES_LAMES } from '../../content/campagne/lames';
-import { SCENES_RANGS, planifierRangs } from '../../content/campagne/scenesRangs';
+import { SCENES_RANGS, SCENES_SUITES, planifierRangs } from '../../content/campagne/scenesRangs';
 import { SCENES_ENFANCE } from '../../content/campagne/scenesEnfance';
 import { SCENES_GENIN } from '../../content/campagne/scenesGenin';
 import { SCENES_ADULTES } from '../../content/campagne/scenesAdultes';
@@ -34,7 +34,7 @@ export { texteCommun } from './outils';
 export { vueCombatDuo, SIGNES } from './combat';
 export { actionsLien, ensemble } from './lien';
 
-export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, SCENE_HERITIER_SANG, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES, SCENE_ECHO_SOUVENIR, SCENE_ECHO_PROMESSE, ...SCENES_MORT_SIMULEE, ...SCENES_SECRETS_AUTRE, ...SCENES_LAMES, ...SCENES_RANGS].map((s) => [s.id, s]));
+export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, SCENE_HERITIER_SANG, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES, SCENE_ECHO_SOUVENIR, SCENE_ECHO_PROMESSE, ...SCENES_MORT_SIMULEE, ...SCENES_SECRETS_AUTRE, ...SCENES_LAMES, ...SCENES_RANGS, ...SCENES_SUITES].map((s) => [s.id, s]));
 
 export const LIBELLES_LIEN: Record<TypeLien, string> = {
   freres: 'Frères et sœurs',
@@ -692,6 +692,8 @@ function resoudreCommune(c: Campagne): void {
   const deux = autre(un);
   const avant = cliche(c);
   appliquerIssue(c, issue, un, deux);
+  // La trace dans chaque vie : ses propres scènes pourront en tenir compte (« duo:<scène> » = l'issue).
+  for (const s of c.joueurs) s.drapeaux[`duo:${sc.id}`] = issue.cle;
   const libelle = (j: IdJoueur, id: string) => texteCommun(c, listes[j].find((x) => x.id === id)?.texte ?? '', j, j);
   c.resultat = {
     id: sc.id,
@@ -706,7 +708,9 @@ function resoudreCommune(c: Campagne): void {
   if (issue.combat) c.combatEnAttente = issue.combat;
   c.commune = undefined;
   c.vues.push(sc.id);
-  c.barrieres.shift();
+  // On retire la barrière de cette scène, et seulement elle : une suite programmée par l'issue reste en place.
+  const i = c.barrieres.findIndex((b) => b.id === sc.id);
+  if (i >= 0) c.barrieres.splice(i, 1);
 }
 
 function deciderMut(c: Campagne, j: IdJoueur, choix: string): void {
@@ -779,6 +783,11 @@ function changementsDepuis(c: Campagne, a: Cliche): [Changement[], Changement[]]
 
 /** Ce qu'une issue change : dans chaque vie (effets solo), dans le lien, les souvenirs, les promesses, la suite. */
 function appliquerIssue(c: Campagne, issue: IssueCommune, un: IdJoueur, deux: IdJoueur, seul = false): void {
+  if (issue.suite) {
+    planifierCommune(c, issue.suite.scene, issue.suite.dans);
+    // Qui était « un » dans la scène d'origine : la suite s'en souvient.
+    c.suites = { ...(c.suites ?? {}), [issue.suite.scene]: un };
+  }
   for (const j of seul ? [un] : ([0, 1] as IdJoueur[])) {
     const e = [...(issue.effets?.les2 ?? []), ...((j === un ? issue.effets?.un : issue.effets?.deux) ?? [])];
     if (e.length && !finie(c.joueurs[j])) appliquerEffets(c.joueurs[j], e, nouveauCtx());

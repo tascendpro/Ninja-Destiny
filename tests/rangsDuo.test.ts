@@ -51,6 +51,20 @@ describe('Les rangs, vécus à deux', () => {
     expect(c.vues).toContain('mc_rg_gilet');
   });
 
+  it('une scène commune a des suites : la dette du pupitre revient deux ans plus tard, et chaque vie s’en souvient', () => {
+    let c = duo('amis', 8);
+    c.commune = { id: 'mc_rg_classe', choix: [undefined, undefined] };
+    c = choisirCommune(choisirCommune(c, 0, 'souffler'), 1, 'premier');
+    // « souffler+premier » existe : on vérifie plutôt « souffler » contre « travailler ».
+    c = duo('amis', 8);
+    c.commune = { id: 'mc_rg_classe', choix: [undefined, undefined] };
+    c = lire(choisirCommune(choisirCommune(c, 0, 'souffler'), 1, 'travailler'));
+    const b = c.barrieres.find((x) => x.id === 'mc_suite_pupitre');
+    expect(b).toBeDefined();
+    expect(c.suites?.['mc_suite_pupitre']).toBe(0);
+    for (const s of c.joueurs) expect(s.drapeaux['duo:mc_rg_classe']).toBe('souffler+*');
+  });
+
   it('deux villages différents : pas de classe commune, pas d’équipe commune', () => {
     const c = duo('villages_differents', 12);
     for (const s of c.joueurs) s.rang = 'genin';
