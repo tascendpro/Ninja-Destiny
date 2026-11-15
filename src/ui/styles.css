@@ -8325,3 +8325,96 @@ body::before {
   color: var(--brume);
   font-size: var(--t-xs);
 }
+
+/* ── Temps libre : un conseil en un toucher, des cartes compactes ── */
+.tl-conseil {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  text-align: left;
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, var(--ardoise)), var(--ardoise) 70%);
+  color: var(--papier);
+  cursor: pointer;
+  box-shadow: 0 5px 0 -1px color-mix(in srgb, var(--accent) 50%, #000);
+  transition: transform 0.12s, box-shadow 0.15s;
+  animation: encre 0.4s ease both;
+}
+.tl-conseil:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 -1px color-mix(in srgb, var(--accent) 50%, #000);
+}
+.tl-conseil-kanji {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--texte-bouton);
+  font-family: var(--mincho);
+  font-size: 1.4rem;
+}
+.tl-conseil-corps {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tl-conseil-corps small {
+  font-size: var(--t-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.tl-conseil-corps strong {
+  font-family: var(--mincho);
+  font-size: var(--t-l);
+}
+.tl-conseil-corps span {
+  color: var(--papier-2);
+  font-size: var(--t-s);
+}
+.tl-conseil-fleche {
+  font-size: 1.4rem;
+  color: var(--accent);
+}
+.activite .act-detail {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+details.tl-gens summary {
+  cursor: pointer;
+  padding: 8px 0;
+  color: var(--papier-2);
+  font-size: var(--t-s);
+}
+
+/* ── Le code couleur des personnages : chacun la sienne, partout ── */
+.nom-perso {
+  color: var(--np);
+  font-weight: 650;
+}
+.nom-perso.nom-teinte {
+  color: hsl(var(--np-h) 62% 72%);
+}
+:root[data-ambiance='washi'] .nom-perso.nom-teinte {
+  color: hsl(var(--np-h) 55% 34%);
+}
+.nom-perso.nom-joueur {
+  padding: 0 3px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--np) 16%, transparent);
+}
+.page-commune .commune-choix li.joueur-0,
+.page-commune .commune-choix li.joueur-1 {
+  border-left-color: var(--pj);
+}

@@ -30,6 +30,8 @@ import { remonter } from './defilement';
 import CreationDuo from './campagne/CreationDuo';
 import { BandeauDuo, ChoixMort, EcranPassage, FinDuo, Nouvelles, Proposition, ResultatCommun, SceneCommune, ScenePrivee, VueLien } from './campagne/Campagne';
 import PageCommune from './campagne/PageCommune';
+import { NomsColores, teinteDe, type NomColore } from './paroles';
+import { defPnj } from '../engine/etat';
 import Salon from './multi/Salon';
 import { memoriserPartie, partieMemorisee, serviceEnLigne, type PartieDistante } from './multi/enLigne';
 import { Synchro, nouvellesActions } from '../engine/multi/synchro';
@@ -151,6 +153,24 @@ export default function Game() {
     const t = window.setTimeout(() => setToast(null), 3200);
     return () => window.clearTimeout(t);
   }, [toast]);
+
+  // Le code couleur : les deux joueurs (ou toi, en solo), puis chaque personnage rencontré, toujours de la même teinte.
+  const nomsColores = useMemo<NomColore[]>(() => {
+    if (!etat) return [];
+    const l: NomColore[] = campagne
+      ? campagne.creations.map((c, j) => ({ nom: c.prenom, couleur: `var(--joueur-${j})`, joueur: j as 0 | 1 }))
+      : [{ nom: etat.creation.prenom, couleur: 'var(--accent)', joueur: 'solo' as const }];
+    for (const [id, st] of Object.entries(etat.pnj)) {
+      if (!st.rencontre) continue;
+      const d = defPnj(etat, id);
+      if (!d?.nom || l.some((x) => x.nom === d.nom)) continue;
+      const teinte = teinteDe(d.nom);
+      l.push({ nom: d.nom, teinte });
+      const prenom = d.nom.split(' ')[0];
+      if (prenom.length >= 3 && prenom !== d.nom && !l.some((x) => x.nom === prenom)) l.push({ nom: prenom, teinte });
+    }
+    return l;
+  }, [etat, campagne]);
 
   const anime = reglages.animations === 'normales';
   const sauvegardes = useMemo(() => (pret ? listerSauvegardes(stockage) : []), [pret, stockage, rev, etat]);
@@ -427,6 +447,7 @@ export default function Game() {
     const surLaPage = !!page && !campagne.morts.includes('a_choisir') && (page.etape === 'reactions' || !!campagne.resultat?.libelles[0] || !!campagne.resultat?.decision);
     if (page && surLaPage)
       return (
+        <NomsColores.Provider value={nomsColores}>
         <div className="coque jeu">
           <main className="contenu">
             <PageCommune
@@ -444,6 +465,7 @@ export default function Game() {
             </div>
           )}
         </div>
+        </NomsColores.Provider>
       );
     if (actif === null && siege !== undefined && !campagne.fin && joueurActif(campagne) !== null)
       return (
@@ -500,6 +522,7 @@ export default function Game() {
     const prive = !campagne.combat && !campagne.commune && !resultatCommun && (campagne.resultatPrive[actif] || priveeDue(campagne, actif));
     if (resultatCommun || (campagne.commune && !campagne.combat) || prive)
       return (
+        <NomsColores.Provider value={nomsColores}>
         <div className="coque jeu">
           <main className="contenu">
             {resultatCommun ? (
@@ -513,6 +536,7 @@ export default function Game() {
             )}
           </main>
         </div>
+        </NomsColores.Provider>
       );
   }
 
@@ -542,6 +566,7 @@ export default function Game() {
   const fatigue = gravite(j.fatigue);
 
   return (
+    <NomsColores.Provider value={nomsColores}>
     <div className="coque jeu">
       <header className="entete">
         <div className="entete-lieu">
@@ -723,6 +748,7 @@ export default function Game() {
         </div>
       )}
     </div>
+    </NomsColores.Provider>
   );
 }
 

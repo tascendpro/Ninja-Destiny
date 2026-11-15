@@ -157,21 +157,24 @@ function texteDelai(j: number | undefined): string {
   return ` Au tableau encore ${Math.round(j / 30)} mois environ.`;
 }
 
-let REFERENCES: { texte: string; roles: Set<string> } | undefined;
-/** Ce que le contenu cite : les rôles (« @rival ») et les identifiants de personnages. Calculé une seule fois. */
-function references() {
+let REFERENCES: Set<string> | undefined;
+/**
+ * Ceux dont la relation compte pour l'aventure : une scène ou un choix en fait une condition (« si ta confiance envers
+ * lui dépasse… »). Être cité dans un texte ne suffit pas : il faut que le lien puisse changer la suite.
+ */
+function references(): Set<string> {
   if (!REFERENCES) {
     const texte = JSON.stringify(R.contenu.evenements);
-    REFERENCES = { texte, roles: new Set([...texte.matchAll(/@([a-zA-Z_]+)/g)].map((m) => m[1])) };
+    REFERENCES = new Set([...texte.matchAll(/"relation":"(@?[a-zA-Z_]+)","axe"/g)].map((m) => m[1]));
   }
   return REFERENCES;
 }
 
-/** Un personnage vaut qu'on passe du temps avec lui si au moins une scène peut le faire revenir (par son nom ou son rôle). */
+/** Un personnage vaut qu'on passe du temps avec lui si une scène peut tenir compte de ce lien (par son nom ou son rôle). */
 export function lienUtile(s: GameState, id: string): boolean {
   const r = references();
-  if (r.texte.includes(`"${id}"`) || r.texte.includes(`{${id}}`)) return true;
-  return Object.entries(s.roles).some(([role, pnj]) => pnj === id && r.roles.has(role));
+  if (r.has(id)) return true;
+  return Object.entries(s.roles).some(([role, pnj]) => pnj === id && r.has(`@${role}`));
 }
 
 export { APPRIS_EN_GRANDISSANT } from './progression';

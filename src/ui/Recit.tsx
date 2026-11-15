@@ -400,8 +400,7 @@ const CATEGORIES: { id: CategorieTL; nom: string; kanji: string; resume: string;
   { id: 'route', nom: 'Route', kanji: '道', resume: 'Vivre hors du village', filtre: (a) => a.categorie === 'route' },
   { id: 'entrainement', nom: 'S’entraîner', kanji: '練', resume: 'Disciplines, natures, armes', filtre: (a) => a.categorie === 'entrainement' },
   { id: 'techniques', nom: 'Techniques', kanji: '術', resume: 'Apprendre, perfectionner', filtre: (a) => a.categorie === 'technique' },
-  { id: 'liens', nom: 'Liens', kanji: '絆', resume: 'Passer du temps avec tes proches', filtre: (a) => a.categorie === 'social' || a.categorie === 'famille' },
-  { id: 'gens', nom: 'Les gens', kanji: '人', resume: 'Ce qu’ils pensent de toi', filtre: () => false },
+  { id: 'liens', nom: 'Liens', kanji: '絆', resume: 'Tes proches, et ce qu’ils pensent de toi', filtre: (a) => a.categorie === 'social' || a.categorie === 'famille' },
   { id: 'vie', nom: 'Se reposer', kanji: '生', resume: 'Repos, étude, travail', filtre: (a) => ['repos', 'etude', 'travail', 'metier'].includes(a.categorie) },
 ];
 const KANJI_CATEGORIE = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.kanji])) as Record<CategorieTL, string>;
@@ -504,10 +503,10 @@ function TempsLibre({
   const parCategorie = useMemo(() => Object.fromEntries(CATEGORIES.map((c) => [c.id, acts.filter(c.filtre)])) as Record<CategorieTL, Activite[]>, [acts]);
   // « Les gens » n'a pas d'activité : la case s'ouvre dès qu'on connaît quelqu'un.
   const connus = Object.keys(etat.relations).some((id) => etat.pnj[id]?.rencontre || etat.relations[id].souvenirs.length > 0);
-  const visibles = CATEGORIES.filter((c) => parCategorie[c.id].length > 0 || (c.id === 'gens' && connus));
+  const visibles = CATEGORIES.filter((c) => parCategorie[c.id].length > 0 || (c.id === 'liens' && connus));
   const defaut = visibles.find((c) => parCategorie[c.id].some((a) => a.disponible))?.id ?? visibles[0]?.id ?? 'vie';
   const [choisie, setChoisie] = useState<CategorieTL | null>(null);
-  const cat = choisie && (parCategorie[choisie]?.length || (choisie === 'gens' && connus)) ? choisie : defaut;
+  const cat = choisie && (parCategorie[choisie]?.length || (choisie === 'liens' && connus)) ? choisie : defaut;
 
   // Programme d'entraînement : une technique et une discipline, à combiner sur la même période.
   const [programme, setProgramme] = useState<{ sort?: string; discipline?: string }>({});
@@ -537,6 +536,21 @@ function TempsLibre({
   if (etat.jauges.fatigue >= 60) alertes.push('La fatigue s’accumule : t’entraîner encore expose à la blessure.');
   if (etat.blessures.some((b) => b.gravite >= 3)) alertes.push('Blessure grave : repos obligatoire, aucune mission.');
   else if (etat.blessures.length) alertes.push(`Blessure en cours : ${etat.blessures.map((b) => b.nom.toLowerCase()).join(', ')}.`);
+
+  // Le conseil du moment : se reposer si le corps le demande ; sinon une mission qui presse ; sinon l'entraînement
+  // le plus proche de son palier suivant (là où une période de travail se voit le plus).
+  const conseil = (() => {
+    const dispo = acts.filter((a) => a.disponible && !a.alerte && a.duree > 0);
+    if (etat.jauges.fatigue >= 60 || etat.jauges.sante < 50) {
+      const r = dispo.find((a) => a.categorie === 'repos');
+      if (r) return { a: r, kanji: '休', raison: etat.jauges.sante < 50 ? 'Ton corps est blessé : soigne-le avant tout.' : 'La fatigue s’accumule : t’entraîner maintenant, c’est risquer la blessure.' };
+    }
+    const mission = dispo.find((a) => a.categorie === 'mission');
+    if (mission) return { a: mission, kanji: '任', raison: 'Une mission t’attend : ryō, réputation, et de l’expérience au combat.' };
+    const proche = dispo.filter((a) => a.progression?.prochain).sort((x, y) => (y.progression?.pct ?? 0) - (x.progression?.pct ?? 0))[0];
+    if (proche?.progression) return { a: proche, kanji: '練', raison: `Tu es à ${Math.round(proche.progression.pct * 100)} % du palier ${proche.progression.prochain} : une période suffit peut-être.` };
+    return undefined;
+  })();
 
   const liste = parCategorie[cat] ?? [];
   // Achats et réparations sont dans l'onglet Magasin ; l'arme principale se choisit dans Ninja › Arsenal.
@@ -578,6 +592,21 @@ function TempsLibre({
             )}
           </aside>
           <div className="tl-principal">
+            {conseil && (
+              <button className="tl-conseil" onClick={() => onActivite(conseil.a.id)}>
+                <span className="tl-conseil-kanji" aria-hidden="true">
+                  {conseil.kanji}
+                </span>
+                <span className="tl-conseil-corps">
+                  <small>Conseillé pour toi</small>
+                  <strong>{accorder(conseil.a.libelle, p)}</strong>
+                  <span>{conseil.raison}</span>
+                </span>
+                <span className="tl-conseil-fleche" aria-hidden="true">
+                  →
+                </span>
+              </button>
+            )}
             <div className="tl-categories" role="tablist" aria-label="Catégories d’activités">
               {visibles.map((c) => (
                 <button key={c.id} role="tab" aria-selected={cat === c.id} onClick={() => setChoisie(c.id)}>
@@ -586,19 +615,20 @@ function TempsLibre({
                   </span>
                   <span className="tl-nom">{c.nom}</span>
                   <span className="tl-resume">{c.resume}</span>
-                  {c.id !== 'gens' && <span className="compte">{parCategorie[c.id].filter((a) => a.disponible).length}</span>}
+                  {parCategorie[c.id].some((a) => a.disponible) && <span className="compte">{parCategorie[c.id].filter((a) => a.disponible).length}</span>}
                 </button>
               ))}
             </div>
             {double && (cat === 'techniques' || cat === 'entrainement') && !valides.sort && !valides.discipline && (
               <p className="programme-aide">Coche une discipline et une technique : les deux progressent pendant la même période.</p>
             )}
-            {cat === 'gens' ? (
-              <div className="sous-groupe tl-gens">
-                <p className="tl-aide">Ce que chacun pense de toi, et ce dont il se souvient. Pour passer du temps avec eux, ouvre « Liens ».</p>
+            {cat === 'liens' && connus && (
+              <details className="sous-groupe tl-gens">
+                <summary>Ce qu’ils pensent de toi</summary>
                 <Relations etat={etat} />
-              </div>
-            ) : cat === 'entrainement' ? (
+              </details>
+            )}
+            {cat === 'entrainement' ? (
               SOUS_GROUPES_ENTRAINEMENT.map((g) => {
                 const l = principales.filter(g.filtre);
                 if (!l.length) return null;
@@ -632,7 +662,7 @@ function TempsLibre({
                 ))}
               </ul>
             )}
-            {principales.length === 0 && cat !== 'gens' && <p className="tl-vide">Rien à faire ici pour l’instant.</p>}
+            {principales.length === 0 && cat !== 'liens' && <p className="tl-vide">Rien à faire ici pour l’instant.</p>}
             {double && (valides.sort || valides.discipline) && (
               <div className="programme actif" role="region" aria-label="Programme d’entraînement">
                 <span className="programme-choix">
