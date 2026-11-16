@@ -190,3 +190,46 @@ export const OBJETS: Record<string, { nom: string; kanji: string; texte: string 
   message_grue: { nom: 'Le message à la grue', kanji: '鶴', texte: 'Le sceau de cire est rompu. Ce qu’il disait n’appartient qu’à {parent}.' },
   kunai_grue: { nom: 'Le kunai à la grue', kanji: '鶴', texte: 'Il revient toujours à son nid, disait celui qui te l’a donné.' },
 };
+
+/**
+ * Un fait de la mémoire d'une relation, dit en quelques mots (fiche des relations : « Ce qui compte entre vous »).
+ * `f` : le genre du personnage (pour « tu l'as sauvé·e ») ; les formes en « ·e » restantes désignent le joueur.
+ */
+export function libelleFait(fait: import('../engine/types').FaitRelation, femininPnj: boolean): string {
+  const e = femininPnj ? 'e' : '';
+  const il = femininPnj ? 'elle' : 'il';
+  const toi = fait.tags?.includes('toi');
+  const lui = fait.tags?.includes('lui');
+  switch (fait.type) {
+    case 'premiere_rencontre':
+      return 'Votre première rencontre';
+    case 'entrainement':
+      if (fait.tags?.includes('kawarimi')) return fait.tags.includes('victoire') ? 'Les trois minutes, où tu l’as mis' + e + ' à terre' : 'Les trois minutes, et le kawarimi';
+      if (fait.tags?.includes('tombe')) return 'Le matin où tu es tombé·e avant la fin';
+      return 'Un entraînement ensemble, à l’aube';
+    case 'victoire':
+      return fait.premier ? `Ta première victoire contre ${femininPnj ? 'elle' : 'lui'}` : 'Un duel gagné';
+    case 'defaite':
+      return `${fait.premier ? 'Ta première défaite' : 'Un duel perdu'}${fait.tags?.includes('temoins') ? ', devant tout le monde' : ''}`;
+    case 'humiliation':
+      return toi ? `Le jour où tu l’as humilié${e}` : `Le jour où ${il} t’a humilié·e`;
+    case 'dispute':
+      return fait.premier ? 'Votre première dispute' : 'Une dispute';
+    case 'secret':
+      return lui && toi ? 'Un secret échangé' : lui ? `Un secret qu’${il} t’a confié` : 'Un secret que tu lui as confié';
+    case 'promesse':
+      return 'Une promesse faite';
+    case 'promesse_tenue':
+      return 'Une promesse tenue';
+    case 'promesse_rompue':
+      return 'Une promesse rompue';
+    case 'trahison':
+      return toi ? `Le jour où tu l’as abandonné${e}` : `Le jour où ${il} t’a trahi·e`;
+    case 'sauvetage':
+      return toi ? `Le jour où tu l’as sauvé${e}` : `Le jour où ${il} t’a sauvé·e`;
+    case 'sacrifice':
+      return `Ce qu’${il} a donné pour toi`;
+    case 'moment':
+      return 'Un moment à vous';
+  }
+}

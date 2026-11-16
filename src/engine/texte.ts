@@ -3,6 +3,7 @@ import { R } from './registre';
 import { evaluer } from './conditions';
 import { defPnj, resoudrePnj } from './etat';
 import { JETONS_PROCHES, jetonProche } from './proches';
+import { jetonQuand } from './memoire';
 
 export const JETONS_CONNUS = [
   'prenom',
@@ -90,6 +91,8 @@ export function valeurJeton(s: GameState, jeton: string): string | undefined {
   if (jeton.startsWith('@')) return defPnj(s, resoudrePnj(s, jeton))?.nom;
   // La mémoire des proches : le compte avec le rival, ton habitude, la revue du mentor, le dernier souvenir partagé.
   if (JETONS_PROCHES.includes(jeton) || jeton.startsWith('souvenir:')) return jetonProche(s, jeton);
+  // Quand c'était : {quand:@aine:entrainement} → « l'an dernier », « quand tu avais neuf ans ».
+  if (jeton.startsWith('quand:')) return jetonQuand(s, jeton);
   const m = /^(il|Il|e|le|lui|clan):(@?[\w-]+)$/.exec(jeton);
   if (m) {
     const d = defPnj(s, resoudrePnj(s, m[2]));

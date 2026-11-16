@@ -52,6 +52,9 @@ export const PROCHES: EventDef[] = [
       { si: aine('protecteur'), texte: '« Tu passes ta vie à {habitude}. » Ce n’est pas un reproche, pas tout à fait. {Aine_il} regarde tes mains, les écorchures, le bandage que tu as refait toi-même, mal. « Montre. »' },
       { si: aine('severe'), texte: '« Tu passes ta vie à {habitude}. » {Aine_il} croise les bras. « Et le reste ? Tu crois qu’il va se faire tout seul ? Je t’ai vu·e hier. Tu bâcles tout ce qui ne t’amuse pas. »' },
       { si: aine('jaloux'), texte: '« Toujours à {habitude}, hein. » Le ton est léger. Les yeux, moins. Depuis quelque temps, on demande de tes nouvelles avant de demander des siennes, et {aine_il} ne sait pas encore quoi faire de ça.' },
+      // Ce dont {il} se souvient : vos matins d'entraînement (memoire.ts).
+      { si: { faitAvec: '@aine', type: 'entrainement', tag: 'kawarimi' }, texte: '« Et ta permutation ? Montre. » Depuis le matin des trois minutes, {aine_il} te le demande chaque fois, comme on vérifie qu’un cadeau sert encore. Votre dernier entraînement ensemble, c’était {quand:@aine:entrainement}.' },
+      { si: { tout: [{ faitAvec: '@aine', type: 'entrainement', tag: 'tombe' }, { non: { faitAvec: '@aine', type: 'entrainement', tag: 'kawarimi' } }] }, texte: '{Aine_il} n’a jamais reparlé du matin où tu es tombé·e avant la fin des trois minutes. Toi non plus. Ça flotte quand même dans la pièce.' },
       { si: aine('distant'), texte: '{Aine_il} reste sur le seuil. « Tu passes ta vie à {habitude}. On me l’a dit. » On le lui a dit : vous ne vous parlez plus assez pour qu’{aine_il} le sache {lui:@aine}-même.' },
     ],
     choix: [
@@ -109,6 +112,7 @@ export const PROCHES: EventDef[] = [
       { si: { rangMin: 'chunin' }, texte: 'Ton gilet est plié sur la chaise d’à côté. {Parent} le regarde plus souvent que toi.' },
       { si: { pnj: '@aine', etat: 'mort' }, texte: 'Il y a toujours un bol de trop sur cette table. Vous ne l’avez jamais retiré.' },
       { si: { drapeau: 'examen_rate', min: 1 }, texte: 'Personne ne parle de l’examen raté. Ça fait partie du repas, comme le sel.' },
+      { si: { faitAvec: '@parent', type: 'dispute', tag: 'lettre' }, texte: 'Depuis la lettre du tiroir, {quand:@parent:dispute}, il y a des questions que tu ne poses plus à table. {Parent} non plus.' },
       { si: { drapeau: 'lettre_su' }, texte: 'Le nom d’Akihiko ne sera pas prononcé ce soir. Mais {parent} sait que tu sais, et ça s’entend dans les silences.' },
       // Ce qu'il est pour toi, maintenant.
       { si: parent('fier'), texte: '{Parent} ne dit pas qu’{parent_il} est fier{parent_e}. {Parent_il} te ressert sans que tu demandes, deux fois, et le lendemain, les voisins te félicitent pour des choses que tu ne lui as jamais racontées.' },
@@ -174,6 +178,9 @@ export const PROCHES: EventDef[] = [
       { si: { drapeau: 'c2_dette_rival' }, texte: '« Et la fiole, dans la forêt. Tu me la dois toujours. »' },
       { si: { drapeau: 'c2_tournoi_gagne' }, texte: '« Le tournoi, c’était de la chance. Je le dirai jusqu’à ma mort. »' },
       { si: { drapeau: 'dg_rival', egal: 'aveu_partage' }, texte: 'Depuis l’infirmerie, il y a dans sa voix quelque chose que personne d’autre n’entend.' },
+      // Ce que vos combats ont laissé (memoire.ts) : une défaite devant tout le monde ne s'oublie pas.
+      { si: { faitAvec: '@rival', type: 'defaite', tag: 'temoins' }, texte: '« Devant tout le monde, {quand:@rival:defaite}. Tu t’en souviens ? Moi, oui. Je m’en souviens pour nous deux. »' },
+      { si: { faitAvec: '@rival', type: 'humiliation', tag: 'toi' }, texte: '« Les vrais ninjas ne pleurent pas. C’est toi qui m’as dit ça, derrière l’Académie. » Ce n’est pas une question. Ça ne l’a jamais été.' },
       // Ce qu'il, elle est pour toi.
       { si: rival('ennemi'), texte: 'Ce n’est plus un jeu, depuis longtemps. {@rival} ne cherche pas à te battre : {il:@rival} cherche à ce que tu perdes.' },
       { si: rival('rival'), texte: '« Demain. Le terrain du fond. » Ce n’est pas une question.' },
@@ -234,6 +241,11 @@ export const PROCHES: EventDef[] = [
       { si: P3, texte: 'Le muret a perdu deux pierres. {@coequipierA} a gardé la place de gauche. Toi, celle de droite. Personne n’a jamais décidé ça.' },
       { si: { tout: [{ souvenirAvec: '@coequipierA' }, { non: ami('decu') }] }, texte: '« Tu te souviens ? » Tu te souviens. {souvenir:@coequipierA}' },
       { si: { tout: [{ souvenirAvec: '@coequipierA' }, ami('decu')] }, texte: '{@coequipierA} ne dit pas « tu te souviens ». Mais tu y penses quand même : {souvenir:@coequipierA} Ça paraît loin.' },
+      // Ce que vous avez traversé (memoire.ts).
+      { si: { faitAvec: '@coequipierA', type: 'sauvetage', tag: 'lui' }, texte: '« Tu me dois toujours une vie, tu sais. » {Il:@coequipierA} dit ça en riant. Ce n’est qu’à moitié une blague, et vous le savez tous les deux.' },
+      { si: { tout: [{ faitAvec: '@coequipierA', type: 'sauvetage', tag: 'toi' }, { non: { faitAvec: '@coequipierA', type: 'sauvetage', tag: 'lui' } }] }, texte: '{Il:@coequipierA} ne parle jamais de ce jour-là, {quand:@coequipierA:sauvetage}, où tu ne l’as pas laissé{e:@coequipierA} derrière toi. Mais {il:@coequipierA} s’assoit toujours du côté où tu pourrais tomber.' },
+      { si: { faitAvec: '@coequipierA', type: 'trahison', tag: 'toi' }, texte: 'Entre vous, il y a ce jour-là, {quand:@coequipierA:trahison}, où tu ne t’es pas retourné·e. Personne ne l’a oublié.' },
+      { si: { tout: [{ faitAvec: '@coequipierA', type: 'dispute' }, { non: ami('decu') }] }, texte: 'Vous n’avez jamais reparlé de votre dispute. C’était {quand:@coequipierA:dispute}, et elle s’assoit encore entre vous, parfois.' },
       { si: ami('proche'), texte: '{@coequipierA} te tend la moitié d’un gâteau de riz sans te regarder, comme on passe le sel. Vous ne vous dites pas grand-chose. Vous n’en avez pas besoin.' },
       { si: ami('ami'), texte: '« Raconte. Et n’enjolive pas, je te connais. »' },
       { si: ami('decu'), texte: '{@coequipierA} ne te fait pas de place. Tu t’assois quand même. Le silence est de ceux qui ont une raison.' },

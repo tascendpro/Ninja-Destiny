@@ -182,6 +182,8 @@ export interface ConclusionDef {
   effets?: Effect[];
   /** La scène qui suit cette fin (le sort d'un adversaire vaincu, par exemple). */
   suite?: string;
+  /** L'issue que cette fin vaut pour la scène, quand elle diffère de la règle (tenir jusqu'au bout est une réussite). */
+  issue?: import('../types').Issue;
 }
 
 /** Un combat branché sur l'Affrontement Racine : la scène et le choix qui l'ouvrent, l'adversaire, le contexte. */

@@ -6,6 +6,7 @@ import { R } from './registre';
 import { checkCareerEligibility } from './metiers';
 import { duoPossible } from './duo';
 import { habitude, positionRival, posture } from './proches';
+import { faits } from './memoire';
 
 function inclut<T>(valeur: T, attendu: T | T[]): boolean {
   return Array.isArray(attendu) ? attendu.includes(valeur) : valeur === attendu;
@@ -107,6 +108,7 @@ export function evaluer(c: Condition | undefined, s: GameState): boolean {
   if ('posture' in c) return (Array.isArray(c.est) ? c.est : [c.est]).includes(posture(s, c.posture));
   if ('rivalBilan' in c) return (Array.isArray(c.rivalBilan) ? c.rivalBilan : [c.rivalBilan]).includes(positionRival(s));
   if ('habitudeConnue' in c) return !!habitude(s) === c.habitudeConnue;
+  if ('faitAvec' in c) return faits(s, c.faitAvec, { type: c.type, tag: c.tag, premier: c.premier }).length > 0;
   if ('connu' in c) {
     const id = resoudrePnj(s, c.connu);
     return !!id && !!s.pnj[id]?.rencontre;

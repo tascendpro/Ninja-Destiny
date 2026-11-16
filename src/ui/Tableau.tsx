@@ -12,7 +12,8 @@ import { getWeaponModifiers, idFamille, rangArme } from '../engine/armes';
 import { checkCareerEligibility, nomPalierMetier } from '../engine/metiers';
 import { noteFinale } from '../engine/fins';
 import { naturesMax } from '../engine/tempsLibre';
-import { ATTRIBUT_LIBELLE, AXE_LIBELLE, ETAT_PNJ, OBJETS, RANG_LIBELLE, SOCIAL_LIBELLE, STATUT_ARME, STATUT_LIBELLE } from './libelles';
+import { ATTRIBUT_LIBELLE, AXE_LIBELLE, ETAT_PNJ, OBJETS, RANG_LIBELLE, SOCIAL_LIBELLE, STATUT_ARME, STATUT_LIBELLE, libelleFait } from './libelles';
+import { quand } from '../engine/memoire';
 import { resoudreTexte } from '../engine/texte';
 import Repartition from './Repartition';
 import Repli from './Repli';
@@ -876,6 +877,23 @@ export function Relations({ etat }: { etat: GameState }) {
                   <Piste valeur={r[ax]} classe={ax === 'hostilite' || ax === 'rivalite' || ax === 'peur' ? 'c-danger' : 'c-neutre'} />
                 </div>
               ))}
+              {(() => {
+                // La mémoire de la relation : les moments qui comptent, du plus récent au plus ancien (cinq au plus).
+                const comptent = [...(r.faits ?? [])].filter((f) => f.importance >= 2 || f.type === 'premiere_rencontre').sort((a, b) => b.jour - a.jour).slice(0, 5);
+                return comptent.length ? (
+                  <div className="faits-relation">
+                    <h4>Ce qui compte entre vous</h4>
+                    <ul>
+                      {comptent.map((f, i) => (
+                        <li key={i} className={`fait-${f.type}`}>
+                          <span>{accorder(libelleFait(f, d.genre === 'f'), etat.creation.presentation)}</span>
+                          <small>{quand(etat, f)}</small>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null;
+              })()}
               {r.souvenirs.length > 0 && (
                 <ul className="souvenirs">
                   {r.souvenirs.slice(-3).reverse().map((sv, i) => (

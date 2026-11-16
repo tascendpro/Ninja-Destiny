@@ -13,6 +13,14 @@ Ce dépôt contient **le moteur complet** et **une vie entière en six chapitres
 
 La voie de la route traverse aussi les cinq chapitres (mercenaires, guerre sans drapeau, compagnie ou village à soi, maître errant).
 
+## Version 2.54 : la mémoire des relations, et les trois minutes de l'aîné·e
+
+- **Mémoire structurée** (`src/engine/memoire.ts`) : chaque relation garde, à côté de ses axes et de ses souvenirs écrits, des **faits datés** (`faits`) : première rencontre, entraînement, victoire, défaite, humiliation, dispute, secret, promesse (faite, tenue, rompue), trahison, sauvetage, sacrifice. Chaque fait porte l'âge, l'importance, « premier du genre » et des étiquettes (« toi », « lui », « kawarimi », « temoins »). On ne retient pas tout : quarante faits au plus, jamais un « premier » oublié.
+- **Ce qui s'enregistre tout seul** : la première rencontre, les duels contre un personnage du jeu (victoire ou défaite, devant témoins ou non), les promesses. **Ce que déclarent les scènes** : `src/content/memoires.ts`, une table lisible (secret de l'infirmerie, contrepoison du rival, ravin, crevasse, dispute de la lettre…).
+- **Les souvenirs changent les dialogues** : condition `{ faitAvec: '@x', type, tag?, premier? }`, jeton `{quand:@x:type}` (« l'an dernier », « il y a trois ans », « quand tu avais neuf ans »). L'aîné·e réclame ta permutation, le rival te rappelle la défaite devant tout le monde, l'ami·e te dit que tu lui dois toujours une vie. La fiche des relations montre « Ce qui compte entre vous ».
+- **Trois minutes face à l'aîné·e** (`ap_aine_deuxieme`) : une conclusion par fin de combat. **Tenir** jusqu'au bout est une réussite (même plus amoché·e) et ouvre le kawarimi, enseigné comme un aîné l'enseigne ; **gagner** (le mettre à terre) n'est pas présenté comme une victoire, mais comme une leçon de plus ; **tomber** avant la fin reste un échec, sans perdre la tendresse. La voix suit sa posture (complice, sévère, jaloux·se, distant·e). Une conclusion peut désormais déclarer son issue (`issue`).
+- Contenu 2.54.0.
+
 ## Version 2.53 : les proches ont une posture et une mémoire
 
 - **Postures** (`src/engine/proches.ts`) : chaque proche est lu dans ses axes de relation. L'aîné·e est complice, protecteur·rice, sévère, jaloux·se ou distant·e ; le parent fier, inquiet, protecteur ou distant ; le rival rival, respectueux·se, complice ou ennemi·e ; l'ami·e proche, ami·e, déçu·e (promesse rompue) ou distant·e ; le mentor exigeant, confiant ou déçu. Condition `{ posture: 'rival', est: 'complice' }`.

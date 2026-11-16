@@ -5,6 +5,7 @@ import type { Condition, Effect, EventDef, Outcome, Texte, VillageId } from './t
 import { R } from './registre';
 import { JETONS_CONNUS, jetonsDe } from './texte';
 import { maxTierForAge } from './maitrise';
+import { TYPES_FAITS } from './memoire';
 
 export interface Probleme {
   niveau: 'erreur' | 'avertissement';
@@ -88,6 +89,7 @@ export function diagnostiquer(): Probleme[] {
       if ('relation' in x) verifierPnj(x.relation, ou);
       if ('relationRompue' in x) verifierPnj(x.relationRompue, ou);
       if ('connu' in x) verifierPnj(x.connu, ou);
+      if ('faitAvec' in x) verifierPnj(x.faitAvec, ou);
       if ('souvenirAvec' in x) verifierPnj(x.souvenirAvec, ou);
       if ('pnj' in x) verifierPnj(x.pnj, ou);
       if ('clanPnj' in x) verifierPnj(x.clanPnj, ou);
@@ -138,6 +140,7 @@ export function diagnostiquer(): Probleme[] {
       if ('succes' in e && !R.succes[e.succes]) err('succes_inconnu', `${ou} : trophée inconnu ${e.succes}.`);
       if ('relation' in e) verifierPnj(e.relation, ou);
       if ('rompre' in e) verifierPnj(e.rompre, ou);
+      if ('memoire' in e) verifierPnj(e.memoire, ou);
       if ('reconcilier' in e) verifierPnj(e.reconcilier, ou);
       if ('pnjEtat' in e) verifierPnj(e.pnjEtat, ou);
       if ('promesse' in e) verifierPnj(e.pnj, ou);
@@ -169,6 +172,12 @@ export function diagnostiquer(): Probleme[] {
     }
     for (const j of jetonsDe(t)) {
       if (JETONS_CONNUS.includes(j)) continue;
+      const q = /^quand:(@?[\w-]+):(\w+)$/.exec(j);
+      if (q) {
+        verifierPnj(q[1], ou);
+        if (!TYPES_FAITS.includes(q[2] as never)) err('jeton_inconnu', `${ou} : type de fait inconnu dans {${j}}.`);
+        continue;
+      }
       const m = /^(?:(il|Il|e|le|lui|clan|souvenir):)?(@?[\w-]+)$/.exec(j);
       if (m && m[2].startsWith('@')) {
         verifierPnj(m[2], ou);

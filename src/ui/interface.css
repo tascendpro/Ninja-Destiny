@@ -1062,3 +1062,53 @@ body {
     transition: none;
   }
 }
+
+/* ── Relations : ce qui compte entre vous (mémoire des faits) ── */
+
+.faits-relation {
+  margin: 12px 0 6px;
+}
+.faits-relation h4 {
+  margin: 0 0 6px;
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.faits-relation ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.faits-relation li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 10px;
+  border-left: 3px solid var(--nd-border);
+  border-radius: 0 var(--nd-radius-sm) var(--nd-radius-sm) 0;
+  background: var(--nd-bg-soft);
+  font-size: var(--t-s);
+  color: var(--nd-text-soft);
+}
+.faits-relation li small {
+  flex: none;
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+}
+.faits-relation .fait-sauvetage,
+.faits-relation .fait-promesse_tenue,
+.faits-relation .fait-secret {
+  border-left-color: var(--nd-green);
+}
+.faits-relation .fait-trahison,
+.faits-relation .fait-promesse_rompue,
+.faits-relation .fait-humiliation {
+  border-left-color: var(--nd-red);
+}
+.faits-relation .fait-entrainement,
+.faits-relation .fait-victoire {
+  border-left-color: var(--nd-gold);
+}

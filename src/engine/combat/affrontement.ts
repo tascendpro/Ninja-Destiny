@@ -577,9 +577,9 @@ function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: Fin
   const regle = CONTEXTES[sc.contexte];
   const genre = genreAdv(s, d);
   const rapide = fin === 'victoire' && sc.manche <= Math.ceil(sc.plafond / 2) && sc.joueur.endurance / sc.joueur.enduranceMax > 0.6;
-  const issue = issuePour(fin, ch, rapide);
-  const outcome = outcomePour(issue, ch);
   const conclusion = af.conclusions?.[fin];
+  const issue = conclusion?.issue ?? issuePour(fin, ch, rapide);
+  const outcome = outcomePour(issue, ch);
   // La mort n'est jamais la conclusion par défaut : seulement en contexte mortel, après un avertissement donné plus tôt.
   // Perdre aux points contre quelqu'un qui veut ta mort peut tuer aussi, un peu moins souvent qu'une défaite à terre.
   const peutMourir = regle.letal && (fin === 'defaite' || fin === 'departage_perdu') && sc.avertissementManche !== undefined && sc.avertissementManche < sc.manche;
@@ -632,6 +632,10 @@ function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: Fin
     : undefined;
   const effets = [...(conclusion?.effets ?? outcome.effets)];
   if (pnjId && effetsRel) effets.push({ relation: pnjId, delta: Object.fromEntries(Object.entries(effetsRel).filter(([, v]) => v)) });
+  if (pnjId && (gagneJoueur || perdJoueur)) {
+    const tags = [sc.contexte, ...(af.temoins?.length ? ['temoins'] : [])];
+    effets.push({ memoire: pnjId, type: gagneJoueur ? 'victoire' : 'defaite', importance: regle.letal ? 3 : 2, tags });
+  }
   if (sc.provoque && pnjId) effets.push({ relation: pnjId, delta: { hostilite: 2 } });
   if (fin === 'fuite' && regle.coutFuite) effets.push({ stat: 'social.reputation', delta: -regle.coutFuite });
   if (!mort) appliquerEffets(s, effets, ctx);

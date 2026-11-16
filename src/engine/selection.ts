@@ -1,5 +1,6 @@
 // Sélection des événements : planifiés → trame → aléatoire contrôlé. L'aléatoire ne remplace jamais la cohérence.
 
+import { rencontrer } from './memoire';
 import type { EventDef, GameState } from './types';
 import { R } from './registre';
 import { evaluer } from './conditions';
@@ -120,7 +121,7 @@ export function entrerEvenement(s: GameState, id: string): void {
   for (const ref of ev.personnages ?? []) {
     const pid = resoudrePnj(s, ref);
     if (pid && s.pnj[pid]) {
-      s.pnj[pid].rencontre = true;
+      rencontrer(s, pid);
       decouvrir(s, `pnj:${pid}`);
     }
   }

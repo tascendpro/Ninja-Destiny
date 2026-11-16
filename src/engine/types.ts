@@ -141,6 +141,8 @@ export type Condition =
   | { souvenirAvec: string }
   /** Déjà rencontré : une scène de souvenirs ne doit pas tenir lieu de première rencontre. */
   | { connu: string }
+  /** Un moment partagé avec ce personnage (memoire.ts) : un sauvetage, une dispute, la première victoire… */
+  | { faitAvec: string; type: TypeFait | TypeFait[]; tag?: string; premier?: boolean }
   | { aptitude: AttributId }
   | { objectif: string }
   | { presentation: Presentation }
@@ -180,6 +182,8 @@ export type Effect =
   | { souvenir: string; pnj: string }
   /** La revue du mentor : ce qui a progressé depuis la dernière, et un conseil jamais donné (lus par {revue_progres}, {revue_conseil}). */
   | { revueMentor: true }
+  /** Un moment qui compte, noté dans la mémoire de la relation (memoire.ts). */
+  | { memoire: string; type: TypeFait; importance?: 1 | 2 | 3; tags?: string[] }
   | { promesse: string; pnj: string; texte: string }
   | { promesseTenue: string }
   | { promesseRompue: string }
@@ -731,6 +735,40 @@ export interface RelationState {
   dette: number;
   rompue: boolean;
   souvenirs: string[];
+  /** Les moments qui comptent, en faits datés (voir memoire.ts). Absent des sauvegardes d'avant la 2.54. */
+  faits?: FaitRelation[];
+}
+
+/** Ce qui peut marquer une relation. */
+export type TypeFait =
+  | 'premiere_rencontre'
+  | 'entrainement'
+  | 'victoire'
+  | 'defaite'
+  | 'humiliation'
+  | 'dispute'
+  | 'secret'
+  | 'promesse'
+  | 'promesse_tenue'
+  | 'promesse_rompue'
+  | 'trahison'
+  | 'sauvetage'
+  | 'sacrifice'
+  | 'moment';
+
+/** Un moment qui compte : quoi, quand, à quel âge, à quel point. Pas une phrase : un fait que le récit interroge. */
+export interface FaitRelation {
+  type: TypeFait;
+  jour: number;
+  /** Ton âge ce jour-là (« quand tu avais neuf ans »). */
+  age: number;
+  importance: 1 | 2 | 3;
+  /** Le premier fait de ce type avec ce personnage (première victoire, première dispute…). */
+  premier?: boolean;
+  /** Qui a fait quoi (« toi », « lui ») et le détail (« kawarimi », « temoins »…). */
+  tags?: string[];
+  /** La scène où c'est arrivé. */
+  scene?: string;
 }
 
 // ── Missions et fins ─────────────────────────────────────────

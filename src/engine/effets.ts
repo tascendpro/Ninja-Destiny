@@ -24,6 +24,7 @@ import { avancerTemps } from './temps';
 import { declencherRage, estProche } from './pertes';
 import { apprendreDuo } from './duo';
 import { revueMentor } from './proches';
+import { noterFait, rencontrer } from './memoire';
 
 /** Drapeaux qui disent qu'un être cher vient de mourir sous les yeux du personnage. */
 const DEUILS_TEMOINS = new Set(['conjoint_mort', 'enfant_mort', 'ami_mort_quartier']);
@@ -121,7 +122,7 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
       r[axe] = Math.max(0, Math.min(100, avant + d));
       if (r[axe] !== avant) ctx.changements.push({ t: 'relation', pnj: id, axe, delta: r[axe] - avant });
     }
-    if (s.pnj[id]) s.pnj[id].rencontre = true;
+    rencontrer(s, id);
     decouvrir(s, `pnj:${id}`);
     return;
   }
@@ -150,6 +151,10 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
     }
     return;
   }
+  if ('memoire' in e) {
+    noterFait(s, e.memoire, e.type, { importance: e.importance, tags: e.tags });
+    return;
+  }
   if ('revueMentor' in e) {
     revueMentor(s);
     return;
@@ -165,6 +170,7 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
     // Le texte de la promesse peut citer des personnages ({aineNom}…) : on le fige au moment où elle est faite.
     const texte = interpoler(e.texte, s);
     s.promesses.push({ id: e.promesse, pnj: id, texte, jour: s.jour, etat: 'en_cours' });
+    noterFait(s, id, 'promesse', { importance: 2, tags: [e.promesse] });
     ctx.changements.push({ t: 'promesse', message: `Promesse : ${texte}` });
     ajouterJournal(s, `Promesse faite : ${texte}`, 2);
     return;
@@ -174,6 +180,7 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
     const p = s.promesses.find((x) => x.id === pid);
     if (!p || p.etat !== 'en_cours') return;
     p.etat = 'promesseTenue' in e ? 'tenue' : 'rompue';
+    noterFait(s, p.pnj, p.etat === 'tenue' ? 'promesse_tenue' : 'promesse_rompue', { importance: 3, tags: [p.id] });
     const r = relationDe(s, p.pnj);
     if (p.etat === 'tenue') {
       r.confiance = Math.min(100, r.confiance + 10);
@@ -380,7 +387,7 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
   if ('role' in e) {
     if (R.pnj[e.pnj] || s.pnjGeneres[e.pnj]) {
       s.roles[e.role] = e.pnj;
-      if (s.pnj[e.pnj]) s.pnj[e.pnj].rencontre = true;
+      rencontrer(s, e.pnj);
       decouvrir(s, `pnj:${e.pnj}`);
     }
     return;
