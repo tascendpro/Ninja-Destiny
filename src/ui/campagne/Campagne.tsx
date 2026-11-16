@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import type { ActionLien, Campagne, IdJoueur, SigneCombat, SuiteMort } from '../../engine/campagne/types';
-import { LIBELLES_LIEN, SIGNES, actionsLien, suitesMort, motsDuLien, souvenirsDe, vueCombatDuo, vueCommune, vuePrivee } from '../../engine/campagne/moteur';
+import { LIBELLES_LIEN, SCENES, SIGNES, actionsLien, enAttente, suitesMort, motsDuLien, souvenirsDe, vueCombatDuo, vueCommune, vuePrivee } from '../../engine/campagne/moteur';
 import { R } from '../../engine/registre';
 import { projeter, type CartePublique } from '../../engine/campagne/projection';
 import { lieuCourant } from '../../engine/moteur';
@@ -558,3 +558,55 @@ export function FinDuo({ c, onMenu }: { c: Campagne; onMenu: () => void }) {
     </section>
   );
 }
+
+/**
+ * Où en êtes-vous, tous les deux : vos âges, ce que chacun peut faire, le prochain moment à vivre ensemble.
+ * De l'autre, on ne voit que ce que tout le monde voit (sa carte publique) et s'il est libre ou occupé : jamais à quoi.
+ */
+export function EtatDuo({ c, j, enLigne = false }: { c: Campagne; j: IdJoueur; enLigne?: boolean }) {
+  const o = (1 - j) as IdJoueur;
+  const p = projeter(c, j);
+  const moi = c.joueurs[j];
+  const ageMoi = Math.floor((moi.jour - moi.naissance) / 360);
+  const occupeAutre = !!c.commune || !!c.combat || c.joueurs[o].scene.type !== 'temps_libre';
+  const attente = enAttente(c, j);
+  const b = c.barrieres[0];
+  const moisAvant = b && !b.introduction ? Math.max(0, Math.round((b.jour - moi.jour) / 30)) : undefined;
+  const ensemble = c.vues.filter((id) => !SCENES_PRIVEES.has(id)).length;
+  return (
+    <section className="etat-duo" aria-label="Où vous en êtes, tous les deux">
+      <div className={`etat-duo-carte joueur-${j}`}>
+        <span className="etat-duo-pastille" aria-hidden="true" />
+        <strong>{c.creations[j].prenom}</strong>
+        <small>
+          {ageMoi} ans · toi
+        </small>
+        <span className="etat-duo-statut">{attente ? 'en attente' : 'à toi de jouer'}</span>
+      </div>
+      <span className="etat-duo-lien" aria-hidden="true">
+        絆
+      </span>
+      <div className={`etat-duo-carte joueur-${o}`}>
+        <span className="etat-duo-pastille" aria-hidden="true" />
+        <strong>{p.autre.prenom}</strong>
+        <small>
+          {p.autre.age} ans{p.autre.etat !== 'en_forme' ? ` · ${p.autre.etat === 'grave' ? 'gravement blessé·e' : 'blessé·e'}` : ''}
+        </small>
+        <span className="etat-duo-statut">{p.autre.statut === 'mort' ? 'n’est plus' : occupeAutre ? 'occupé·e' : 'libre'}</span>
+      </div>
+      <p className="etat-duo-suite">
+        {attente ??
+          (moisAvant === undefined
+            ? 'Chacun vit sa vie ; les moments à deux viendront.'
+            : moisAvant <= 1
+              ? 'Un moment à vivre ensemble est tout proche.'
+              : `Prochain moment à deux : dans ${moisAvant} mois environ.`)}
+        {ensemble > 0 && <span> · {ensemble} {ensemble > 1 ? 'scènes vécues ensemble' : 'scène vécue ensemble'}</span>}
+        {enLigne && <span className="etat-duo-en-ligne"> · en ligne</span>}
+      </p>
+    </section>
+  );
+}
+
+/** Les scènes privées ne comptent pas parmi celles vécues ensemble. */
+const SCENES_PRIVEES = new Set(Object.values(SCENES).filter((s) => s.privee).map((s) => s.id));

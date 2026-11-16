@@ -1,5 +1,5 @@
 import { createContext, useContext, type CSSProperties, type ReactNode } from 'react';
-import { decouper } from './repliques';
+import { decouper, type Ligne } from './repliques';
 
 /**
  * Le code couleur des personnages : chacun a sa couleur, partout où son nom apparaît (récit, dialogues, scènes
@@ -60,14 +60,40 @@ export function avecParoles(p: string, noms: NomColore[] = []): ReactNode[] {
  * Un paragraphe du récit. S'il contient des paroles, chaque réplique part à la ligne derrière un tiret
  * (repliques.ts) ; sinon il reste un seul bloc de texte. Les noms des personnages prennent leur couleur.
  */
+/**
+ * Qui parle : un personnage connu nommé dans l'incise de la réplique (« …, dit Minoru »). Seulement s'il n'y a pas de
+ * doute : un seul nom dans l'incise, et pas une incise où c'est toi qui parles.
+ */
+function locuteur(l: Ligne, noms: NomColore[]): NomColore | undefined {
+  if (!l.replique || !noms.length) return undefined;
+  const incise = l.morceaux
+    .filter((m) => !m.parole)
+    .map((m) => m.texte)
+    .join(' ');
+  if (!incise.trim() || /(^|[\s,])(tu|toi|dis-tu|demandes-tu|réponds-tu)\b/i.test(incise)) return undefined;
+  const trouves = [...noms].filter((n) => n.nom.length >= 3 && n.joueur === undefined).sort((a, b) => b.nom.length - a.nom.length).filter((n) => incise.includes(n.nom));
+  // « Minoru Uchiha » et « Minoru » désignent la même personne : on garde le plus long, et on refuse deux personnes.
+  const distincts = trouves.filter((n) => !trouves.some((m) => m !== n && m.nom.includes(n.nom)));
+  return distincts.length === 1 ? distincts[0] : undefined;
+}
+
 export function ParagrapheRecit({ texte, classe }: { texte: string; classe?: string }) {
   const noms = useContext(NomsColores);
   const lignes = decouper(texte);
   if (!lignes.some((l) => l.replique)) return <p className={classe}>{avecParoles(texte, noms)}</p>;
   return (
     <div className="dialogue">
-      {lignes.map((l, i) => (
-        <p key={i} className={[classe, l.replique ? 'replique' : undefined].filter(Boolean).join(' ') || undefined}>
+      {lignes.map((l, i) => {
+        const qui = locuteur(l, noms);
+        const style = qui ? ((qui.couleur ? { '--np': qui.couleur } : { '--np-h': qui.teinte }) as unknown as CSSProperties) : undefined;
+        return (
+        <p key={i} className={[classe, l.replique ? 'replique' : undefined, qui ? `a-locuteur${qui.teinte !== undefined ? ' nom-teinte' : ''}` : undefined].filter(Boolean).join(' ') || undefined} style={style}>
+          {qui && (
+            <span className="locuteur" aria-hidden="true">
+              <i>{qui.nom.charAt(0)}</i>
+              {qui.nom}
+            </span>
+          )}
           {l.replique && (
             <span className="tiret" aria-hidden="true">
               —{' '}
@@ -83,7 +109,8 @@ export function ParagrapheRecit({ texte, classe }: { texte: string; classe?: str
             ),
           )}
         </p>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -10,9 +10,8 @@ import type { GameState } from '../../engine/types';
 import { accorder } from '../../engine/texte';
 import { vueAffrontement } from '../../engine/combat/affrontement';
 import type { ActionCombat, DepenseElan, Famille } from '../../engine/combat/types';
-import GroupesNature, { KANJI_GROUPE } from './GroupesNature';
+import { KANJI_GROUPE, groupeTechnique, libelleGroupe } from './GroupesNature';
 import { R } from '../../engine/registre';
-import Portrait from '../Portrait';
 import { avecParoles } from '../paroles';
 import { classeMulti, styleNatures } from '../natures';
 import { naturesMaitrise } from '../../engine/tempsLibre';
@@ -48,6 +47,25 @@ const MENUS: { id: string; nom: string; kanji: string; familles: Famille[]; aide
 ];
 const PAR_PAGE = 4;
 
+/**
+ * Sous « Jutsu », on choisit d'abord une nature (Katon, Raiton…), puis la technique : on pense « du feu », puis « laquelle ».
+ * Les pouvoirs (transformations, yeux du clan) forment leur propre groupe.
+ */
+const groupeJutsu = (f: Famille, id: string) => (f === 'pouvoir' ? 'pouvoir' : groupeTechnique(id));
+const ORDRE_GROUPES = Object.keys(KANJI_GROUPE);
+const rangGroupe = (g: string) => (g === 'pouvoir' ? 900 : ORDRE_GROUPES.includes(g) ? ORDRE_GROUPES.indexOf(g) : 800);
+const nomGroupe = (g: string) => (g === 'pouvoir' ? 'Pouvoirs' : libelleGroupe(g));
+/** « Katon (Feu) » se lit « Katon », avec « Feu » dessous. */
+const sensGroupe = (g: string) => {
+  const m = /\(([^)]+)\)/.exec(nomGroupe(g));
+  return m ? `${m[1]} · ` : '';
+};
+const kanjiGroupe = (g: string) => (g === 'pouvoir' ? '力' : (KANJI_GROUPE[g] ?? '術'));
+
+/** La feinte vit dans la famille taijutsu du moteur (c'est un geste du corps), mais c'est une ruse : elle se range sous « Tactique ». */
+const RANGEE: Record<string, string> = { feinte: 'tactique' };
+const dansMenu = (menuId: string, m: { familles: Famille[] }, f: Famille, actionId: string) => (RANGEE[actionId] ? RANGEE[actionId] === menuId : m.familles.includes(f));
+
 export default function Affrontement({ etat, onCombat }: { etat: GameState; onCombat: (a: ActionCombat) => void }) {
   const v = vueAffrontement(etat);
   // La dernière manche déjà jouée quand l'écran s'ouvre : on n'anime que les suivantes.
@@ -56,6 +74,8 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
   const [famille, setFamille] = useState<Famille | null>(null);
   const [menu, setMenu] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  // Sous « Jutsu » : la nature ouverte (null : on choisit d'abord la nature).
+  const [nature, setNature] = useState<string | null>(null);
   const [choix, setChoix] = useState<string | null>(null);
   const [elan, setElan] = useState<DepenseElan | undefined>(undefined);
   // Contre une escouade : qui viser. Par défaut, le premier qui barre le chemin.
@@ -69,6 +89,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
     setElan(undefined);
     // Chaque manche repart des quatre grands choix.
     setMenu(null);
+    setNature(null);
     setFamille(null);
     if (nbEntrees > 1) haut.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }, [nbEntrees]);
@@ -78,7 +99,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
   const confirmer = (id = choix) => {
     if (!famille || !id) return;
     const viser = membres && (famille === 'taijutsu' || famille === 'ninjutsu' || famille === 'arme') ? cibleValide : undefined;
-    onCombat({ famille, choix: id, ...(elan ? { elan } : {}), ...(viser ? { cible: viser } : {}) });
+    onCombat({ famille, choix: id, ...(elan && id !== 'feinte' ? { elan } : {}), ...(viser ? { cible: viser } : {}) });
   };
 
   // Raccourcis PC (§22.5) : 1-9 ouvrent une famille, Échap ferme, Entrée lance. Inactifs dans un champ de saisie.
@@ -91,11 +112,15 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
       if (/^[1-4]$/.test(e.key) && !menu) {
         setMenu(MENUS[Number(e.key) - 1].id);
         setPage(0);
+        setNature(null);
         setChoix(null);
       } else if (e.key === 'Escape') {
+        // Un cran en arrière : la technique, puis la nature, puis le menu.
         setChoix(null);
         setFamille(null);
-        setMenu(null);
+        setPage(0);
+        if (menu === 'jutsu' && nature) setNature(null);
+        else setMenu(null);
       } else if (e.key === 'Enter' && choix) confirmer();
     };
     window.addEventListener('keydown', ecoute);
@@ -105,7 +130,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
   if (!v) return null;
   const fam = v.familles.find((f) => f.id === famille);
   const act = fam?.actions.find((a) => a.id === choix);
-  const offensive = famille === 'taijutsu' || famille === 'ninjutsu' || famille === 'arme';
+  const offensive = (famille === 'taijutsu' || famille === 'ninjutsu' || famille === 'arme') && choix !== 'feinte';
   const pctJ = Math.round((v.joueur.endurance / v.joueur.enduranceMax) * 100);
   const pctC = Math.min(100, Math.round((v.joueur.chakra / Math.max(1, v.joueur.chakraMax)) * 100));
   const manches = v.journal.filter((j) => j.manche > 0);
@@ -134,8 +159,10 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
         onClick={() => (choisie ? confirmer(a.id) : setChoix(a.id))}
       >
         <span className="aff-action-nom">{a.nom}</span>
-        {(a.marques.length > 0 || a.chakra !== undefined) && (
+        {a.disponible && a.detail && <span className="aff-action-detail">{accorder(a.detail, p)}</span>}
+        {(a.marques.length > 0 || a.chakra !== undefined || a.chance !== undefined) && (
           <span className="aff-action-meta">
+            {a.chance !== undefined && a.disponible && <span className="aff-chance">{a.chance} %</span>}
             {a.chakra !== undefined && <span className="aff-cout">{a.chakra} chakra</span>}
             {a.marques.map((m) => (
               <b key={m} className={`aff-marque m-${m.replace(/\s/g, '-')}`}>
@@ -162,16 +189,20 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
 
         {transition && <TransitionManche key={transition.manche} j={transition} />}
         {transition?.nature && <EffetNature key={`n${transition.manche}`} nature={transition.nature} />}
+        {/* 0. Ce que tu risques, dit avant tout le reste */}
+        <p className={`aff-gravite g-${v.gravite.id}`} role="note">
+          <b>{v.gravite.nom}</b>
+          <span>{v.gravite.detail}</span>
+          <span className="aff-gravite-manche">{v.manche}</span>
+        </p>
         {/* 1. Face-à-face : toi à gauche, l'adversaire à droite */}
         <div className="aff-duel arene" ref={haut}>
           <div className={`aff-carte joueur${transition?.subi ? ' frappee' : ''}`} key={`cj${transition?.manche ?? 0}`}>
-            <span className="aff-avatar">
-              <Portrait nom={etat.creation.prenom} village={etat.creation.village} clan={etat.creation.clan} taille={40} />
-            </span>
             <div className="aff-carte-corps">
               <span className="aff-carte-nom">{etat.creation.prenom}</span>
               <span className="aff-jauge" role="meter" aria-label="Tes PV" aria-valuenow={pctJ} aria-valuemin={0} aria-valuemax={100}>
                 <i className="aff-endurance" style={{ width: `${pctJ}%` }} />
+                {v.ko > 0 && <b className="aff-seuil" style={{ left: `${v.ko * 100}%` }} title="Seuil de KO" />}
               </span>
               <span className="aff-jauge fine" role="meter" aria-label="Ton chakra" aria-valuenow={v.joueur.chakra} aria-valuemin={0} aria-valuemax={v.joueur.chakraMax}>
                 <i className="aff-chakra" style={{ width: `${pctC}%` }} />
@@ -187,6 +218,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
                 )}
                 {gJ && <span className={`aff-pastille ${gJ.classe}`}>{accorder(gJ.mot, p)}</span>}
                 {v.joueur.sonne && <span className="aff-pastille sonne">{accorder('sonné·e', p)}</span>}
+                {v.concentre && <span className="aff-pastille concentre">{accorder('concentré·e', p)}</span>}
                 {v.joueur.etats.map((e) => (
                   <span key={e} className="aff-pastille etat">
                     {accorder(e, p)}
@@ -207,15 +239,13 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
             </span>
           </div>
           <div className={`aff-carte adv${transition?.inflige ? ' frappee' : ''}`} key={`ca${transition?.manche ?? 0}`}>
-            <span className="aff-avatar adv" aria-hidden="true">
-              敵
-            </span>
             <div className="aff-carte-corps">
               <span className="aff-carte-nom">
                 {v.adversaire.nom} {v.adversaire.niveau && <small>{v.adversaire.niveau}</small>}
               </span>
               <span className="aff-jauge" role="meter" aria-label={`PV de ${v.adversaire.nom}`} aria-valuenow={v.adversaire.pct} aria-valuemin={0} aria-valuemax={100}>
                 <i className="aff-adv" style={{ width: `${v.adversaire.pct}%` }} />
+                {v.ko > 0 && <b className="aff-seuil" style={{ left: `${v.ko * 100}%` }} title="Seuil de KO" />}
               </span>
               <span className="aff-pastilles">
                 <span className="aff-chiffre">{v.adversaire.pct} %</span>
@@ -236,9 +266,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
               </span>
             </div>
           </div>
-          <p className="aff-sous-duel">
-            {v.contexte.libelle} · {v.manche}
-          </p>
+          <p className="aff-sous-duel">{v.contexte.libelle}</p>
         </div>
 
         {/* 2. Le fil du combat : la manche qui vient de se jouer, puis le journal replié */}
@@ -276,6 +304,9 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
                 </p>
               ))}
             {v.annonce.fiabilite !== 'fiable' && <small>Lecture incertaine : ce n’est peut-être pas ce {elide('que', minusculeArticle(v.adversaire.nom))} prépare.</small>}
+            <p className={`aff-conseil${v.annonce.fiabilite === 'fiable' ? ' sur' : ''}`}>
+              <b>{accorder(v.annonce.conseil.mot, p)}</b> {accorder(v.annonce.conseil.conseil, p)}
+            </p>
             {v.lecture.length > 0 && (
               <details className="aff-lecture">
                 <summary>Ce que tu sais {elide('de', minusculeArticle(v.adversaire.nom))} ({v.lecture.length})</summary>
@@ -292,6 +323,9 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
         {/* 3 bis. Le terrain et la chaîne de natures : ce que tes techniques ont préparé */}
         <TerrainEtChaine v={v} />
 
+        {/* 3 ter. Les règles en sept lignes : ouvertes d'office au tout premier combat */}
+        <AideCombat ouverte={Object.keys(etat.registresCombat).length === 0 && manches.length === 0} v2={v.regles >= 2} />
+
         {/* 4. La commande : familles en onglets, puis les actions en cartes */}
         <section className="aff-commande" aria-label="Ton action pour cette manche">
           {(() => {
@@ -300,7 +334,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
               return (
                 <div className="aff-menu" role="group" aria-label="Que fais-tu ?">
                   {MENUS.map((x, i) => {
-                    const n = v.familles.filter((f) => x.familles.includes(f.id)).reduce((t, f) => t + f.actions.filter((a) => a.disponible).length, 0);
+                    const n = v.familles.reduce((t, f) => t + f.actions.filter((a) => a.disponible && dansMenu(x.id, x, f.id, a.id)).length, 0);
                     return (
                       <button
                         key={x.id}
@@ -310,6 +344,7 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
                         onClick={() => {
                           setMenu(x.id);
                           setPage(0);
+                          setNature(null);
                           setChoix(null);
                         }}
                       >
@@ -328,27 +363,82 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
               );
             // Les actions du menu, les plus parlantes d'abord : disponibles, puis marquées (enchaînement, synergie…).
             // Ce qui est impossible maintenant ne prend pas de place : seules les actions jouables occupent les quatre cases.
-            const toutes = v.familles.filter((f) => m.familles.includes(f.id)).flatMap((f) => f.actions.map((a) => ({ a, f: f.id })));
-            const indisponibles = toutes.filter((x) => !x.a.disponible).length;
-            const items = toutes
+            const toutes = v.familles.flatMap((f) => f.actions.filter((a) => dansMenu(m.id, m, f.id, a.id)).map((a) => ({ a, f: f.id, g: m.id === 'jutsu' ? groupeJutsu(f.id, a.id) : '' })));
+            // Jutsu : d'abord la nature, s'il y en a plusieurs.
+            const groupes = m.id === 'jutsu' ? [...new Set(toutes.map((x) => x.g))].sort((x, y) => rangGroupe(x) - rangGroupe(y)) : [];
+            const parNature = groupes.length > 1;
+            const retour = () => {
+              setChoix(null);
+              setFamille(null);
+              setPage(0);
+              if (parNature && nature) setNature(null);
+              else setMenu(null);
+            };
+            if (parNature && !nature)
+              return (
+                <div id="aff-panneau" className="aff-sous-menu menu-jutsu" role="group" aria-label="Choisis une nature">
+                  <div className="aff-sous-tete">
+                    <button type="button" className="aff-retour" onClick={retour}>
+                      ‹ Jutsu
+                    </button>
+                    <span className="aff-sous-aide">Quelle nature ?</span>
+                  </div>
+                  <div className="aff-natures">
+                    {groupes.map((g) => {
+                      const du = toutes.filter((x) => x.g === g);
+                      const jouables = du.filter((x) => x.a.disponible);
+                      const lie = jouables.some((x) => x.a.marques.some((k) => k === 'synergie possible' || k === 'terrain favorable'));
+                      const raison = jouables.length ? undefined : du.find((x) => x.a.raison)?.a.raison;
+                      return (
+                        <button
+                          key={g}
+                          type="button"
+                          className={`aff-nature${lie ? ' liee' : ''}`}
+                          style={{ '--nat': `var(--n-${g}, var(--nd-primary-hover))` } as React.CSSProperties}
+                          disabled={!jouables.length}
+                          onClick={() => {
+                            setNature(g);
+                            setPage(0);
+                            setChoix(null);
+                          }}
+                        >
+                          <span className="aff-nature-kanji" aria-hidden="true">
+                            {kanjiGroupe(g)}
+                          </span>
+                          <span className="aff-nature-nom">{nomGroupe(g).split(' (')[0]}</span>
+                          <small>
+                            {sensGroupe(g)}
+                            {jouables.length
+                              ? `${jouables.length} technique${jouables.length > 1 ? 's' : ''}${du.length > jouables.length ? ` · ${du.length - jouables.length} hors de portée` : ''}`
+                              : accorder(raison ?? 'Hors de portée', p)}
+                          </small>
+                          {lie && <b className="aff-nature-lien">enchaînement</b>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            const dansLaNature = parNature ? toutes.filter((x) => x.g === nature) : toutes;
+            const indisponibles = dansLaNature.filter((x) => !x.a.disponible).length;
+            const items = dansLaNature
               .filter((x) => x.a.disponible)
               .map((x, i) => ({ ...x, i }))
-              .sort((x, y) => Number(y.a.disponible) - Number(x.a.disponible) || y.a.marques.length - x.a.marques.length || x.i - y.i);
+              .sort((x, y) => y.a.marques.length - x.a.marques.length || x.i - y.i);
             const pages = Math.max(1, Math.ceil(items.length / PAR_PAGE));
             const visibles = items.slice((page % pages) * PAR_PAGE, (page % pages) * PAR_PAGE + PAR_PAGE);
+            const titre = parNature && nature ? nomGroupe(nature) : m.nom;
             return (
-              <div id="aff-panneau" className={`aff-sous-menu menu-${m.id}`} role="group" aria-label={m.nom}>
+              <div
+                id="aff-panneau"
+                className={`aff-sous-menu menu-${m.id}${parNature ? ' par-nature' : ''}`}
+                role="group"
+                aria-label={titre}
+                style={parNature && nature ? ({ '--nat': `var(--n-${nature}, var(--nd-primary-hover))` } as React.CSSProperties) : undefined}
+              >
                 <div className="aff-sous-tete">
-                  <button
-                    type="button"
-                    className="aff-retour"
-                    onClick={() => {
-                      setMenu(null);
-                      setChoix(null);
-                      setFamille(null);
-                    }}
-                  >
-                    ‹ {m.nom}
+                  <button type="button" className="aff-retour" onClick={retour}>
+                    ‹ {parNature && nature ? `${kanjiGroupe(nature)} ${titre.split(' (')[0]}` : titre}
                   </button>
                   {pages > 1 && (
                     <button type="button" className="aff-autres" onClick={() => setPage((page + 1) % pages)}>
@@ -375,6 +465,15 @@ export default function Affrontement({ etat, onCombat }: { etat: GameState; onCo
           {/* 5. La barre de lancement : toujours à portée du pouce */}
           {fam && (
             <div className="aff-lancer">
+              {act && (
+                <div className="aff-fiche-action" aria-live="polite">
+                  <strong>{act.nom}</strong>
+                  <span>{accorder(act.disponible ? (act.effet ?? act.detail) : (act.raison ?? act.detail), p)}</span>
+                  <small>
+                    {[act.effet ? act.detail : '', act.chance !== undefined ? `Exécution ≈ ${act.chance} %` : '', act.chakra !== undefined ? `${act.chakra} chakra` : 'Sans chakra', ...act.marques].filter(Boolean).join(' · ')}
+                  </small>
+                </div>
+              )}
               {offensive && v.joueur.elan >= 1 && (
                 <div className="aff-elan-choix" role="group" aria-label="Dépenser de l’élan">
                   <button type="button" aria-pressed={elan === 'puissance'} onClick={() => setElan(elan === 'puissance' ? undefined : 'puissance')}>
@@ -559,7 +658,77 @@ function TransitionManche({ j }: { j: Entree }) {
   );
 }
 
-/** Une manche jouée (§22.4) : son issue d'abord, puis le récit d'un seul tenant, la cause, et la réplique. */
+/**
+ * Les règles en sept lignes : de quoi comprendre une manche sans lire de manuel.
+ * Chaque chiffre est celui du moteur (resolution.ts).
+ */
+function AideCombat({ ouverte, v2 }: { ouverte: boolean; v2: boolean }) {
+  return (
+    <details className="aff-aide" open={ouverte || undefined}>
+      <summary>Comment se joue une manche</summary>
+      <ol>
+        <li>
+          <b>Vous agissez en même temps.</b> Lis d’abord « Ce que tu lis » : ce qu’il prépare, et si ta lecture est sûre.
+        </li>
+        <li>
+          <b>S’il attaque</b> : tenir la garde (−30 % de dégâts), esquiver (réussie, sa garde s’ouvre), ou frapper plus fort que lui{v2 ? ' (mais vous échangez des coups)' : ''}.
+        </li>
+        <li>
+          <b>S’il se garde ou t’observe</b> : {v2 ? 'feinter, te concentrer, reprendre ton souffle, ' : ''}observer. Frapper une garde fait 30 % de moins.
+        </li>
+        <li>
+          <b>S’il prépare un coup</b> : frappe tout de suite (+25 %), il ne peut pas te lire.
+        </li>
+        <li>
+          <b>Répéter le même geste</b> le rend prévisible : il finit par le lire et l’esquiver. Une technique qu’il n’a jamais vue le surprend.
+        </li>
+        <li>
+          <b>L’élan</b> (●●●) se gagne en touchant : 1 point pour un coup plus puissant, 3 pour tenter le coup décisif.
+        </li>
+        <li>
+          <b>Le chakra</b> paie les jutsu. Sous 10 %, il ne reste que le corps à corps et les techniques simples. Le pourcentage sur chaque action est ta chance de bien l’exécuter.
+        </li>
+      </ol>
+    </details>
+  );
+}
+
+/** Le résumé d'une manche, en quatre lignes : toi, lui, ce que ça donne, pourquoi ; puis la leçon. */
+function Explication({ e, p }: { e: NonNullable<Entree['explication']>; p: GameState['creation']['presentation'] }) {
+  return (
+    <div className={`aff-explication ton-${e.ton}`}>
+      <dl>
+        <div>
+          <dt>Toi</dt>
+          <dd>{e.toi}</dd>
+        </div>
+        {e.lui && (
+          <div>
+            <dt>En face</dt>
+            <dd>{accorder(e.lui, p)}</dd>
+          </div>
+        )}
+        <div>
+          <dt>Résultat</dt>
+          <dd className="aff-explication-bilan">{e.bilan}</dd>
+        </div>
+        {e.pourquoi && (
+          <div>
+            <dt>Pourquoi</dt>
+            <dd>{accorder(e.pourquoi, p)}</dd>
+          </div>
+        )}
+      </dl>
+      {e.conseil && (
+        <p className="aff-explication-conseil">
+          <span aria-hidden="true">策</span> {accorder(e.conseil, p)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Une manche jouée (§22.4) : son issue, le récit d'un seul tenant, la réplique, puis ce qui s'est passé en clair. */
 function BlocManche({ j, nom, p }: { j: Entree; nom: string; p: GameState['creation']['presentation'] }) {
   const issue = j.issue ? ISSUES[j.issue] : undefined;
   return (
@@ -586,10 +755,11 @@ function BlocManche({ j, nom, p }: { j: Entree; nom: string; p: GameState['creat
           <b>Enchaînement</b> {nomNature(j.synergie.de)} → {nomNature(j.synergie.vers)} · {j.synergie.nom} <small>({j.synergie.niveau})</small>
         </p>
       )}
-      {j.lecture && <p className={`aff-cause issue-${j.issue ?? 'autre'}`}>{accorder(j.lecture, p)}</p>}
       {j.repliques.map((r, k) => (
         <Replique key={k} nom={nom} texte={accorder(r, p)} />
       ))}
+      {/* Ce qui s'est passé, en clair ; un combat d'avant la 2.51 garde sa seule phrase-cause. */}
+      {j.explication ? <Explication e={j.explication} p={p} /> : j.lecture && <p className={`aff-cause issue-${j.issue ?? 'autre'}`}>{accorder(j.lecture, p)}</p>}
     </section>
   );
 }

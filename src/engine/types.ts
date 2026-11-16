@@ -130,6 +130,7 @@ export type Condition =
   | { sansMetier: true }
   | { metierEligible: string }
   | { trait: string }
+  | { orphelin: boolean }
   | { aptitude: AttributId }
   | { objectif: string }
   | { presentation: Presentation }

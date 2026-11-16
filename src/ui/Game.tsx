@@ -17,9 +17,8 @@ import NommerEnfant, { doitNommerEnfant } from './NommerEnfant';
 import { ModalePoints, resumeRepartition } from './ModalePoints';
 import { clePerso, lirePreferences } from './preferencesPoints';
 import { planVide, proposer } from '../engine/plan';
-import Journal from './Journal';
+import Carnet from './Carnet';
 import Encyclopedie from './Encyclopedie';
-import BingoBook from './BingoBook';
 import Fin from './Fin';
 import Menu from './Menu';
 import type { Reglages } from './Menu';
@@ -28,7 +27,7 @@ import type { Piste as PisteSon } from './musiques';
 import { gravite } from './fiche';
 import { remonter } from './defilement';
 import CreationDuo from './campagne/CreationDuo';
-import { BandeauDuo, ChoixMort, EcranPassage, FinDuo, Nouvelles, Proposition, ResultatCommun, SceneCommune, ScenePrivee, VueLien } from './campagne/Campagne';
+import { BandeauDuo, ChoixMort, EcranPassage, EtatDuo, FinDuo, Nouvelles, Proposition, ResultatCommun, SceneCommune, ScenePrivee, VueLien } from './campagne/Campagne';
 import PageCommune from './campagne/PageCommune';
 import { NomsColores, teinteDe, type NomColore } from './paroles';
 import { defPnj } from '../engine/etat';
@@ -40,15 +39,14 @@ import type { ActionLien, Campagne, IdJoueur, SigneCombat } from '../engine/camp
 import type { ActionCombat } from '../engine/combat/types';
 
 type Ecran = 'accueil' | 'creation' | 'creation_duo' | 'salon' | 'jeu' | 'savoir';
-type Onglet = 'recit' | 'ninja' | 'magasin' | 'journal' | 'bingo' | 'savoir' | 'lien';
+type Onglet = 'recit' | 'ninja' | 'carnet' | 'magasin' | 'lien';
 
+/** Quatre lieux, pas plus : l'histoire, le personnage, sa mémoire, l'échoppe. À deux, le lien s'y ajoute. */
 const NAV: { id: Onglet; kanji: string; nom: string }[] = [
   { id: 'recit', kanji: '話', nom: 'Récit' },
   { id: 'ninja', kanji: '忍', nom: 'Ninja' },
+  { id: 'carnet', kanji: '記', nom: 'Carnet' },
   { id: 'magasin', kanji: '店', nom: 'Magasin' },
-  { id: 'journal', kanji: '記', nom: 'Journal' },
-  { id: 'bingo', kanji: '賞', nom: 'Bingo' },
-  { id: 'savoir', kanji: '書', nom: 'Savoir' },
 ];
 
 const REGLAGES_DEFAUT: Reglages = { theme: 'nuit', son: true, volume: 0.5, animations: 'normales' };
@@ -198,7 +196,8 @@ export default function Game() {
   const demarrerEnLigne = (p: PartieDistante) => {
     if (!p.creationHote || !p.creationInvite || !p.lien) return;
     enLigne?.synchro.arreter();
-    const base = nouvelleCampagne(p.creationHote, p.creationInvite, p.lien, p.graine);
+    // Une partie lancée avant les règles 2 n'en porte pas la marque : elle se rejoue avec les siennes.
+    const base = nouvelleCampagne(p.creationHote, p.creationInvite, { ...p.lien, regles: p.lien.regles ?? 1 }, p.graine);
     const synchro = new Synchro(serviceEnLigne().journal(p.id), base, (c) => setCampagne(c));
     setEnLigne({ partie: p, synchro });
     setCampagne(base);
@@ -605,6 +604,10 @@ export default function Game() {
           <span className="age-pastille" title="Âge">
             {age(etat)} ans
           </span>
+          <button className="son-pastille" onClick={basculerSon} aria-pressed={reglages.son} title={reglages.son ? 'Couper la musique' : 'Remettre la musique'}>
+            <span aria-hidden="true">{reglages.son ? '♪' : '♪̸'}</span>
+            <span className="visuellement-cache">{reglages.son ? 'Couper la musique' : 'Remettre la musique'}</span>
+          </button>
           {campagne && (
             <button className="duo-pastille" onClick={quitterDuo} title="Quitter la campagne (elle est gardée sur l’appareil)">
               {etat.creation.prenom} <span aria-hidden="true">✕</span>
@@ -640,6 +643,7 @@ export default function Game() {
             {doitNommerEnfant(etat) && <NommerEnfant etat={etat} onNommer={(nom) => appliquer((s) => nommer(s, 'enfant', nom))} />}
             {campagne && actif !== null && (
               <>
+                <EtatDuo c={campagne} j={actif} enLigne={!!enLigne} />
                 <Nouvelles notes={campagne.notes[actif]} onLu={() => essayer(() => lireNotes(campagne, actif))} />
                 {!campagne.combat && <Proposition c={campagne} j={actif} onRepondre={(oui) => lienDuo({ t: 'repondre', accepte: oui })} />}
                 {campagne.combat && <BandeauDuo c={campagne} j={actif} signe={signe} onSigne={setSigne} onDuo={(id) => combatDuo({ famille: 'ninjutsu', choix: id })} />}
@@ -672,9 +676,7 @@ export default function Game() {
           />
         )}
         {onglet === 'magasin' && <Magasin etat={etat} onAcheter={(id) => appliquer((s) => magasin(s, id))} />}
-        {onglet === 'journal' && <Journal etat={etat} />}
-        {onglet === 'bingo' && <BingoBook etat={etat} />}
-        {onglet === 'savoir' && <Encyclopedie etat={etat} meta={meta} />}
+        {onglet === 'carnet' && <Carnet etat={etat} meta={meta} sansBingo={!!campagne} />}
         {onglet === 'lien' && campagne && actif !== null && <VueLien c={campagne} j={actif} onLien={lienDuo} />}
       </main>
       {modalePoints && etat.pointsStat > 0 && (
@@ -684,7 +686,7 @@ export default function Game() {
         <span className="nav-sceau" aria-hidden="true">
           忍
         </span>
-        {(campagne ? [...NAV.filter((n) => n.id !== 'bingo'), { id: 'lien' as Onglet, kanji: '双', nom: 'À deux' }] : NAV).map((n) => (
+        {(campagne ? [...NAV, { id: 'lien' as Onglet, kanji: '双', nom: 'À deux' }] : NAV).map((n) => (
           <button
             key={n.id}
             aria-current={onglet === n.id ? 'page' : undefined}
@@ -699,12 +701,6 @@ export default function Game() {
             {n.nom}
           </button>
         ))}
-        <button onClick={basculerSon} aria-pressed={reglages.son} title={reglages.son ? 'Couper la musique' : 'Remettre la musique'}>
-          <span className="kanji" aria-hidden="true">
-            {reglages.son ? '音' : '静'}
-          </span>
-          {reglages.son ? 'Son' : 'Muet'}
-        </button>
         <button onClick={() => setMenu(campagne ? 'reglages' : 'sauvegardes')}>
           <span className="kanji" aria-hidden="true">
             設

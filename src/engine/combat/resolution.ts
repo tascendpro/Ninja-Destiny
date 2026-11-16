@@ -76,6 +76,16 @@ export const ARME: Record<string, ActionArme> = {
   lancer: { nom: 'Volée de lames', vitesse: 'rapide', part: 0.8, attribut: 'agilite', k: 0.22, exec: 0.1, familles: ['kunai', 'senbon', 'outils'] },
 };
 
+/**
+ * La feinte (règles 2) : un geste du corps, sans dégâts, qui cherche une réaction défensive. Contre quelqu'un qui
+ * attend, observe ou prépare, elle ouvre sa garde ; contre quelqu'un qui attaque déjà, elle ne sert à rien.
+ * Montrée deux fois, elle se lit ; un vétéran, un froid ou un prudent y mordent moins.
+ */
+export const FEINTE = { nom: 'Feinte', detail: 'Pas de dégâts : provoquer une réaction pour ouvrir sa garde. Inutile s’{il} attaque déjà ; se lit si tu la répètes.' };
+
+/** Les actions apparues avec les règles 2 : invisibles dans un combat ouvert avant elles. */
+const ACTIONS_REGLES_2 = new Set(['feinte', 'souffle', 'concentration']);
+
 /** L'arme en main, si elle est utilisable. */
 export function armeEnMain(s: GameState): WeaponDef | undefined {
   const id = s.armeEquipee;
@@ -88,9 +98,11 @@ export const ACTIONS_FIXES: Record<Exclude<Famille, 'taijutsu' | 'ninjutsu' | 'a
     garde: { nom: 'Tenir la garde', detail: 'Encaisser moins (−30 %). Deux gardes de suite lui laissent le temps de préparer.' },
     esquive: { nom: 'Esquiver', detail: 'Réussie, sa garde s’ouvre. Ratée, le coup passe en entier.' },
     permutation: { nom: 'Permutation', detail: 'Une bûche prend le coup ; réussie, tu surgis dans son dos.' },
+    souffle: { nom: 'Reprendre ton souffle', detail: 'Un peu de PV et de chakra reviennent, moins à chaque fois. S’{il} attaque, le coup passe en entier, et plus.' },
   },
   observation: {
     observer: { nom: 'Observer', detail: 'Remplir ta fiche de lecture. S’il attaque, tu prends le coup.' },
+    concentration: { nom: 'Te concentrer', detail: 'Ta prochaine attaque part plus juste, plus fort, et se lit mal. S’{il} attaque maintenant, tu encaisses davantage.' },
   },
   parole: {
     provoquer: { nom: 'Provoquer', detail: 'Un fier ou un féroce perd son calme ; un froid s’en moque.' },
@@ -191,7 +203,9 @@ export function chanceExecution(s: GameState, a: ActionCombat): number {
   const brut = chanceExecutionBrute(s, a);
   if (!m || brut >= 1) return brut;
   const signes = a.famille === 'ninjutsu' ? m.signes : 0;
-  return clamp(brut + m.exec + signes, 0.1, 0.98);
+  // Concentré·e à la manche d'avant : le geste part plus juste.
+  const concentre = (sc0!.concentre ?? 0) > 0 ? 0.1 : 0;
+  return clamp(brut + m.exec + signes + concentre, 0.1, 0.98);
 }
 
 function chanceExecutionBrute(s: GameState, a: ActionCombat): number {
@@ -235,6 +249,37 @@ export interface VueAction {
   marques: string[];
   disponible: boolean;
   raison?: string;
+  /** Ce que fait une technique, en clair : sa description, ses effets tactiques, sa portée, sa nature face à la sienne. */
+  effet?: string;
+}
+
+/** Les effets tactiques d'une technique, dits avec les chiffres du moteur (voir resoudre). */
+const EFFET_TACTIQUE: Record<string, string> = {
+  rapide: 'Rapide : part plus souvent (+8 %) et se lit moins bien.',
+  precis: 'Précise : se lit moins bien.',
+  perce: 'Perce la garde : rien n’est perdu contre un adversaire en garde.',
+  desequilibre: 'Le laisse déséquilibré quand elle porte.',
+  interrompt: 'Interrompt une préparation (+10 de puissance contre qui prépare).',
+  achevement: 'Achève : ×1,5 contre un adversaire déséquilibré.',
+  ouverture: 'Demande une ouverture : −30 % contre une garde intacte.',
+};
+
+/** La fiche d'une technique : ce qu'elle est, ce qu'elle fait de plus que frapper. Rien n'y dit l'issue. */
+export function effetTechnique(s: GameState, sc: EtatAffrontement, id: string): string | undefined {
+  const def = R.maitrises[id];
+  const t = def?.technique;
+  if (!def || !t) return undefined;
+  const lignes = [def.description];
+  for (const e of t.tactique?.effets ?? []) if (EFFET_TACTIQUE[e]) lignes.push(EFFET_TACTIQUE[e]);
+  if (t.tactique?.etat) lignes.push(`Peut le laisser ${EFFETS_ETAT[t.tactique.etat.id]?.nom.replace('·e', '') ?? t.tactique.etat.id} (${t.tactique.etat.tours} manche${t.tactique.etat.tours > 1 ? 's' : ''}).`);
+  const portee = porteeTechnique(id);
+  if (portee !== 'cible') lignes.push(portee === 'large' ? 'Large : prend tout un groupe.' : 'De zone : touche plusieurs ennemis.');
+  // Sa nature ne compte que si tu l'as lue.
+  const adverse = sc.lecture.nature ? adversaireDef(sc.adversaireId).nature : undefined;
+  const av = avantageTechnique(id, adverse);
+  if (av === 'fort') lignes.push('Sa nature y est faible : +25 %.');
+  if (av === 'faible') lignes.push('Sa nature y résiste : −20 %.');
+  return lignes.filter(Boolean).join(' ');
 }
 
 export interface VueFamille {
@@ -277,7 +322,7 @@ export function familles(s: GameState, sc: EtatAffrontement): VueFamille[] {
       for (const id of techniquesFamille(s, 'arme')) {
         const def = R.maitrises[id];
         const cout = coutChakra(s, sc, id);
-        const v: VueAction = { id, nom: def.nom, detail: `Rang ${def.rang ?? '?'}`, chance: arrondi5(chanceExecution(s, { famille: f, choix: id })), chakra: cout, marques: [], disponible: true };
+        const v: VueAction = { id, nom: def.nom, detail: `Rang ${def.rang ?? '?'}`, chance: arrondi5(chanceExecution(s, { famille: f, choix: id })), chakra: cout, marques: [], disponible: true, effet: effetTechnique(s, sc, id) };
         marquer(s, sc, id, v);
         if (sc.joueur.sonne > 0) Object.assign(v, bloque('Sonné·e : tu ne peux que te défendre ou parler.'));
         else if (s.jauges.chakra < cout) Object.assign(v, bloque(`Chakra insuffisant (${cout} requis).`));
@@ -307,13 +352,21 @@ export function familles(s: GameState, sc: EtatAffrontement): VueFamille[] {
         actions.push({ id: c.id, nom: `${c.nom} ×${n}`, detail: c.effet, marques: [], disponible: true });
       }
     } else if (f === 'taijutsu' || f === 'ninjutsu') {
-      if (f === 'taijutsu')
+      if (f === 'taijutsu') {
         for (const [id, x] of Object.entries(TAIJUTSU)) {
           const v: VueAction = { id, nom: x.nom, detail: x.detail, chance: arrondi5(chanceExecution(s, { famille: f, choix: id })), marques: [], disponible: true };
           marquer(s, sc, id, v);
           if (sc.joueur.sonne > 0) Object.assign(v, bloque('Sonné·e : tu ne peux que te défendre ou parler.'));
           actions.push(v);
         }
+        if ((sc.regles ?? 1) >= 2) {
+          const v: VueAction = { id: 'feinte', nom: FEINTE.nom, detail: FEINTE.detail, marques: [], disponible: true };
+          if ((sc.vuesCeCombat['feinte'] ?? 0) >= 2) v.marques.push('éventée');
+          if (sc.joueur.sonne > 0) Object.assign(v, bloque('Sonné·e : tu ne peux que te défendre ou parler.'));
+          else if (mJ.fige) Object.assign(v, bloque('Immobilisé·e : ton corps ne peut rien faire croire.'));
+          actions.push(v);
+        }
+      }
       for (const id of techniquesFamille(s, f)) {
         const def = R.maitrises[id];
         const cout = coutChakra(s, sc, id);
@@ -326,6 +379,7 @@ export function familles(s: GameState, sc: EtatAffrontement): VueFamille[] {
           nature: def.element,
           marques: [],
           disponible: true,
+          effet: effetTechnique(s, sc, id),
         };
         marquer(s, sc, id, v);
         if (sc.joueur.sonne > 0) Object.assign(v, bloque('Sonné·e : tu ne peux que te défendre ou parler.'));
@@ -337,7 +391,10 @@ export function familles(s: GameState, sc: EtatAffrontement): VueFamille[] {
       }
     } else {
       for (const [id, x] of Object.entries(ACTIONS_FIXES[f])) {
+        if (ACTIONS_REGLES_2.has(id) && (sc.regles ?? 1) < 2) continue;
         const v: VueAction = { id, nom: x.nom, detail: x.detail, marques: [], disponible: true };
+        if (id === 'concentration' && (sc.concentre ?? 0) > 0) Object.assign(v, bloque('Tu es déjà concentré·e : frappe, maintenant.'));
+        if (id === 'souffle' && (sc.vuesCeCombat['souffle'] ?? 0) >= 3) Object.assign(v, bloque('Ton corps n’a plus rien à te rendre : reprendre ton souffle ne suffit plus.'));
         if (id === 'permutation') {
           const tier = s.maitrises['kawarimi']?.tier ?? 0;
           if (tier < 1) continue;
@@ -359,7 +416,7 @@ export function familles(s: GameState, sc: EtatAffrontement): VueFamille[] {
           const def = R.maitrises[id];
           const cout = coutChakra(s, sc, id);
           const part = Math.round((def.technique!.tactique!.defense ?? 0) * 100);
-          const v: VueAction = { id, nom: def.nom, detail: `Arrête environ ${part} % d’un coup · rang ${def.rang ?? '?'}`, chakra: cout, nature: def.element, marques: [], disponible: true };
+          const v: VueAction = { id, nom: def.nom, detail: `Arrête environ ${part} % d’un coup · rang ${def.rang ?? '?'}`, chakra: cout, nature: def.element, marques: [], disponible: true, effet: `${def.description} Arrête environ ${part} % d’un coup ; s’il n’attaque pas, elle ne sert à rien.` };
           if (mJ.sansChakra) Object.assign(v, bloque('Chakra bloqué : plus rien ne passe.'));
           else if (sc.joueur.vide > 0) Object.assign(v, bloque('Vidé·e : plus une goutte de chakra à façonner cette manche.'));
           else if (s.jauges.chakra < cout) Object.assign(v, bloque(`Chakra insuffisant (${cout} requis).`));
@@ -534,6 +591,7 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
   st.attaque += bp.attaque;
   st.defense += bp.defense;
   const advOffensif = OFFENSIVES.has(sc.intention);
+  const v2 = (sc.regles ?? 1) >= 2;
   // Le télégraphe lu : ta réponse pare sa grande technique (§8.1) ; il n'en reste presque rien, et sa garde s'ouvre.
   const pare = pareLaMajeure(sc, d, a);
   const cle = a.choix;
@@ -585,8 +643,42 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
   }
   const multGarde = () => multGardeJoueur(gardeJoueur);
 
+  // ── La feinte (règles 2) : provoquer une réaction, sans frapper ──
+  if (a.choix === 'feinte') {
+    const deja = sc.vuesCeCombat['feinte'] ?? 0;
+    sc.vuesCeCombat['feinte'] = deja + 1;
+    if (advOffensif) {
+      // Il attaquait déjà : ton faux geste ne l'arrête pas, et tu n'étais pas en garde.
+      res.subi = coupAdverse(1);
+      res.cause = advReussit ? 'Feinte perdue : {il} attaquait déjà ; ton faux geste ne l’a pas arrêté.' : 'Feinte perdue : {il} attaquait, et {il} a manqué son coup. Tu as eu de la chance.';
+      sc.joueur.garde = 'ouverte';
+      return finir(s, sc, res);
+    }
+    // Il ne mord pas toujours : une feinte déjà vue, un œil exercé, un tempérament qui ne réagit pas au premier geste.
+    const lucide = sc.temperament === 'veteran' || sc.temperament === 'froid' || sc.temperament === 'prudent' ? 0.12 : 0;
+    const pLue = clamp(0.08 + 0.22 * deja + (st.perception - s.attributs.intellect) / 160 + lucide - (mA.fige || aEtat(sc.adv, 'sous_genjutsu') ? 0.3 : 0), 0, 0.85);
+    if (r.reponse < pLue) {
+      sc.joueur.garde = 'desequilibre';
+      sc.ouverture = 0;
+      res.cause = deja > 0 ? 'Feinte éventée : {il} l’a déjà vue ; {il} ne bouge pas, et c’est toi qui te retrouves en porte-à-faux.' : 'Feinte lue : {il} n’a pas cru à ton geste. Tu es en porte-à-faux.';
+      res.repliqueCategorie = 'reconnaissance';
+      bilanEchec(sc, cle, res.cause);
+      return finir(s, sc, res);
+    }
+    sc.ouverture += 22;
+    sc.adv.garde = 'desequilibre';
+    sc.elan = Math.min(3, sc.elan + 1);
+    bougerMoral(sc, { concentration: -8 });
+    res.reussi = true;
+    res.impact = sc.intention === 'preparer' ? 'Ton geste le coupe dans sa préparation : {il} se couvre par réflexe. ' : '';
+    res.cause = 'Feinte : {il} a réagi à un coup qui n’est jamais venu. Sa garde s’ouvre pour ta prochaine attaque.';
+    sc.joueur.garde = 'ouverte';
+    return finir(s, sc, res);
+  }
+
   // ── Actions offensives ──
   if (a.famille === 'taijutsu' || a.famille === 'ninjutsu' || a.famille === 'arme') {
+    const concentre = (sc.concentre ?? 0) > 0;
     const estTech = !!R.maitrises[cle];
     if (estTech) {
       const cout = coutChakra(s, sc, cle);
@@ -649,6 +741,8 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     if (mA.fige || aEtat(sc.adv, 'sous_genjutsu')) pPred -= 0.3;
     if (tac.includes('precis')) pPred -= 0.1;
     if (tac.includes('rapide')) pPred -= 0.05;
+    // Préparé·e en silence à la manche d'avant : le geste ne s'annonce pas.
+    if (concentre) pPred *= 0.5;
     pPred = clamp(pPred, 0, 0.75);
     if (lu === 'erronee') pPred = 0;
     // Il regarde ce que tu fais : il peut le comprendre, ou se tromper (les deux tirages viennent du 9e).
@@ -707,6 +801,7 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
     }
     if (def?.element && s.registresCombat[sc.registreId]?.contreMesures.includes(`nature:${def.element}`)) mult *= 0.8;
     if (parfaite) mult *= 1.2;
+    if (concentre) mult *= 1.2;
     if (res.execution === 'instable') mult *= 0.7;
     // Contre une escouade : une technique de zone les prend tous ; un coup ciblé n'en touche qu'un.
     if (sc.adv.membres) {
@@ -745,6 +840,12 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
         res.inflige = Math.round(degatsBruts * (ratio >= 1.5 ? 1 : 0.6));
         res.cause = res.inedite ? 'Surprise : {il} ne connaissait pas cette technique et a réagi trop tard.' : ratio >= 1.5 ? 'Traverse : ta puissance a balayé la sienne.' : 'Domine : ton coup l’a emporté, de peu.';
         res.reponse = '{Il} frappe en même temps que toi.';
+        // Règles 2 : deux attaques qui se croisent, c'est un échange. Le plus fort l'emporte, mais personne n'en sort intact :
+        // frapper dans une attaque coûte, et lire son intention pour l'esquiver ou la feinter devient payant.
+        if (v2 && !res.inedite) {
+          res.subi = coupAdverse(ratio >= 1.5 ? 0.25 : 0.5);
+          if (res.subi > 0) res.cause += ' Vous avez échangé vos coups : le sien t’a trouvé·e aussi.';
+        }
       } else if (ratio >= 0.9) {
         res.issue = 'annulee';
         res.cause = 'Égalité : vos deux coups se valaient ; aucun ne passe.';
@@ -807,6 +908,23 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
 
   // ── Défense ──
   if (a.famille === 'defense') {
+    // Reprendre son souffle (règles 2) : un peu revient, moins à chaque fois ; s'il attaque, tu as baissé les bras.
+    if (a.choix === 'souffle') {
+      const n = sc.vuesCeCombat['souffle'] ?? 0;
+      sc.vuesCeCombat['souffle'] = n + 1;
+      sc.gardesConsecutives = 0;
+      const part = 1 / (1 + n);
+      const chakra = Math.round(s.jauges.chakraMax * 0.12 * part);
+      const pv = Math.round(sc.joueur.enduranceMax * 0.08 * part);
+      s.jauges.chakra = Math.min(s.jauges.chakraMax, s.jauges.chakra + chakra);
+      sc.joueur.endurance = Math.min(sc.joueur.enduranceMax, sc.joueur.endurance + pv);
+      s.jauges.fatigue = clamp(s.jauges.fatigue - 4, 0, 100);
+      res.subi = coupAdverse(1.2);
+      res.reussi = res.subi === 0;
+      res.cause = res.subi > 0 ? `Souffle repris trop tard : +${pv} PV et +${chakra} chakra, mais son coup t’a trouvé·e les bras baissés.` : `Souffle repris : +${pv} PV, +${chakra} chakra. ${n > 0 ? 'Moins que la dernière fois.' : 'Ça ne durera pas.'}`;
+      sc.joueur.garde = 'ouverte';
+      return finir(s, sc, res);
+    }
     if (a.choix === 'garde') {
       sc.gardesConsecutives += 1;
       res.subi = coupAdverse(0.7);
@@ -851,7 +969,9 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
         return finir(s, sc, res);
       }
       if (r.reponse < p || !advReussit) {
-        sc.ouverture = perm ? 20 : 10;
+        sc.ouverture = v2 ? (perm ? 24 : 16) : perm ? 20 : 10;
+        // Règles 2 : une vraie esquive (il a frappé, et dans le vide) le laisse en porte-à-faux.
+        if (v2 && advReussit) sc.adv.garde = 'desequilibre';
         res.reussi = true;
         res.cause = perm ? 'Permutation : une bûche a pris le coup ; tu es dans son dos.' : lu ? 'Esquive : tu avais lu son geste avant qu’{il} parte.' : 'Esquive : tu as été plus rapide que son coup.';
         res.repliqueCategorie = 'parade';
@@ -925,6 +1045,15 @@ export function resoudre(s: GameState, sc: EtatAffrontement, d: AdversaireDef, a
   }
 
   // ── Observation ──
+  if (a.famille === 'observation' && a.choix === 'concentration') {
+    // Préparer son prochain geste (règles 2) : une manche de vulnérabilité contre une attaque plus juste et plus forte.
+    res.subi = coupAdverse(1.15);
+    sc.concentre = 2;
+    res.reussi = res.subi === 0;
+    res.cause = res.subi > 0 ? 'Concentré·e, au prix d’un coup encaissé : ta prochaine attaque partira plus juste, plus fort, et se lira mal.' : 'Concentré·e : ta prochaine attaque partira plus juste, plus fort, et se lira mal. Ne la laisse pas attendre.';
+    sc.joueur.garde = 'ouverte';
+    return finir(s, sc, res);
+  }
   if (a.famille === 'observation') {
     res.subi = coupAdverse(1);
     sc.lecture.niveau = true;
@@ -1114,6 +1243,8 @@ function finir(s: GameState, sc: EtatAffrontement, res: ResultatManche): Resulta
   if (sc.joueur.sonne > 0 && res.issue !== 'annulee') sc.joueur.sonne -= 1;
   if (sc.joueur.vide > 0) sc.joueur.vide -= 1;
   if ((sc.advAveugle ?? 0) > 0) sc.advAveugle! -= 1;
+  // La concentration ne tient qu'une manche : frappe tout de suite, ou elle se perd.
+  if ((sc.concentre ?? 0) > 0) sc.concentre! -= 1;
   // Il voulait fuir, et ton coup ne l'a pas arrêté.
   if (sc.intention === 'fuir' && sc.adv.endurance > 0 && !res.fin && res.inflige < sc.adv.enduranceMax * 0.2 && !aEtat(sc.adv, 'immobilise')) res.fin = 'fuite_adverse';
   if (sc.intention !== 'preparer' && sc.adv.garde === 'garde') sc.adv.garde = 'ouverte';

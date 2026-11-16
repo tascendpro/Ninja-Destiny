@@ -67,11 +67,13 @@ describe('Affrontement Racine', () => {
     expect(fourchettePlafond('genin', 'genin')).toEqual([2, 3]);
     expect(fourchettePlafond('jonin', 'genin')).toEqual([3, 4]);
     expect(fourchettePlafond('genin', 'kage')).toEqual([6, 8]);
+    expect(fourchettePlafond('genin', 'genin', 2)).toEqual([3, 4]);
     for (let g = 1; g <= 40; g++) {
       const s = duel(14, g);
       if (s.scene.type !== 'affrontement') throw new Error();
-      expect(s.scene.plafond).toBeGreaterThanOrEqual(2);
-      expect(s.scene.plafond).toBeLessThanOrEqual(3);
+      // Règles 2 : une manche de plus que la fourchette d'origine.
+      expect(s.scene.plafond).toBeGreaterThanOrEqual(3);
+      expect(s.scene.plafond).toBeLessThanOrEqual(4);
       expect(vueAffrontement(s)!.manche).toBe('Manche 1');
     }
   });
@@ -328,7 +330,9 @@ describe('Affrontement Racine', () => {
       let r = (g * 2654435761) >>> 0;
       const s = jusquauBout(duel(11, g), (x) => {
         const v = vueAffrontement(x)!;
-        const poss = v.familles.filter((f) => f.id === 'taijutsu' || f.id === 'defense').flatMap((f) => f.actions.filter((a) => a.disponible).map((a) => ({ famille: f.id, choix: a.id })));
+        // Le hasard ne pioche que les gestes classiques : la feinte et le souffle ne valent que bien placés
+        // (leur équilibre est vérifié à part, dans combatTactique.test.ts).
+        const poss = v.familles.filter((f) => f.id === 'taijutsu' || f.id === 'defense').flatMap((f) => f.actions.filter((a) => a.disponible && a.id !== 'feinte' && a.id !== 'souffle').map((a) => ({ famille: f.id, choix: a.id })));
         r = (r * 1103515245 + 12345) >>> 0;
         const a = poss[Math.floor((r / 4294967296) * poss.length)];
         choix[a.choix] = (choix[a.choix] ?? 0) + 1;

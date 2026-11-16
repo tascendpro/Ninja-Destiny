@@ -3,7 +3,7 @@
 import type { GameState } from '../types';
 import { age } from '../calendrier';
 import { rangIndex } from '../etat';
-import type { ContexteId, Famille, NiveauAdv, StatsAdv } from './types';
+import type { ContexteId, Famille, GraviteCombat, NiveauAdv, StatsAdv } from './types';
 import { NIVEAUX } from './types';
 
 export interface RegleContexte {
@@ -97,11 +97,14 @@ export function niveauJoueur(s: GameState): NiveauAdv {
 }
 
 /** Fourchette de plafond, ajustée par l'écart de niveau (§6.3). Le tirage se fait à l'ouverture. */
-export function fourchettePlafond(joueur: NiveauAdv, adv: NiveauAdv): [number, number] {
+export function fourchettePlafond(joueur: NiveauAdv, adv: NiveauAdv, regles = 1): [number, number] {
   const fort = indexNiveau(joueur) >= indexNiveau(adv) ? joueur : adv;
+  // Règles 2 : une manche de plus. Une manche passée à lire, feinter ou esquiver doit pouvoir se rattraper ;
+  // sinon frapper à chaque manche gagne toujours, et le combat n'est plus une affaire de décisions.
+  const plus = regles >= 2 ? 1 : 0;
   const [min, max] = PLAFONDS[fort];
-  if (indexNiveau(joueur) - indexNiveau(adv) >= 2) return [Math.max(1, min - 1), Math.max(1, max - 1)];
-  return [min, max];
+  if (indexNiveau(joueur) - indexNiveau(adv) >= 2) return [Math.max(1, min - 1) + plus, Math.max(1, max - 1) + plus];
+  return [min + plus, max + plus];
 }
 
 /** Bonus de rang de l'endurance (§5.1). */
@@ -115,6 +118,34 @@ export function maxFamilles(s: GameState): number {
   if (a < 10) return 4;
   return 9;
 }
+
+/** Les combats sans enjeu de vie : ceux où, enfant, on s'arrête avant de se faire vraiment mal. */
+const AMICAUX: ContexteId[] = ['bagarre', 'entrainement', 'provocation', 'duel'];
+
+/**
+ * Le seuil de KO (part des PV max) : un duel amical entre enfants de 6 à 12 ans s'arrête quand l'un passe sous 30 %
+ * de ses PV. Il est déclaré hors de combat ; personne ne meurt de ce seuil. 0 : pas de seuil (on se bat jusqu'au bout).
+ */
+export function seuilKO(s: GameState, sc: { contexte: ContexteId; regles?: number }): number {
+  if ((sc.regles ?? 1) < 2 || CONTEXTES[sc.contexte].letal || !AMICAUX.includes(sc.contexte)) return 0;
+  const a = age(s);
+  return a >= 6 && a <= 12 ? 0.3 : 0;
+}
+
+/** Entraînement, duel amical, combat sérieux ou combat mortel : ce que le joueur risque, dit avant la première manche. */
+export function graviteCombat(contexte: ContexteId): GraviteCombat {
+  if (CONTEXTES[contexte].letal) return 'mortel';
+  if (contexte === 'entrainement') return 'entrainement';
+  if (contexte === 'bagarre' || contexte === 'provocation' || contexte === 'duel') return 'amical';
+  return 'serieux';
+}
+
+export const LIBELLE_GRAVITE: Record<GraviteCombat, { nom: string; detail: string }> = {
+  entrainement: { nom: 'Entraînement', detail: 'Personne n’y laisse plus que des bleus.' },
+  amical: { nom: 'Duel amical', detail: 'On se bat pour gagner, pas pour blesser.' },
+  serieux: { nom: 'Combat sérieux', detail: 'Les blessures seront réelles.' },
+  mortel: { nom: 'Combat mortel', detail: 'On peut y mourir, toujours après un avertissement.' },
+};
 
 /** Ce qu'un enfant de 6 à 9 ans peut faire : se battre, se protéger, parler, partir. */
 export const FAMILLES_ENFANT: Famille[] = ['taijutsu', 'defense', 'parole', 'fuite'];

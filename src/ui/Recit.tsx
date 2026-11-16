@@ -11,7 +11,6 @@ import type { VueDecor } from '../engine/decors';
 import { duoPossible, genererActivites, naturesActivite, periodeMax } from '../engine/tempsLibre';
 import type { Activite } from '../engine/tempsLibre';
 import { age, libelleDuree, libellePeriode, moisDe, saisonDe } from '../engine/calendrier';
-import Portrait from './Portrait';
 import { PaysageFige } from './SceneArt';
 import { ParagrapheRecit } from './paroles';
 import Affrontement, { CarteBilan } from './combat/Affrontement';
@@ -235,7 +234,6 @@ export default function Recit({
             <div className="portraits">
               {vue.personnages.map((x) => (
                 <span className="portrait" key={x.id}>
-                  <Portrait nom={x.nom} genre={x.genre} village={x.village} clan={x.clan} taille={34} mort={x.etat === 'mort'} />
                   <span>
                     {x.nom}
                     {ETAT_PNJ[x.etat] ? ` (${accorder(ETAT_PNJ[x.etat], x.genre === 'f' ? 'feminin' : 'masculin')})` : ''}
@@ -392,7 +390,7 @@ export default function Recit({
 
 // ── Temps libre ────────────────────────────────────────────────
 
-type CategorieTL = 'missions' | 'route' | 'entrainement' | 'techniques' | 'liens' | 'gens' | 'vie';
+type CategorieTL = 'missions' | 'route' | 'entrainement' | 'techniques' | 'liens' | 'decouvrir' | 'gens' | 'vie';
 
 // Le temps libre en cases : chacune dit ce qu'elle apporte avant qu'on l'ouvre.
 const CATEGORIES: { id: CategorieTL; nom: string; kanji: string; resume: string; filtre: (a: Activite) => boolean }[] = [
@@ -401,7 +399,8 @@ const CATEGORIES: { id: CategorieTL; nom: string; kanji: string; resume: string;
   { id: 'entrainement', nom: 'S’entraîner', kanji: '練', resume: 'Disciplines, natures, armes', filtre: (a) => a.categorie === 'entrainement' },
   { id: 'techniques', nom: 'Techniques', kanji: '術', resume: 'Apprendre, perfectionner', filtre: (a) => a.categorie === 'technique' },
   { id: 'liens', nom: 'Liens', kanji: '絆', resume: 'Tes proches, et ce qu’ils pensent de toi', filtre: (a) => a.categorie === 'social' || a.categorie === 'famille' },
-  { id: 'vie', nom: 'Se reposer', kanji: '生', resume: 'Repos, étude, travail', filtre: (a) => ['repos', 'etude', 'travail', 'metier'].includes(a.categorie) },
+  { id: 'decouvrir', nom: 'Découvrir', kanji: '探', resume: 'Explorer, étudier, enquêter', filtre: (a) => a.categorie === 'exploration' || a.categorie === 'etude' },
+  { id: 'vie', nom: 'Se reposer', kanji: '生', resume: 'Repos, travail, petits plaisirs', filtre: (a) => ['repos', 'travail', 'metier'].includes(a.categorie) },
 ];
 const KANJI_CATEGORIE = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.kanji])) as Record<CategorieTL, string>;
 
@@ -427,6 +426,7 @@ function LigneActivite({
   choisie = false,
   cocher = false,
   kanji,
+  conseillee = false,
 }: {
   a: Activite;
   p: Presentation;
@@ -434,6 +434,7 @@ function LigneActivite({
   choisie?: boolean;
   cocher?: boolean;
   kanji?: string;
+  conseillee?: boolean;
 }) {
   const prog = a.progression;
   const natures = naturesActivite(a);
@@ -443,7 +444,7 @@ function LigneActivite({
         data-kanji={natures.length ? KANJI_NATURE[natures[0]] ?? kanji : kanji}
         data-nature={natures[0]}
         style={styleNatures(natures, '--cat')}
-        className={`activite${choisie ? ' choisie' : ''}${!a.disponible ? ' bloquee' : ''}${classeMulti(natures)}`}
+        className={`activite${choisie ? ' choisie' : ''}${conseillee ? ' conseillee' : ''}${!a.disponible ? ' bloquee' : ''}${classeMulti(natures)}`}
         disabled={!a.disponible}
         aria-pressed={a.groupe && cocher ? choisie : undefined}
         onClick={() => onActivite(a.id)}
@@ -506,6 +507,9 @@ function TempsLibre({
   const visibles = CATEGORIES.filter((c) => parCategorie[c.id].length > 0 || (c.id === 'liens' && connus));
   const defaut = visibles.find((c) => parCategorie[c.id].some((a) => a.disponible))?.id ?? visibles[0]?.id ?? 'vie';
   const [choisie, setChoisie] = useState<CategorieTL | null>(null);
+  // Le conseil ne choisit jamais à ta place : il ouvre la bonne case et montre l'activité ; c'est toi qui la lances.
+  const [enEvidence, setEnEvidence] = useState<string | null>(null);
+  useEffect(() => setEnEvidence(null), [etat.actions.length]);
   const cat = choisie && (parCategorie[choisie]?.length || (choisie === 'liens' && connus)) ? choisie : defaut;
 
   // Programme d'entraînement : une technique et une discipline, à combiner sur la même période.
@@ -569,8 +573,9 @@ function TempsLibre({
               <span className="tl-titre-kanji" aria-hidden="true">
                 修
               </span>
-              Temps libre
+              Ton temps libre
             </h1>
+            <p className="tl-sous-titre">À toi de choisir. Une seule décision : le temps file jusqu’au prochain moment qui compte.</p>
             <FriseAnnee etat={etat} />
             <CarteHumeur etat={etat} />
             <BilanDernierePeriode etat={etat} />
@@ -593,12 +598,20 @@ function TempsLibre({
           </aside>
           <div className="tl-principal">
             {conseil && (
-              <button className="tl-conseil" onClick={() => onActivite(conseil.a.id)}>
+              <button
+                className="tl-conseil"
+                onClick={() => {
+                  const c = CATEGORIES.find((x) => x.filtre(conseil.a));
+                  if (c) setChoisie(c.id);
+                  setEnEvidence(conseil.a.id);
+                  window.setTimeout(() => document.querySelector('.activite.conseillee')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 60);
+                }}
+              >
                 <span className="tl-conseil-kanji" aria-hidden="true">
                   {conseil.kanji}
                 </span>
                 <span className="tl-conseil-corps">
-                  <small>Conseillé pour toi</small>
+                  <small>Une idée, si tu hésites</small>
                   <strong>{accorder(conseil.a.libelle, p)}</strong>
                   <span>{conseil.raison}</span>
                 </span>
@@ -632,7 +645,7 @@ function TempsLibre({
               SOUS_GROUPES_ENTRAINEMENT.map((g) => {
                 const l = principales.filter(g.filtre);
                 if (!l.length) return null;
-                const ligne = (a: Activite) => <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />;
+                const ligne = (a: Activite) => <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} conseillee={enEvidence === a.id} />;
                 return (
                   <div className="sous-groupe" key={g.titre}>
                     <h3>{g.titre}</h3>
@@ -651,14 +664,14 @@ function TempsLibre({
                   techId={(a) => a.id}
                   groupe={groupeActivite}
                   titre="temps libre · techniques"
-                  rendu={(a) => <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />}
+                  rendu={(a) => <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} conseillee={enEvidence === a.id} />}
                   liste
                 />
               </div>
             ) : (
               <ul className="activites sous-groupe">
                 {principales.map((a) => (
-                  <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} />
+                  <LigneActivite key={a.id} a={a} p={p} kanji={KANJI_CATEGORIE[cat]} onActivite={clic} choisie={estChoisie(a)} cocher={double} conseillee={enEvidence === a.id} />
                 ))}
               </ul>
             )}
@@ -842,7 +855,6 @@ function Combat({ etat, theme, anime, onManche }: { etat: GameState; theme: 'nui
         <h1 className="titre-scene">{accorder(v.titre, p)}</h1>
         <div className="duel" aria-label="Face-à-face">
           <div className="duel-camp duel-toi">
-            <Portrait nom={nomComplet(etat)} genre={p === 'feminin' ? 'f' : p === 'masculin' ? 'm' : undefined} village={etat.creation.village} clan={etat.creation.clan} taille={46} />
             <span className="duel-nom">
               <b>{etat.creation.prenom}</b>
               <span className="duel-jauge">

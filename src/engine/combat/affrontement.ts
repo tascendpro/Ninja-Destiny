@@ -13,7 +13,7 @@ import { applyCombatExperience } from '../maitrise';
 import { noterMerite } from '../progression';
 import { CHANCE_MORT } from '../epreuves';
 import type { ActionCombat, AdversaireDef, AffrontementDef, EtatAffrontement, FinCombat, IntentionAdv, RegistreAdversaire } from './types';
-import { CONTEXTES, GABARITS, LIBELLE_NIVEAU, bonusRang, fourchettePlafond, indexNiveau, niveauJoueur } from './contextes';
+import { CONTEXTES, GABARITS, LIBELLE_GRAVITE, LIBELLE_NIVEAU, bonusRang, fourchettePlafond, graviteCombat, indexNiveau, niveauJoueur, seuilKO } from './contextes';
 import { declencherEvenement } from './evenements';
 import { entrerPhase, majeureDe } from './boss';
 import { apaiserJauges, avertissements, nourrirJauges } from './jauges';
@@ -22,7 +22,7 @@ import { etatsVisibles } from './etats';
 import { visageDe } from './esprit';
 import { PENSEES_JOUEUR, REPLIQUES_PERSONNALITE } from '../../content/combat/personnalites';
 import { adversaireDef, niveauAdversaire, nomAdversaire, registreDe, statsAdversaire, techniquesAdversaire, temperamentCourant, tirerIntention } from './adversaire';
-import { TAIJUTSU, ACTIONS_FIXES, ARME, armeEnMain, familles, resoudre, validerAction } from './resolution';
+import { TAIJUTSU, ACTIONS_FIXES, ARME, FEINTE, armeEnMain, familles, resoudre, validerAction } from './resolution';
 import { CONSOMMABLE } from '../consommables';
 import { chancePermutation } from '../epreuves';
 import { idFamille } from '../armes';
@@ -38,7 +38,10 @@ import { ANNONCES_BETE, COUPS_BETE } from '../../content/combat/generiques';
 import { MORTS_AU_COMBAT } from '../../content/combat/morts';
 import { enchainementsPossibles, marquerTerrain, natureAction, terrainInitial, vieillirTerrain, vueTerrain } from './terrain';
 import { LIBELLE_SYNERGIE } from './terrain';
-import { NIVEAUX } from './types';
+import { NIVEAUX, REGLES_COMBAT } from './types';
+import type { GraviteCombat } from './types';
+import { conseilAnnonce, expliquerManche } from './explication';
+import type { ConseilAnnonce, ExplicationManche } from './explication';
 
 /** Le combat d'un choix : sa fiche s'il en a une, sinon un combat tiré de son épreuve. Tous les combats passent par ici. */
 export function affrontementPour(evenementId: string, choixId: string): AffrontementDef | undefined {
@@ -110,12 +113,13 @@ export function ouvrirAffrontement(s: GameState, ev: EventDef, ch: ChoiceDef): v
   const nAdv = niveauAdversaire(s, d);
   const nJ = niveauJoueur(s);
   const st = statsAdversaire(s, d);
-  const [min, max] = fourchettePlafond(nJ, nAdv);
+  const [min, max] = fourchettePlafond(nJ, nAdv, REGLES_COMBAT);
   const plafond = min + Math.min(max - min, Math.floor(alea(s) * (max - min + 1)));
   const endJ = enduranceJoueur(s);
   const registreId = registreDe(s, d);
   const reg = s.registresCombat[registreId];
   const sc: EtatAffrontement = {
+    regles: REGLES_COMBAT,
     type: 'affrontement',
     evenementId: ev.id,
     choixId: ch.id,
@@ -163,7 +167,7 @@ export function ouvrirAffrontement(s: GameState, ev: EventDef, ch: ChoiceDef): v
  */
 export function creerAffrontement(
   s: GameState,
-  o: { evenementId: string; adversaireId: string; contexte: EtatAffrontement['contexte']; plafond: number; nomAdversaire?: string; enduranceAdv?: number },
+  o: { evenementId: string; adversaireId: string; contexte: EtatAffrontement['contexte']; plafond: number; nomAdversaire?: string; enduranceAdv?: number; regles?: number },
 ): EtatAffrontement {
   const d = adversaireDef(o.adversaireId);
   const st = statsAdversaire(s, d);
@@ -173,6 +177,7 @@ export function creerAffrontement(
   const h = (Math.imul((s.seed ^ s.jour ^ o.adversaireId.length * 2654435761) >>> 0, 2246822519) >>> 0) % 100;
   const cran: Cran = d.seuils.fuite === 0 && d.seuils.reddition === 0 ? 'acharne' : h < 18 ? 'lache' : h < 62 ? 'ordinaire' : h < 88 ? 'tenace' : 'acharne';
   return {
+    regles: o.regles ?? 1,
     cran,
     type: 'affrontement',
     evenementId: o.evenementId,
@@ -279,8 +284,11 @@ export function jouerAffrontement(s: GameState, a: ActionCombat, ctx: Ctx): Conc
   validerAction(s, sc, a);
   const r = { exec: alea(s), reponse: alea(s), execAdv: alea(s), variation: alea(s), decisif: alea(s), texte: alea(s), replique: alea(s), etat: alea(s), analyse: alea(s) };
   const annonce = sc.annonce.texte;
+  // Ce qu'il faisait vraiment, avant que la manche ne le change (une préparation brisée devient une défense).
+  const vrai = { intention: sc.intention, fiabilite: sc.annonce.fiabilite, techniqueAdv: sc.intention === 'technique' ? techniquesAdversaire(s, d).find((t) => t.id === sc.techniqueAdv)?.nom : sc.intention === 'majeure' ? majeureDe(sc, d)?.nom : undefined };
   const res = resoudre(s, sc, d, a, r);
   const entree = composerManche(s, sc, d, a, res, annonce, r.texte, r.replique);
+  Object.assign(entree, { famille: a.famille, choix: a.choix, intention: vrai.intention, fiabilite: vrai.fiabilite, ...(res.reussi !== undefined ? { reussi: res.reussi } : {}), ...(res.execution !== 'sans' ? { tenue: res.execution } : {}), ...(vrai.techniqueAdv ? { techniqueAdv: vrai.techniqueAdv } : {}) });
   const natureFx: string | undefined = natureAction(a.choix) ?? ((R.maitrises[a.choix]?.element as string | undefined) === 'fusion' ? 'fusion' : undefined);
   if (natureFx) entree.nature = natureFx;
   sc.journal.push(entree);
@@ -317,8 +325,22 @@ export function jouerAffrontement(s: GameState, a: ActionCombat, ctx: Ctx): Conc
     sc.prolonge = true;
     sc.plafond += 1;
   }
+  // Un duel amical entre enfants s'arrête sous le seuil de KO : on ne se bat pas jusqu'à terre à neuf ans.
+  const ko = res.fin || sc.adv.membres ? 0 : seuilKO(s, sc);
+  if (ko > 0 && sc.joueur.endurance > 0 && sc.adv.endurance > 0) {
+    if (sc.joueur.endurance <= sc.joueur.enduranceMax * ko) sc.ko = 'joueur';
+    else if (sc.adv.endurance <= sc.adv.enduranceMax * ko) sc.ko = 'adv';
+  }
   const fin: FinCombat | undefined =
-    sc.joueur.endurance <= 0 ? 'defaite' : sc.adv.endurance <= 0 ? 'victoire' : res.fin ? res.fin : sc.manche >= sc.plafond ? departage(sc) : undefined;
+    sc.joueur.endurance <= 0 || sc.ko === 'joueur'
+      ? 'defaite'
+      : sc.adv.endurance <= 0 || sc.ko === 'adv'
+        ? 'victoire'
+        : res.fin
+          ? res.fin
+          : sc.manche >= sc.plafond
+            ? departage(sc)
+            : undefined;
   if (fin) return conclure(s, sc, d, fin, ctx);
   sc.manche += 1;
   ouvrirManche(s, sc, d);
@@ -336,6 +358,7 @@ function departage(sc: EtatAffrontement): FinCombat {
 }
 
 function nomAction(a: ActionCombat): string {
+  if (a.choix === 'feinte') return FEINTE.nom;
   if (TAIJUTSU[a.choix]) return TAIJUTSU[a.choix].nom;
   if (a.famille === 'arme' && ARME[a.choix]) return ARME[a.choix].nom;
   if (a.famille === 'objet' && CONSOMMABLE[a.choix]) return CONSOMMABLE[a.choix].nom;
@@ -352,7 +375,7 @@ export function composerManche(s: GameState, sc: EtatAffrontement, d: Adversaire
   const vari = (cle: string) => accorderAdv(avecNom(choisirVariante(recits[cle] ?? recits[cle.split(':').slice(0, -1).join(':')] ?? [], rTexte).replace(/\{tech\}/g, tech?.nom ?? nomAction(a)), sc.nomAdversaire), genre);
   const nature = tech?.element;
   // Combien de fois cette action avait déjà servi dans ce combat (le compteur inclut déjà celle-ci).
-  const offensive = a.famille === 'taijutsu' || a.famille === 'ninjutsu' || a.famille === 'arme';
+  const offensive = (a.famille === 'taijutsu' || a.famille === 'ninjutsu' || a.famille === 'arme') && a.choix !== 'feinte';
   const deja = offensive ? Math.max(0, (sc.vuesCeCombat[a.choix] ?? 1) - 1) : 0;
   let execution = '';
   if (offensive) {
@@ -558,7 +581,13 @@ function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: Fin
   // La mort n'est jamais la conclusion par défaut : seulement en contexte mortel, après un avertissement donné plus tôt.
   // Perdre aux points contre quelqu'un qui veut ta mort peut tuer aussi, un peu moins souvent qu'une défaite à terre.
   const peutMourir = regle.letal && (fin === 'defaite' || fin === 'departage_perdu') && sc.avertissementManche !== undefined && sc.avertissementManche < sc.manche;
-  let mort = peutMourir && rMort < (CHANCE_MORT[s.creation.difficulte] ?? 0.45) * (fin === 'defaite' ? 1 : 0.75);
+  // Règles 2 : des combats plus longs, des coups échangés ; on perd donc plus souvent après l'avertissement. Pour que
+  // la mort reste aussi rare qu'avec les règles 1 (le taux est calibré), chaque défaite mortelle tue un peu moins souvent.
+  // Mesuré (joueur au hasard, combat mortel de genin) : 25,5 % de morts sans ce facteur, 13,5 % avec les règles 1.
+  // Un personnage très faible en combat à mort : 121 morts sur 300 sans ce facteur, 101 avec les règles 1, 69 avec.
+  // Le facteur 0,65 garde les deux près de leur niveau d'avant (tests : combatTactique, legendes).
+  const calibrage = (sc.regles ?? 1) >= 2 ? 0.65 : 1;
+  let mort = peutMourir && rMort < (CHANCE_MORT[s.creation.difficulte] ?? 0.45) * (fin === 'defaite' ? 1 : 0.75) * calibrage;
   // Une permutation bien maîtrisée détourne parfois le coup mortel : une bûche le prend à ta place.
   if (mort && chancePermutation(s) > 0 && tirageTexte(s, `permutation:${sc.evenementId}`) < chancePermutation(s)) {
     mort = false;
@@ -615,12 +644,15 @@ function conclure(s: GameState, sc: EtatAffrontement, d: AdversaireDef, fin: Fin
     ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -s.jauges.sante });
     s.jauges.sante = 0;
   } else {
-    const d0 = Math.round(perte * (regle.blessuresLegeres ? 10 : 28) * facteur);
+    // Hors de combat sous le seuil : le duel s'arrête là, et les bleus restent des bleus.
+    const legeres = regle.blessuresLegeres || !!sc.ko;
+    if (sc.ko) ctx.changements.push({ t: 'info', message: accorderAdv(avecNom(sc.ko === 'joueur' ? 'Hors de combat : sous 30 % de tes forces, tu ne peux plus continuer. Le duel s’arrête là.' : 'Hors de combat : sous 30 % de ses forces, {nom} ne peut plus continuer. Le duel s’arrête là.', sc.nomAdversaire), genre) });
+    const d0 = Math.round(perte * (legeres ? 10 : 28) * facteur);
     if (d0 > 0) {
-      s.jauges.sante = clamp(s.jauges.sante - d0, regle.blessuresLegeres ? 1 : 0, 100);
+      s.jauges.sante = clamp(s.jauges.sante - d0, legeres ? 1 : 0, 100);
       ctx.changements.push({ t: 'stat', chemin: 'jauges.sante', delta: -d0 });
     }
-    if (!regle.blessuresLegeres && fin === 'defaite') appliquerEffets(s, [{ blessure: { id: `affrontement_${sc.evenementId}`, nom: 'Blessures d’un combat perdu', gravite: 2, jours: 25 } }], ctx);
+    if (!legeres && fin === 'defaite') appliquerEffets(s, [{ blessure: { id: `affrontement_${sc.evenementId}`, nom: 'Blessures d’un combat perdu', gravite: 2, jours: 25 } }], ctx);
   }
   const w = armeEnMain(s);
   const xp = [
@@ -675,7 +707,7 @@ function bilanCombat(s: GameState, sc: EtatAffrontement, d: AdversaireDef, xp: s
   const genre = genreAdv(s, d);
   const meilleure = Object.entries(sc.bilan.reussites).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))[0];
   const pire = Object.entries(sc.bilan.echecs).sort((x, y) => y[1].length - x[1].length || x[0].localeCompare(y[0]))[0];
-  const nom = (id: string) => TAIJUTSU[id]?.nom ?? R.maitrises[id]?.nom ?? Object.values(ACTIONS_FIXES).find((g) => g[id])?.[id].nom ?? id;
+  const nom = (id: string) => (id === 'feinte' ? FEINTE.nom : undefined) ?? TAIJUTSU[id]?.nom ?? R.maitrises[id]?.nom ?? Object.values(ACTIONS_FIXES).find((g) => g[id])?.[id].nom ?? id;
   const appris: string[] = [];
   if (sc.lecture.niveau) appris.push(`Son niveau : ${LIBELLE_NIVEAU[sc.niveauAdv]}.`);
   if (sc.lecture.nature && d.nature) appris.push(`Sa nature : ${R.elements[d.nature]?.nom ?? d.nature}.`);
@@ -710,13 +742,23 @@ function bilanCombat(s: GameState, sc: EtatAffrontement, d: AdversaireDef, xp: s
 export interface VueAffrontement {
   titre: string;
   contexte: { libelle: string; kanji: string };
+  /** Ce que le joueur risque : entraînement, duel amical, combat sérieux, combat mortel. */
+  gravite: { id: GraviteCombat; nom: string; detail: string };
+  /** Le seuil de KO (part des PV), s'il y en a un : la barre le montre. */
+  ko: number;
+  /** Concentré·e : la prochaine attaque en profite. */
+  concentre: boolean;
+  /** La version des règles de ce combat (feinte, souffle et concentration n'existent qu'à partir de 2). */
+  regles: number;
   /** « Manche 2 » ; le plafond n'est montré que si un arbitre l'annonce. */
   manche: string;
   adversaire: { nom: string; niveau: string; pct: number; garde: string; sonne: boolean; etats: string[]; visage?: string; allie?: string; membres?: { id: string; nom: string; role: string; kanji: string; pct: number; horsCombat: boolean; parti: boolean }[] };
   joueur: { endurance: number; enduranceMax: number; chakra: number; chakraMax: number; elan: number; garde: string; sonne: boolean; etats: string[] };
-  annonce: { texte: string; fiabilite: string; mortelle: boolean };
+  /** L'annonce, et ce qu'elle permet d'en conclure : l'intention n'est nommée que si la lecture est fiable. */
+  annonce: { texte: string; fiabilite: string; mortelle: boolean; conseil: ConseilAnnonce };
   familles: VueFamille[];
-  journal: EntreeAffrontement[];
+  /** Chaque manche, avec son explication en clair (absente des manches d'avant la 2.51). */
+  journal: (EntreeAffrontement & { explication?: ExplicationManche })[];
   lecture: string[];
   /** Le terrain : ce que les techniques y ont laissé. */
   terrain: ReturnType<typeof vueTerrain>;
@@ -752,6 +794,14 @@ export function vueAffrontement(s: GameState): VueAffrontement | undefined {
   return {
     titre: interpoler(R.evenements[sc.evenementId].titre, s),
     contexte: { libelle: CONTEXTES[sc.contexte].libelle, kanji: CONTEXTES[sc.contexte].kanji },
+    gravite: (() => {
+      const g = graviteCombat(sc.contexte);
+      const ko = seuilKO(s, sc);
+      return { id: g, ...LIBELLE_GRAVITE[g], ...(ko ? { detail: `Le premier qui passe sous ${Math.round(ko * 100)} % de ses PV est hors de combat. Personne n’y meurt.` } : {}) };
+    })(),
+    ko: sc.adv.membres ? 0 : seuilKO(s, sc),
+    concentre: (sc.concentre ?? 0) > 0,
+    regles: sc.regles ?? 1,
     manche: sc.plafondVisible ? `Manche ${sc.manche} sur ${sc.plafond}` : `Manche ${sc.manche}`,
     adversaire: {
       nom: sc.nomAdversaire,
@@ -766,9 +816,22 @@ export function vueAffrontement(s: GameState): VueAffrontement | undefined {
       membres: sc.adv.membres?.map((m) => ({ id: m.id, nom: m.nom, role: m.role, kanji: KANJI_ROLE[m.role], pct: Math.round((m.pv / m.pvMax) * 100), horsCombat: m.pv <= 0 || !!m.parti, parti: !!m.parti })),
     },
     joueur: { endurance: sc.joueur.endurance, enduranceMax: sc.joueur.enduranceMax, chakra: s.jauges.chakra, chakraMax: s.jauges.chakraMax, elan: sc.elan, garde: sc.joueur.garde, sonne: sc.joueur.sonne > 0, etats: etatsVisibles(sc.joueur) },
-    annonce: { texte: sc.annonce.texte, fiabilite: sc.annonce.fiabilite, mortelle: !!sc.annonce.mortelle },
+    annonce: {
+      texte: sc.annonce.texte,
+      fiabilite: sc.annonce.fiabilite,
+      mortelle: !!sc.annonce.mortelle,
+      conseil: (() => {
+        const c = conseilAnnonce(sc.intention, sc.annonce.fiabilite, sc.regles ?? 1);
+        return { mot: texteAdv(s, sc, d, c.mot), conseil: texteAdv(s, sc, d, c.conseil) };
+      })(),
+    },
     familles: fam,
-    journal: sc.journal,
+    journal: sc.journal.map((j) => {
+      const e = expliquerManche(j);
+      if (!e) return j;
+      const t = (x?: string) => (x ? texteAdv(s, sc, d, x) : x);
+      return { ...j, explication: { ...e, lui: t(e.lui), bilan: t(e.bilan)!, conseil: t(e.conseil) } };
+    }),
     lecture,
     terrain: vueTerrain(sc),
     sceaux: sc.sceaux ?? [],

@@ -349,6 +349,8 @@ export interface FinCampagne {
 
 export interface Campagne {
   format: 1;
+  /** Version des règles de combat de cette campagne (absent : 1). Voir REGLES_COMBAT. */
+  regles?: number;
   graine: number;
   joueurs: [GameState, GameState];
   creations: [Creation, Creation];

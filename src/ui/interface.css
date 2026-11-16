@@ -1,0 +1,1064 @@
+/* ─────────────────────────────────────────────────────────────
+   Ninja Destiny — interface V2
+   Chargée après styles.css. Les jetons (--nd-*) sont définis en tête de styles.css.
+   Ici : les gestes communs (boutons, focus, barres), la navigation, la fiche du personnage,
+   les dialogues, le temps libre, le carnet, et l'écran de combat sur téléphone.
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Gestes communs ───────────────────────────────────────── */
+
+body {
+  background:
+    radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--nd-primary) 9%, transparent), transparent 60%),
+    var(--nd-bg);
+}
+:focus-visible {
+  outline: 2px solid var(--nd-primary-hover);
+  outline-offset: 3px;
+}
+.btn-principal {
+  border-radius: var(--nd-radius-md);
+  border-color: transparent;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--nd-primary) 88%, white), var(--nd-primary));
+  box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--nd-primary) 80%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform var(--nd-duree) var(--nd-ease), box-shadow var(--nd-duree) var(--nd-ease), filter var(--nd-duree);
+}
+.btn-principal:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--nd-primary-hover), var(--nd-primary));
+  border-color: transparent;
+  box-shadow: var(--nd-glow);
+}
+.btn-principal:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn-secondaire {
+  border-radius: var(--nd-radius-md);
+  transition: background var(--nd-duree), border-color var(--nd-duree);
+}
+.btn-secondaire:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--nd-primary) 55%, var(--nd-border));
+  background: var(--nd-surface-hover);
+}
+.piste {
+  height: 7px;
+  border-radius: 99px;
+}
+.piste i {
+  border-radius: 99px;
+  transition: width 0.6s var(--nd-ease);
+}
+
+/* ── En-tête : le son passe en pastille, la navigation se resserre ── */
+
+.son-pastille {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--nd-border);
+  background: var(--nd-surface);
+  color: var(--nd-muted);
+  font-size: 1rem;
+  line-height: 1;
+}
+.son-pastille[aria-pressed='true'] {
+  color: var(--nd-primary-hover);
+  border-color: color-mix(in srgb, var(--nd-primary) 45%, var(--nd-border));
+}
+.nav button[aria-current='page'] .kanji {
+  color: var(--nd-primary-hover);
+}
+@media (max-width: 1023px) {
+  .nav {
+    grid-template-columns: none;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+  }
+  .nav button {
+    position: relative;
+    min-height: 56px;
+    font-size: 0.72rem;
+    letter-spacing: 0.01em;
+  }
+  .nav button[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 28%;
+    right: 28%;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--nd-primary);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--nd-primary) 70%, transparent);
+  }
+  .nav button .kanji {
+    font-size: 1.35rem;
+  }
+}
+
+/* ── Fiche du personnage : le personnage au centre ─────────── */
+
+.heros {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'identite' 'faits';
+  gap: 18px;
+  margin: 18px 0 20px;
+  padding: 22px;
+  border-radius: var(--nd-radius-lg);
+  border: 1px solid var(--nd-border);
+  background:
+    radial-gradient(80% 120% at 0% 0%, color-mix(in srgb, var(--village) 16%, transparent), transparent 55%),
+    radial-gradient(60% 90% at 100% 100%, var(--nd-primary-soft), transparent 60%),
+    var(--nd-surface);
+  box-shadow: var(--nd-shadow);
+  overflow: hidden;
+  animation: nd-monte 0.35s var(--nd-ease) both;
+}
+.heros::after {
+  /* Un sceau en filigrane : le kanji du ninja, très pâle. */
+  content: '忍';
+  position: absolute;
+  right: -10px;
+  top: -34px;
+  font-family: var(--mincho);
+  font-size: 11rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--nd-text) 4%, transparent);
+  pointer-events: none;
+}
+.heros-rang {
+  padding: 2px 11px;
+  border-radius: 99px;
+  border: 1px solid color-mix(in srgb, var(--nd-gold) 50%, transparent);
+  background: color-mix(in srgb, var(--nd-gold) 12%, var(--nd-surface));
+  color: var(--nd-gold);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.heros-identite {
+  grid-area: identite;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+.heros-surtitre {
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.heros-nom {
+  font-family: var(--mincho);
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.heros-age {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 4px;
+  color: var(--nd-text-soft);
+  font-size: var(--t-s);
+}
+.heros-jauges {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin-top: 12px;
+  font-size: var(--t-s);
+}
+.heros-points {
+  justify-self: start;
+  margin-top: 10px;
+  padding: 7px 14px;
+  border-radius: 99px;
+  border: 1px solid color-mix(in srgb, var(--nd-gold) 55%, transparent);
+  background: color-mix(in srgb, var(--nd-gold) 14%, transparent);
+  color: var(--nd-gold);
+  font-weight: 700;
+  font-size: var(--t-s);
+}
+.heros-faits {
+  grid-area: faits;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--nd-border-soft);
+}
+.heros-faits > div {
+  min-width: 0;
+}
+.heros-faits dt {
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.heros-faits dd {
+  margin: 0;
+  color: var(--nd-text-soft);
+  font-size: var(--t-s);
+  line-height: 1.5;
+}
+.heros-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.heros-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--nd-border);
+  background: var(--nd-bg-soft);
+  color: var(--nd-text);
+  font-size: var(--t-xs);
+}
+.heros-chip b {
+  color: var(--nd-gold);
+}
+.heros-chip small {
+  color: var(--nd-muted);
+}
+.heros-chip.tech {
+  border-color: color-mix(in srgb, var(--nat, var(--nd-primary)) 50%, var(--nd-border));
+}
+.heros-proches {
+  display: grid;
+  gap: 8px;
+}
+.heros-proche {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--nd-text);
+}
+.heros-proche > span {
+  display: grid;
+  line-height: 1.25;
+}
+.heros-proche small {
+  color: var(--nd-green);
+  font-size: var(--t-xs);
+}
+.heros-proche.negatif small {
+  color: var(--nd-red);
+}
+.identite-sobre h2 {
+  font-size: var(--t-l);
+}
+@media (max-width: 640px) {
+  .heros {
+    text-align: center;
+    padding: 20px 16px;
+  }
+  .heros-identite {
+    justify-items: center;
+  }
+  .heros-jauges {
+    width: 100%;
+    text-align: left;
+  }
+  .heros-points {
+    justify-self: center;
+  }
+  .heros-age {
+    justify-content: center;
+  }
+  .heros-faits {
+    text-align: left;
+  }
+}
+
+/* ── Les personnages présents : leurs noms, rien d'autre ── */
+
+.portraits {
+  gap: 6px;
+  margin: 10px 0 18px;
+}
+.portrait {
+  padding: 3px 11px;
+  border-radius: 99px;
+  border: 1px solid var(--nd-border);
+  background: var(--nd-bg-soft);
+  color: var(--nd-text-soft);
+  font-size: var(--t-xs);
+  letter-spacing: 0.02em;
+}
+
+/* ── Ce que tu gardes ─────────────────────────────────────── */
+
+.objets-gardes {
+  margin: 0 0 20px;
+}
+.objets-gardes h2 {
+  font-size: var(--t-l);
+  margin-bottom: 10px;
+}
+.objets-gardes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 10px;
+}
+.objets-gardes li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--nd-radius-md);
+  border: 1px solid var(--nd-border);
+  background: var(--nd-surface);
+}
+.objets-gardes li > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+.objets-gardes small {
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+  line-height: 1.45;
+}
+.objet-kanji {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  font-family: var(--mincho);
+  font-size: 1.25rem;
+  color: var(--nd-gold);
+  background: color-mix(in srgb, var(--nd-gold) 12%, var(--nd-bg-soft));
+  border: 1px solid color-mix(in srgb, var(--nd-gold) 35%, transparent);
+}
+
+/* ── Carnet : journal, Bingo Book, savoir ─────────────────── */
+
+.carnet {
+  width: 100%;
+  max-width: 76rem;
+  margin: 0 auto;
+}
+.carnet-onglets {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+  padding: 16px 16px 4px;
+}
+.carnet-onglets button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--nd-radius-md);
+  border: 1px solid var(--nd-border);
+  background: var(--nd-surface);
+  color: var(--nd-text);
+}
+.carnet-onglets button[aria-selected='true'] {
+  border-color: color-mix(in srgb, var(--nd-primary) 60%, var(--nd-border));
+  background: linear-gradient(160deg, var(--nd-primary-soft), var(--nd-surface));
+  box-shadow: inset 0 -2px 0 var(--nd-primary);
+}
+.carnet-kanji {
+  grid-row: span 2;
+  font-family: var(--mincho);
+  font-size: 1.5rem;
+  color: var(--nd-primary-hover);
+}
+.carnet-nom {
+  font-weight: 700;
+  font-size: var(--t-s);
+}
+.carnet-onglets small {
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+}
+@media (max-width: 560px) {
+  .carnet-onglets small {
+    display: none;
+  }
+  .carnet-onglets button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    padding: 8px 6px;
+  }
+  .carnet-kanji {
+    grid-row: auto;
+    font-size: 1.25rem;
+  }
+}
+
+/* ── Dialogues : qui parle se voit avant ce qu'il dit ─────── */
+
+.dialogue > p.a-locuteur {
+  position: relative;
+  margin-top: 0.9em;
+  padding: 0.55em 0.9em 0.6em 1.15em;
+  text-indent: 0;
+  border-left: 3px solid var(--np, hsl(var(--np-h, 260) 60% 66%));
+  border-radius: 0 var(--nd-radius-sm) var(--nd-radius-sm) 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--np, hsl(var(--np-h, 260) 60% 66%)) 9%, transparent), transparent 85%);
+  animation: nd-replique 0.32s var(--nd-ease) both;
+}
+.dialogue > p.a-locuteur .tiret {
+  display: none;
+}
+.locuteur {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 3px;
+  font-family: var(--gothic);
+  font-style: normal;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--np, hsl(var(--np-h, 260) 60% 70%));
+}
+.locuteur i {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-style: normal;
+  font-family: var(--mincho);
+  font-size: 0.75rem;
+  color: var(--nd-bg);
+  background: var(--np, hsl(var(--np-h, 260) 60% 66%));
+}
+:root[data-ambiance='washi'] .locuteur,
+:root[data-ambiance='washi'] .dialogue > p.a-locuteur {
+  --np-l: 38%;
+}
+
+/* ── Récit : les choix, plus lisibles, plus tactiles ──────── */
+
+.choix-liste .choix {
+  border-radius: var(--nd-radius-md);
+  transition: transform var(--nd-duree) var(--nd-ease), border-color var(--nd-duree), background var(--nd-duree), box-shadow var(--nd-duree);
+}
+.choix-liste .choix:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--nd-primary) 60%, var(--nd-border));
+  box-shadow: 0 12px 28px -18px color-mix(in srgb, var(--nd-primary) 90%, transparent);
+  transform: translateY(-1px);
+}
+.choix-liste .choix:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+/* ── Temps libre ──────────────────────────────────────────── */
+
+.tl-sous-titre {
+  color: var(--nd-muted);
+  font-size: var(--t-s);
+  margin: -2px 0 12px;
+}
+.activite.conseillee {
+  border-color: var(--nd-gold) !important;
+  box-shadow: 0 0 0 1px var(--nd-gold), 0 12px 30px -18px var(--nd-gold);
+  animation: nd-pulse 1.6s var(--nd-ease) 2;
+}
+.temps-libre[data-cat='decouvrir'] {
+  --cat: var(--nd-blue);
+}
+
+/* ── Combat : ce que tu risques, ce que tu peux faire ─────── */
+
+.aff-gravite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: var(--nd-radius-md);
+  border: 1px solid color-mix(in srgb, var(--g) 45%, var(--nd-border));
+  background: color-mix(in srgb, var(--g) 10%, var(--nd-surface));
+  font-size: var(--t-s);
+  color: var(--nd-text-soft);
+}
+.aff-gravite b {
+  color: var(--g);
+  letter-spacing: 0.03em;
+}
+.aff-gravite-manche {
+  margin-left: auto;
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+.aff-gravite.g-entrainement {
+  --g: var(--nd-green);
+}
+.aff-gravite.g-amical {
+  --g: var(--nd-blue);
+}
+.aff-gravite.g-serieux {
+  --g: var(--nd-gold);
+}
+.aff-gravite.g-mortel {
+  --g: var(--nd-red);
+}
+.aff-jauge {
+  position: relative;
+}
+.aff-seuil {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--nd-text);
+  opacity: 0.75;
+  border-radius: 1px;
+}
+.aff-pastille.concentre {
+  color: var(--nd-gold);
+  border-color: color-mix(in srgb, var(--nd-gold) 55%, transparent);
+  background: color-mix(in srgb, var(--nd-gold) 12%, transparent);
+}
+.aff-action-detail {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--nd-muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+  font-weight: 400;
+}
+.aff-chance {
+  color: var(--nd-green);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.aff-fiche-action {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: var(--nd-radius-md);
+  border: 1px solid color-mix(in srgb, var(--nd-primary) 40%, var(--nd-border));
+  background: color-mix(in srgb, var(--nd-primary) 8%, var(--nd-surface));
+  font-size: var(--t-s);
+  animation: nd-monte 0.2s var(--nd-ease) both;
+}
+.aff-fiche-action strong {
+  color: var(--nd-text);
+}
+.aff-fiche-action span {
+  color: var(--nd-text-soft);
+}
+.aff-fiche-action small {
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+}
+.menu-attaque {
+  --mc: var(--nd-red);
+}
+.menu-jutsu {
+  --mc: var(--nd-primary-hover);
+}
+.menu-defense {
+  --mc: var(--nd-green);
+}
+.menu-tactique {
+  --mc: var(--nd-gold);
+}
+.aff-endurance {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--nd-green) 80%, black), var(--nd-green));
+}
+
+/* Sur téléphone : le face-à-face tient sur une ligne, et les quatre grands choix restent sous le pouce. */
+@media (max-width: 700px) {
+  .aff-duel.arene {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'joueur adv'
+      'sous sous';
+    gap: 8px;
+    padding: 10px 8px 8px;
+  }
+  .aff-duel.arene .aff-centre {
+    display: none;
+  }
+  .aff-duel.arene .aff-carte,
+  .aff-duel.arene .aff-carte.adv,
+  .aff-duel.arene .aff-carte.joueur {
+    width: auto;
+    justify-self: stretch;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 8px;
+  }
+  .aff-duel.arene .aff-carte.adv .aff-carte-corps {
+    text-align: right;
+  }
+  .aff-duel.arene .aff-carte-nom {
+    font-size: var(--t-s);
+    overflow-wrap: anywhere;
+  }
+  .aff-duel.arene .aff-pastilles {
+    gap: 4px;
+  }
+  .aff-duel.arene .aff-carte.adv .aff-pastilles {
+    justify-content: flex-end;
+  }
+  .aff-duel.arene .aff-pastille {
+    font-size: 0.68rem;
+    padding: 1px 6px;
+  }
+  .affrontement .titre-scene {
+    font-size: var(--t-xl);
+    margin-bottom: 6px;
+  }
+  /* La commande colle au bas de la zone de lecture : on lit le récit, les choix restent à portée. */
+  .aff-commande {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 0 -16px;
+    padding: 10px 16px 12px;
+    background: linear-gradient(180deg, transparent, var(--nd-bg) 14px);
+    border-top: 1px solid var(--nd-border-soft);
+  }
+  .aff-menu {
+    gap: 8px;
+  }
+  .aff-menu-bouton {
+    min-height: 60px;
+    padding: 8px 10px;
+  }
+  .aff-menu-bouton small {
+    display: none;
+  }
+  .aff-grille4 .aff-action {
+    min-height: 68px;
+  }
+}
+
+/* ── Mouvements : brefs, jamais bloquants ─────────────────── */
+
+@keyframes nd-monte {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes nd-replique {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes nd-pulse {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--nd-gold) 30%, transparent), 0 12px 30px -18px var(--nd-gold);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .heros,
+  .dialogue > p.a-locuteur,
+  .activite.conseillee,
+  .aff-fiche-action {
+    animation: none;
+  }
+}
+:root[data-animations='reduites'] .heros,
+:root[data-animations='reduites'] .dialogue > p.a-locuteur,
+:root[data-animations='reduites'] .activite.conseillee,
+:root[data-animations='reduites'] .aff-fiche-action {
+  animation: none;
+}
+
+/* ── Accueil : l'identité violette sur l'illustration (le sceau rouge du logo reste un sceau) ── */
+
+.accueil-actions .btn-principal {
+  background: linear-gradient(180deg, #9d74f8, var(--nd-primary) 60%, #6d3fd6);
+  border-color: transparent;
+  color: #fff;
+  border-radius: var(--nd-radius-md);
+  box-shadow: 0 16px 36px -16px rgba(139, 92, 246, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.accueil-actions .btn-principal:hover {
+  background: linear-gradient(180deg, #b296fb, var(--nd-primary-hover) 60%, var(--nd-primary));
+  border-color: transparent;
+}
+.accueil-actions .btn-secondaire {
+  border-radius: var(--nd-radius-md);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.accueil-actions .btn-secondaire:hover {
+  border-color: color-mix(in srgb, var(--nd-primary-hover) 70%, transparent);
+}
+.accueil .btn-kanji {
+  color: var(--nd-gold);
+}
+.accueil .reprise {
+  border-radius: var(--nd-radius-lg);
+}
+
+/* ── Combat sur téléphone : l'essentiel au-dessus de la ligne de flottaison ── */
+
+@media (max-width: 700px) {
+  .aff-gravite {
+    padding: 6px 10px;
+    font-size: var(--t-xs);
+    margin-bottom: 8px;
+  }
+  .aff-gravite > span:not(.aff-gravite-manche) {
+    flex-basis: 100%;
+    order: 3;
+    color: var(--nd-muted);
+  }
+  .aff-duel.arene .aff-sous-duel {
+    display: none;
+  }
+  .aff-fil .aff-replique {
+    font-size: var(--t-s);
+  }
+}
+
+/* Sur téléphone, la barre de lancement suit les cartes dans la commande collée en bas : rien ne se recouvre. */
+@media (max-width: 700px) {
+  .aff-commande .aff-lancer {
+    position: static;
+    transform: none;
+    width: auto;
+    margin-top: 10px;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .aff-commande .aff-fiche-action {
+    margin-bottom: 6px;
+  }
+}
+
+/* ── À deux : où vous en êtes ─────────────────────────────── */
+
+.etat-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: 'moi lien autre' 'suite suite suite';
+  align-items: center;
+  gap: 8px 10px;
+  max-width: var(--colonne);
+  margin: 14px auto 6px;
+  padding: 12px 14px;
+  border-radius: var(--nd-radius-lg);
+  border: 1px solid var(--nd-border);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--joueur-0) 10%, var(--nd-surface)), var(--nd-surface) 45%, var(--nd-surface) 55%, color-mix(in srgb, var(--joueur-1) 10%, var(--nd-surface)));
+}
+.etat-duo-carte {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.etat-duo-carte + .etat-duo-lien + .etat-duo-carte {
+  grid-area: autre;
+}
+.etat-duo-carte strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--couleur-joueur);
+}
+.etat-duo-carte small,
+.etat-duo-statut {
+  grid-column: 2;
+  font-size: var(--t-xs);
+  color: var(--nd-muted);
+}
+.etat-duo-statut {
+  color: var(--nd-text-soft);
+}
+.etat-duo-pastille {
+  grid-row: span 3;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--couleur-joueur);
+  box-shadow: 0 0 10px var(--couleur-joueur);
+}
+.etat-duo-lien {
+  grid-area: lien;
+  font-family: var(--mincho);
+  font-size: 1.4rem;
+  color: var(--nd-gold);
+}
+.etat-duo-suite {
+  grid-area: suite;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--nd-border-soft);
+  font-size: var(--t-xs);
+  color: var(--nd-text-soft);
+  text-align: center;
+}
+.etat-duo-en-ligne {
+  color: var(--nd-green);
+}
+
+/* Les onglets qui défilent : un fondu au bord droit dit qu'il y en a d'autres. */
+@media (max-width: 760px) {
+  .onglets {
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 36px), transparent);
+  }
+}
+
+/* ── Combat : comprendre ce qui se passe ──────────────────── */
+
+/* Sous « Ce que tu lis » : ce que la lecture permet d'en conclure. */
+.aff-annonce p.aff-conseil {
+  margin: 8px 0 2px;
+  padding: 8px 10px;
+  border-radius: var(--nd-radius-sm);
+  border: 1px dashed var(--nd-border);
+  background: var(--nd-bg-soft);
+  font-family: var(--gothic);
+  font-style: normal;
+  font-size: var(--t-s);
+  line-height: 1.5;
+  color: var(--nd-text-soft);
+}
+.aff-annonce p.aff-conseil b {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.aff-annonce p.aff-conseil.sur {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--nd-gold) 40%, var(--nd-border));
+}
+.aff-annonce p.aff-conseil.sur b {
+  color: var(--nd-gold);
+}
+
+/* Ce qui s'est passé : quatre lignes alignées, puis la leçon. */
+.aff-explication {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--nd-radius-md);
+  border: 1px solid var(--nd-border);
+  background: var(--nd-surface);
+}
+.aff-explication dl {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+.aff-explication dl > div {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 7.5rem) minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+.aff-explication dt {
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aff-explication dd {
+  margin: 0;
+  color: var(--nd-text);
+  font-size: var(--t-s);
+  line-height: 1.45;
+}
+.aff-explication-bilan {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.aff-explication.ton-bon .aff-explication-bilan {
+  color: var(--nd-green);
+}
+.aff-explication.ton-mauvais .aff-explication-bilan {
+  color: var(--nd-red);
+}
+.aff-explication-conseil {
+  display: flex;
+  gap: 8px;
+  margin: 9px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--nd-border-soft);
+  color: var(--nd-text-soft);
+  font-size: var(--t-s);
+  line-height: 1.5;
+}
+.aff-explication-conseil span {
+  flex: none;
+  font-family: var(--mincho);
+  color: var(--nd-gold);
+}
+
+/* Les règles en sept lignes. */
+.aff-aide {
+  margin-top: 10px;
+  border-radius: var(--nd-radius-md);
+  border: 1px solid var(--nd-border);
+  background: var(--nd-surface);
+}
+.aff-aide summary {
+  padding: 9px 12px;
+  cursor: pointer;
+  color: var(--nd-text-soft);
+  font-size: var(--t-s);
+  font-weight: 700;
+}
+.aff-aide ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 14px 12px 32px;
+  color: var(--nd-text-soft);
+  font-size: var(--t-s);
+  line-height: 1.5;
+}
+.aff-aide b {
+  color: var(--nd-text);
+}
+
+/* Jutsu : d'abord la nature. */
+.aff-sous-aide {
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.aff-natures {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 8px;
+}
+.aff-nature {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  min-height: 64px;
+  padding: 10px 12px;
+  text-align: left;
+  border-radius: var(--nd-radius-md);
+  border: 1px solid color-mix(in srgb, var(--nat) 45%, var(--nd-border));
+  border-left: 5px solid var(--nat);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--nat) 16%, var(--nd-surface)), var(--nd-surface) 75%);
+  color: var(--nd-text);
+  cursor: pointer;
+  transition: transform var(--nd-duree) var(--nd-ease), box-shadow var(--nd-duree);
+}
+.aff-nature:hover:not(:disabled) {
+  box-shadow: 0 10px 24px -16px var(--nat);
+}
+.aff-nature:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.aff-nature:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.aff-nature-kanji {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--nat);
+  font-family: var(--mincho);
+  font-size: 1.2rem;
+  color: var(--nat);
+  background: color-mix(in srgb, var(--nat) 12%, transparent);
+}
+.aff-nature-nom {
+  font-family: var(--mincho);
+  font-size: var(--t-m);
+  font-weight: 700;
+}
+.aff-nature small {
+  color: var(--nd-muted);
+  font-size: var(--t-xs);
+  line-height: 1.3;
+}
+.aff-nature-lien {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--nd-gold) 18%, transparent);
+  color: var(--nd-gold);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.aff-sous-menu.par-nature .aff-retour {
+  border-color: var(--nat, var(--mc));
+  color: var(--nat, var(--mc));
+}
+@media (max-width: 700px) {
+  .aff-natures {
+    grid-template-columns: 1fr 1fr;
+  }
+  .aff-nature {
+    min-height: 58px;
+    padding: 8px 10px;
+  }
+  .aff-explication dl > div {
+    grid-template-columns: 5.2rem minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aff-nature {
+    transition: none;
+  }
+}

@@ -16,7 +16,7 @@ import { adversaireDef, statsAdversaire } from '../combat/adversaire';
 import { accorderAdv, composerManche, creerAffrontement, enduranceJoueur, ouvrirManche } from '../combat/affrontement';
 import { frapperEscouade } from '../combat/escouade';
 import { ARME, TAIJUTSU, chanceExecution, defenseJoueur, puissanceJoueur, resoudre, validerAction } from '../combat/resolution';
-import { CONTEXTES, indexNiveau } from '../combat/contextes';
+import { CONTEXTES, indexNiveau, seuilKO } from '../combat/contextes';
 import { natureAction, vieillirTerrain } from '../combat/terrain';
 import { texteTechniqueTouche } from '../combat/impacts';
 import { COMBATS_DUO } from '../../content/campagne/combats';
@@ -38,7 +38,7 @@ export const SIGNES: Record<SigneCombat, string> = {
 const ISSUE_MOT: Record<string, string> = { touche: 'touché', surprise: 'surprise', decisive: 'coup décisif', predite: 'prédit', dominee: 'dominé', ecrasee: 'écrasé', ratee: 'raté', annulee: 'annulé' };
 
 const sc = (c: Campagne, j: IdJoueur) => c.joueurs[j].scene as EtatAffrontement;
-const ofensive = (a: ActionCombat) => a.famille === 'taijutsu' || a.famille === 'ninjutsu' || a.famille === 'arme';
+const ofensive = (a: ActionCombat) => (a.famille === 'taijutsu' || a.famille === 'ninjutsu' || a.famille === 'arme') && a.choix !== 'feinte';
 const rang = (id: string) => ({ E: 0, D: 1, C: 2, B: 3, A: 4, S: 5, SS: 6 })[R.maitrises[id]?.rang ?? 'C'] ?? 2;
 
 /** Les natures qu'une technique de duo demande : deux personnages qui, ensemble, les maîtrisent. */
@@ -72,7 +72,7 @@ export function ouvrirCombatDuo(c: Campagne, defId: string): void {
     const d = adversaireDef(def.adversaire);
     // L'adversaire est ajusté au binôme : endurance du gabarit de J1, multipliée, la même pour les deux manches.
     const endAdv = def.mode === 'duel' ? enduranceJoueur(o) : Math.round(statsAdversaire(c.joueurs[0], d).endurance * (def.enduranceMult ?? 1.5));
-    s.scene = creerAffrontement(s, { evenementId: def.evenementId, adversaireId: def.adversaire, contexte: def.contexte, plafond: def.plafond, nomAdversaire: def.mode === 'duel' ? c.creations[autre(j)].prenom : def.nomAdversaire?.(c), enduranceAdv: endAdv });
+    s.scene = creerAffrontement(s, { evenementId: def.evenementId, adversaireId: def.adversaire, contexte: def.contexte, plafond: def.plafond, nomAdversaire: def.mode === 'duel' ? c.creations[autre(j)].prenom : def.nomAdversaire?.(c), enduranceAdv: endAdv, regles: c.regles ?? 1 });
   }
   c.combat = { def: defId, mode: def.mode, letal: !!def.letal, choix: [undefined, undefined], signes: [undefined, undefined], scenesAvant, aTerre: [false, false], mensonges: [0, 0], rng: graineFlux(c, `combat:${defId}:${c.actions.length}`) };
   if (def.mode === 'equipe') {
@@ -342,7 +342,28 @@ function resoudreDuel(c: Campagne): void {
     const o = autre(j);
     const a = choix[j];
     if (!ofensive(a)) {
-      if (a.famille === 'observation') sc(c, j).ouverture = 10;
+      const x = sc(c, j);
+      if (a.choix === 'concentration') x.ouverture = 15;
+      else if (a.famille === 'observation') x.ouverture = 10;
+      // La feinte contre l'autre joueur : elle ouvre sa garde s'il attendait, elle ne sert à rien s'il frappait.
+      if (a.choix === 'feinte') {
+        x.vuesCeCombat['feinte'] = (x.vuesCeCombat['feinte'] ?? 0) + 1;
+        if (!ofensive(choix[o])) {
+          x.ouverture = 22;
+          recit[j].push(`${nom(o)} réagit à ta feinte : sa garde s’ouvre.`);
+          recit[o].push(`Tu as mordu à la feinte de ${nom(j)}. Ta garde s’est ouverte.`);
+        } else recit[j].push(`${nom(o)} attaquait déjà : ta feinte n’a servi à rien.`);
+      }
+      // Reprendre son souffle : un peu revient, moins à chaque fois.
+      if (a.choix === 'souffle') {
+        const n = x.vuesCeCombat['souffle'] ?? 0;
+        x.vuesCeCombat['souffle'] = n + 1;
+        const pv = Math.round(x.joueur.enduranceMax * 0.08 / (1 + n));
+        x.joueur.endurance = Math.min(x.joueur.enduranceMax, x.joueur.endurance + pv);
+        const s0 = c.joueurs[j];
+        s0.jauges.chakra = Math.min(s0.jauges.chakraMax, s0.jauges.chakra + Math.round(s0.jauges.chakraMax * 0.12 / (1 + n)));
+        recit[j].push(`Tu reprends ton souffle (+${pv}).`);
+      }
       continue;
     }
     if (!reussit[j]) {
@@ -385,7 +406,9 @@ function resoudreDuel(c: Campagne): void {
   }
   cb.choix = [undefined, undefined];
   cb.signes = [undefined, undefined];
-  const tombes = ([0, 1] as IdJoueur[]).filter((j) => sc(c, j).joueur.endurance <= 0);
+  // Deux enfants qui se battent pour de faux s'arrêtent sous 30 % de leurs PV (règles 2) : hors de combat, pas à terre.
+  const ko = !def.letal ? seuilKO(c.joueurs[0], sc(c, 0)) && seuilKO(c.joueurs[1], sc(c, 1)) : 0;
+  const tombes = ([0, 1] as IdJoueur[]).filter((j) => sc(c, j).joueur.endurance <= (ko ? sc(c, j).joueur.enduranceMax * ko : 0));
   if (tombes.length === 1) return finirDuel(c, autre(tombes[0]));
   if (tombes.length === 2) return finirDuel(c, sc(c, 0).joueur.endurance >= sc(c, 1).joueur.endurance ? 0 : 1);
   if (sc(c, 0).manche >= def.plafond) {
@@ -425,7 +448,9 @@ function finirDuel(c: Campagne, vainqueur: IdJoueur, abandon = false): void {
     if (Math.min(...c.joueurs.map((s) => Math.floor((s.jour - s.naissance) / 360))) >= 45) c.stats.duelCrepuscule = true;
     texte = abandon
       ? texteCommun(c, '{deux} baisse les mains et recule : {il:deux} abandonne. {un} gagne, sans savoir s’il faut s’en réjouir.', vainqueur)
-      : texteCommun(c, '{deux} pose un genou à terre. {un} lui tend la main ; {deux} la prend. Vous restez un moment assis dans la poussière, à reprendre votre souffle, à refaire le combat à voix haute.', vainqueur);
+      : sc(c, vaincu).joueur.endurance > 0
+        ? texteCommun(c, '{deux} chancelle, les bras trop lourds pour se lever encore. « Assez », dit {un}, et pour une fois {deux} ne discute pas. Hors de combat, pas à terre : vous vous asseyez dans la poussière, à refaire le combat à voix haute.', vainqueur)
+        : texteCommun(c, '{deux} pose un genou à terre. {un} lui tend la main ; {deux} la prend. Vous restez un moment assis dans la poussière, à reprendre votre souffle, à refaire le combat à voix haute.', vainqueur);
     texte += texteCommun(c, ` Duels : {j1} ${c.lien.duels[0]}, {j2} ${c.lien.duels[1]}. {un} gagne 3 points de stat, {deux} en gagne 1.`, vainqueur);
     if (!c.lien.souvenirs.some((s) => s.id === 'premier_duel')) souvenir(c, 'premier_duel', texteCommun(c, 'Votre premier duel : {un} l’a emporté.', vainqueur), 3, 'fier');
   }

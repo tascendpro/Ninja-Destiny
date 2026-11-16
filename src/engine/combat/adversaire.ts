@@ -79,6 +79,16 @@ const BASE: Record<Temperament, Record<IntentionAdv, number>> = {
   veteran: { attaque: 25, technique: 25, defense: 20, observer: 15, parler: 10, fuir: 0, preparer: 5, majeure: 0 },
 };
 
+/**
+ * La finesse tactique d'un adversaire (règles 2) : combien il lit tes habitudes. Un enfant presque pas, un élève un peu,
+ * un genin à moitié, un chūnin vraiment ; un vétéran ou un froid lisent mieux que leur rang, un féroce ou un terrifié moins.
+ */
+export function finesseTactique(n: NiveauAdv, t: Temperament): number {
+  const base = ([0.3, 0.5, 0.7, 0.9, 1, 1.1, 1.2, 0.6] as const)[NIVEAUX.indexOf(n)] ?? 1;
+  const mod = t === 'veteran' || t === 'froid' ? 0.15 : t === 'feroce' || t === 'terrifie' || t === 'desespere' ? -0.15 : 0;
+  return Math.max(0.2, Math.min(1.3, base + mod));
+}
+
 /** Le tempérament courant, après une éventuelle bascule. */
 export function temperamentCourant(sc: EtatAffrontement, d: AdversaireDef): Temperament {
   // Un boss change de personnalité avec ses phases (§8) : la phase l'emporte sur la bascule.
@@ -114,11 +124,34 @@ export function scoresIntentions(s: GameState, sc: EtatAffrontement, d: Adversai
   if (sc.contexte === 'entrainement' || sc.contexte === 'examen') sc0.fuir = 0;
   if (sc.contexte === 'embuscade') sc0.parler = 0;
   // Lecture : il voit que tu répètes, il attend ; il voit que tu te terres, il prépare.
+  // Règles 2 : ce qu'il lit dépend de ce qu'il est. Un enfant voit à peine qu'on répète ; un jōnin lit toute une série.
+  const v2 = (sc.regles ?? 1) >= 2;
+  const lecteur = v2 ? finesseTactique(sc.niveauAdv, sc.temperament) : 1;
   const [a1, a2] = sc.actionsJoueur.slice(-2);
-  if (a1 && a1 === a2) sc0.defense += 30;
+  if (a1 && a1 === a2) sc0.defense += Math.round(30 * lecteur);
   if (sc.gardesConsecutives >= 2) {
-    sc0.preparer += majeureDe(sc, d) ? 25 : 0;
-    sc0.technique += 15;
+    sc0.preparer += majeureDe(sc, d) ? Math.round(25 * lecteur) : 0;
+    sc0.technique += Math.round(15 * lecteur);
+  }
+  if (v2) {
+    const familles = sc.famillesJoueur ?? [];
+    const dernier = sc.actionsJoueur[sc.actionsJoueur.length - 1];
+    // Tu as passé la manche à observer, à te concentrer ou à souffler : il a vu une ouverture, il la prend.
+    if (dernier === 'observer' || dernier === 'concentration' || dernier === 'souffle') sc0.attaque += Math.round(22 * lecteur);
+    // Trois manches de suite dans la même famille : il s'y prépare (garde contre l'offensive, technique contre la défense).
+    const trois = familles.slice(-3);
+    if (trois.length === 3 && trois.every((f) => f === trois[0]) && lecteur >= 0.7) {
+      if (trois[0] === 'taijutsu' || trois[0] === 'ninjutsu' || trois[0] === 'arme') sc0.defense += Math.round(18 * lecteur);
+      if (trois[0] === 'defense') {
+        sc0.technique += Math.round(12 * lecteur);
+        sc0.observer += 8;
+      }
+    }
+    // Tu as feinté et ça a marché : il attaque au lieu d'attendre, pour ne plus se faire prendre.
+    if ((sc.vuesCeCombat['feinte'] ?? 0) >= 1 && lecteur >= 0.7) {
+      sc0.attaque += 10;
+      sc0.observer = Math.max(0, sc0.observer - 5);
+    }
   }
   // Mémoire : un récurrent qui connaît ton ouverture l'attend dès la première manche.
   const reg = s.registresCombat[sc.registreId];

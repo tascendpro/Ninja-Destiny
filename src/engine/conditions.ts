@@ -103,6 +103,7 @@ export function evaluer(c: Condition | undefined, s: GameState): boolean {
   if ('sansMetier' in c) return !s.metier.principal;
   if ('metierEligible' in c) return checkCareerEligibility(s, c.metierEligible).ok;
   if ('trait' in c) return s.creation.traits.includes(c.trait);
+  if ('orphelin' in c) return (s.creation.clan === 'sans_clan' && s.creation.origine === 'orphelin') === c.orphelin;
   if ('aptitude' in c) return s.creation.aptitude === c.aptitude;
   if ('objectif' in c) return s.creation.objectif === c.objectif;
   if ('presentation' in c) return s.creation.presentation === c.presentation;

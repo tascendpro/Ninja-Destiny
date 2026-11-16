@@ -12,8 +12,8 @@ import { getWeaponModifiers, idFamille, rangArme } from '../engine/armes';
 import { checkCareerEligibility, nomPalierMetier } from '../engine/metiers';
 import { noteFinale } from '../engine/fins';
 import { naturesMax } from '../engine/tempsLibre';
-import Portrait from './Portrait';
-import { ATTRIBUT_LIBELLE, AXE_LIBELLE, ETAT_PNJ, RANG_LIBELLE, SOCIAL_LIBELLE, STATUT_ARME, STATUT_LIBELLE } from './libelles';
+import { ATTRIBUT_LIBELLE, AXE_LIBELLE, ETAT_PNJ, OBJETS, RANG_LIBELLE, SOCIAL_LIBELLE, STATUT_ARME, STATUT_LIBELLE } from './libelles';
+import { resoudreTexte } from '../engine/texte';
 import Repartition from './Repartition';
 import Repli from './Repli';
 import { KANJI_GROUPE, groupeTechnique, libelleGroupe } from './combat/GroupesNature';
@@ -23,7 +23,7 @@ import { databook, gravite, noteTexte, qualificatif } from './fiche';
 
 const RARETE: Record<string, string> = { commune: 'Commune', qualite: 'De qualité', maitre: 'De maître', legendaire: 'Légendaire', maudite: 'Maudite' };
 
-const ONGLETS = ['Profil', 'Techniques', 'Maîtrise', 'Arsenal', 'Métier', 'Relations', 'Missions', 'Décisions'] as const;
+const ONGLETS = ['Profil', 'Techniques', 'Maîtrise', 'Inventaire', 'Métier', 'Relations', 'Missions', 'Décisions'] as const;
 type Onglet = (typeof ONGLETS)[number];
 
 function Piste({ valeur, max = 100, classe = 'c-neutre' }: { valeur: number; max?: number; classe?: string }) {
@@ -62,14 +62,7 @@ export default function Tableau({
   const p = etat.creation.presentation;
   return (
     <div className="page">
-      <div className="fiche-tete">
-        <div>
-          <h1 className="titre-ecran">{nomComplet(etat)}</h1>
-          <p className="sous-titre">
-            {accorder(RANG_LIBELLE[etat.rang], p)}, {age(etat)} ans, {R.villages[etat.creation.village].nomComplet}.
-          </p>
-        </div>
-      </div>
+      <FicheHeros etat={etat} onOuvrirPoints={onOuvrirPoints} />
       <div className="onglets" role="tablist">
         {ONGLETS.map((o) => (
           <button key={o} role="tab" aria-selected={onglet === o} onClick={() => setOnglet(o)}>
@@ -77,10 +70,10 @@ export default function Tableau({
           </button>
         ))}
       </div>
-      {onglet === 'Profil' && <Profil etat={etat} onOuvrirPoints={onOuvrirPoints} onArsenal={() => setOnglet('Arsenal')} />}
+      {onglet === 'Profil' && <Profil etat={etat} onOuvrirPoints={onOuvrirPoints} onArsenal={() => setOnglet('Inventaire')} />}
       {onglet === 'Techniques' && <Techniques etat={etat} />}
       {onglet === 'Maîtrise' && <Maitrise etat={etat} />}
-      {onglet === 'Arsenal' && <Arsenal etat={etat} peutEquiper={peutEquiper} onEquiper={onEquiper} />}
+      {onglet === 'Inventaire' && <Arsenal etat={etat} peutEquiper={peutEquiper} onEquiper={onEquiper} />}
       {onglet === 'Métier' && <Metier etat={etat} />}
       {onglet === 'Relations' && <Relations etat={etat} />}
       {onglet === 'Missions' && <Missions etat={etat} />}
@@ -90,6 +83,140 @@ export default function Tableau({
 }
 
 const ELEMENTS_BASE = ['katon', 'suiton', 'fuuton', 'raiton', 'doton'] as const;
+
+/** Ce que le personnage est en train de vivre, en quelques mots (jamais le contenu d'un choix à venir). */
+function activiteActuelle(etat: GameState): string {
+  const sc = etat.scene;
+  if (sc.type === 'evenement') return `Au cœur d’un moment : ${accorder(R.evenements[sc.id]?.titre ?? '…', etat.creation.presentation)}`;
+  if (sc.type === 'affrontement' || sc.type === 'combat') return 'En plein combat';
+  if (sc.type === 'temps_libre') return 'Temps libre : à toi de choisir';
+  if (sc.type === 'resultat') return 'Ce qui vient de se passer t’attend dans le récit';
+  if (sc.type === 'bilan') return 'Une page se tourne';
+  return 'Une vie qui s’achève';
+}
+
+/** La prochaine étape, sans rien en dévoiler : un moment d'histoire approche, ou la séquence continue. */
+function prochaineEtape(etat: GameState): string {
+  const prochain = etat.planifies.filter((x) => x.jour > etat.jour).sort((a, b) => a.jour - b.jour)[0];
+  if (prochain) {
+    const mois = Math.max(1, Math.round((prochain.jour - etat.jour) / 30));
+    return mois <= 1 ? 'Quelque chose se prépare, très bientôt.' : mois < 12 ? `Quelque chose se prépare, dans ${mois} mois environ.` : 'Quelque chose se prépare, plus loin dans l’année.';
+  }
+  const seq = [...etat.sequences].reverse().find((x) => !x.fin);
+  const def = seq ? R.contenu.sequences.find((x) => x.id === seq.id) : undefined;
+  return def ? `${def.titre} : la suite s’écrit avec tes choix.` : 'La suite s’écrit avec tes choix.';
+}
+
+/**
+ * La présentation du personnage : son nom au centre, qui il est, où il en est, ce qu'il sait faire de mieux,
+ * ce qu'il vient de vivre et ceux qui comptent. Les chiffres détaillés restent dans les onglets.
+ */
+function FicheHeros({ etat, onOuvrirPoints }: { etat: GameState; onOuvrirPoints: () => void }) {
+  const c = etat.creation;
+  const p = c.presentation;
+  const j = etat.jauges;
+  const village = R.villages[c.village];
+  const origine = c.clan === 'sans_clan' ? (estOrphelin(etat) ? 'Orphelin·e' : 'Sans clan') : `Clan ${R.clans[c.clan].nom}`;
+  const aptitudes = ATTRIBUTS.map((a) => ({ a, v: etat.attributs[a] }))
+    .sort((x, y) => y.v - x.v)
+    .slice(0, 3);
+  const techniques = Object.values(etat.maitrises)
+    .filter((m) => m.tier >= 1 && !m.bloquee && R.maitrises[m.id] && (R.maitrises[m.id].technique || R.maitrises[m.id].kind === 'clan'))
+    .sort((x, y) => y.tier - x.tier || x.id.localeCompare(y.id))
+    .slice(0, 4);
+  const dernier = [...etat.journal].reverse().find((x) => x.importance >= 2);
+  const proches = Object.entries(etat.relations)
+    .filter(([id, r]) => etat.pnj[id]?.rencontre && etat.pnj[id]?.etat !== 'mort' && !r.rompue)
+    .map(([id, r]) => ({ id, r, d: defPnj(etat, id), poids: Math.max(...AXES_RELATION.map((a) => r[a])) }))
+    .filter((x) => x.d && x.poids >= 15)
+    .sort((a, b) => b.poids - a.poids)
+    .slice(0, 3);
+  const fatigue = gravite(j.fatigue);
+  return (
+    <header className="heros" style={{ '--village': village?.couleur ?? 'var(--nd-primary)' } as React.CSSProperties}>
+      <div className="heros-identite">
+        <p className="heros-surtitre">
+          {village?.nom} · {accorder(origine, p)} · chapitre {etat.chapitre}
+        </p>
+        <h1 className="heros-nom">{nomComplet(etat)}</h1>
+        <p className="heros-age">
+          <span className="heros-rang">{accorder(RANG_LIBELLE[etat.rang], p)}</span>
+          <span>
+            {age(etat)} ans{etat.statut !== 'actif' && ` · ${accorder(STATUT_LIBELLE[etat.statut], p)}`}
+          </span>
+        </p>
+        <div className="heros-jauges">
+          <Jauge nom="Santé" valeur={j.sante} classe={j.sante < 30 ? 'c-danger' : 'c-sante'} detail="/ 100" />
+          <Jauge nom="Chakra" valeur={j.chakra} max={Math.max(1, j.chakraMax)} classe="c-chakra" detail={`/ ${Math.round(j.chakraMax)}`} />
+          <Jauge nom="Fatigue" valeur={j.fatigue} classe={fatigue === 'danger' ? 'c-danger' : fatigue === 'alerte' ? 'c-alerte' : 'c-neutre'} detail="/ 100" />
+        </div>
+        {etat.pointsStat > 0 && (
+          <button type="button" className="heros-points" onClick={onOuvrirPoints}>
+            <b>{etat.pointsStat}</b> {etat.pointsStat > 1 ? 'points à répartir' : 'point à répartir'}
+          </button>
+        )}
+      </div>
+      <dl className="heros-faits">
+        <div>
+          <dt>Aptitudes</dt>
+          <dd className="heros-chips">
+            {aptitudes.map((x) => (
+              <span key={x.a} className="heros-chip">
+                {ATTRIBUT_LIBELLE[x.a]} <b>{Math.round(x.v)}</b>
+              </span>
+            ))}
+          </dd>
+        </div>
+        {techniques.length > 0 && (
+          <div>
+            <dt>Techniques</dt>
+            <dd className="heros-chips">
+              {techniques.map((m) => (
+                <span key={m.id} className={`heros-chip tech${classeMulti(naturesMaitrise(m.id))}`} style={styleNatures(naturesMaitrise(m.id))}>
+                  {R.maitrises[m.id].nom} <small>palier {m.tier}</small>
+                </span>
+              ))}
+            </dd>
+          </div>
+        )}
+        <div>
+          <dt>Maintenant</dt>
+          <dd>{activiteActuelle(etat)}</dd>
+        </div>
+        {dernier && (
+          <div>
+            <dt>Dernier souvenir marquant</dt>
+            <dd>{accorder(dernier.texte, p)}</dd>
+          </div>
+        )}
+        <div>
+          <dt>Prochaine étape</dt>
+          <dd>{prochaineEtape(etat)}</dd>
+        </div>
+        {proches.length > 0 && (
+          <div>
+            <dt>Ceux qui comptent</dt>
+            <dd className="heros-proches">
+              {proches.map(({ id, r, d }) => {
+                const l = lienResume(r);
+                const negatif = l.axe === 'hostilite' || l.axe === 'rivalite' || l.axe === 'peur';
+                return (
+                  <span key={id} className={`heros-proche${negatif ? ' negatif' : ''}`}>
+                    <span>
+                      {d!.nom}
+                      <small>{accorder(l.mot, d!.genre === 'f' ? 'feminin' : 'masculin')}</small>
+                    </span>
+                  </span>
+                );
+              })}
+            </dd>
+          </div>
+        )}
+      </dl>
+    </header>
+  );
+}
+
 
 /** Le tempérament en trois mots : le pôle vers lequel penche chaque axe, ou l'équilibre. */
 function temperamentResume(etat: GameState): string {
@@ -121,12 +248,11 @@ function Profil({ etat, onOuvrirPoints, onArsenal }: { etat: GameState; onOuvrir
   return (
     <div className="fiche">
       <section className="panneau l7">
-        <div className="identite">
-          <Portrait nom={c.prenom} village={c.village} clan={c.clan} taille={64} />
+        <div className="identite identite-sobre">
           <div>
-            <h2>{nomComplet(etat)}</h2>
+            <h2>Qui tu es</h2>
             <p className="sous-titre">
-              {accorder(origine, p)}. {accorder(STATUT_LIBELLE[etat.statut], p)}.
+              {accorder(origine, p)}.{etat.statut !== 'actif' && ` ${accorder(STATUT_LIBELLE[etat.statut], p)}.`}
             </p>
             <div>
               {estProdige(etat) && <span className="etiquette violet">{R.traits['prodige'].nom}</span>}
@@ -530,6 +656,27 @@ function Arsenal({ etat, peutEquiper, onEquiper }: { etat: GameState; peutEquipe
   );
   return (
     <>
+      {etat.objets.length > 0 && (
+        <section className="objets-gardes" aria-label="Ce que tu gardes">
+          <h2>Ce que tu gardes</h2>
+          <ul>
+            {etat.objets.map((o) => {
+              const def = OBJETS[o];
+              return (
+                <li key={o}>
+                  <span className="objet-kanji" aria-hidden="true">
+                    {def?.kanji ?? '物'}
+                  </span>
+                  <span>
+                    <strong>{def?.nom ?? o.replace(/_/g, ' ')}</strong>
+                    {def && <small>{resoudreTexte(def.texte, etat)}</small>}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       {etat.arsenal.length === 0 && <p className="vide">Tes mains sont vides.</p>}
       <div className="grille-blocs">
         {etat.arsenal.map((inst) => {
@@ -709,7 +856,6 @@ export function Relations({ etat }: { etat: GameState }) {
               libelle={`Détails du lien avec ${d.nom}`}
               resume={
                 <div className="identite relation-resume">
-                  <Portrait nom={d.nom} village={d.village} clan={d.clan} taille={36} mort={st?.etat === 'mort'} />
                   <div>
                     <h3>{d.nom}</h3>
                     <span className={`lien-mot${negatif ? ' negatif' : ''}${r.rompue ? ' rompu' : ''}`}>

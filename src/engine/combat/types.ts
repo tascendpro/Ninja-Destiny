@@ -251,6 +251,19 @@ export interface EntreeManche {
   technique: string;
   /** La nature de chakra de l'action jouée (son effet à l'écran). */
   nature?: string;
+  /**
+   * Pour expliquer la manche après coup (écran « Ce qui s'est passé ») : ce que tu as joué, ce qu'il faisait vraiment,
+   * ce que ta lecture en disait, et si ton action non offensive a fait ce que tu voulais. Absents des combats d'avant la 2.51.
+   */
+  famille?: Famille;
+  choix?: string;
+  intention?: IntentionAdv;
+  fiabilite?: Fiabilite;
+  reussi?: boolean;
+  /** Comment ton geste est parti (actions qui frappent seulement). */
+  tenue?: 'parfaite' | 'reussie' | 'instable' | 'ratee';
+  /** Le nom de sa technique, s'il en lançait une. */
+  techniqueAdv?: string;
 }
 
 export interface LectureEtat {
@@ -278,7 +291,25 @@ export interface AnnonceEtat {
  */
 export type Cran = 'lache' | 'ordinaire' | 'tenace' | 'acharne';
 
+/**
+ * La version des règles de combat. Un combat garde toute sa vie les règles de son ouverture : une partie enregistrée
+ * (ou un journal en ligne rejoué) ne change pas d'issue quand les règles évoluent.
+ *   1 : les règles d'origine.
+ *   2 : feinte, concentration, souffle ; adversaire qui s'adapte selon son niveau ; KO à 30 % des PV dans les duels
+ *       amicaux de 6 à 12 ans.
+ */
+export const REGLES_COMBAT = 2;
+
+/** Ce qu'est un combat, pour le joueur : on ne risque pas la même chose à l'entraînement et dans une embuscade. */
+export type GraviteCombat = 'entrainement' | 'amical' | 'serieux' | 'mortel';
+
 export interface EtatAffrontement {
+  /** Les règles de ce combat (absent : 1, les règles d'origine). */
+  regles?: number;
+  /** Concentration : la prochaine attaque part plus juste et plus fort (manches restantes). */
+  concentre?: number;
+  /** Le duel s'est arrêté sous le seuil de KO : qui est hors de combat. */
+  ko?: 'joueur' | 'adv';
   /** Son cran, tiré à l'ouverture du combat (absent : ordinaire). */
   cran?: Cran;
   type: 'affrontement';

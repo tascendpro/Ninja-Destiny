@@ -1,30 +1,70 @@
 /* ─────────────────────────────────────────────────────────────
-   Ninja Destiny — feuille de style
-   Palette tirée de l'illustration d'accueil : roche noire, lune crème,
-   nuages cramoisis, ciel d'ardoise. Deux ambiances : Nuit (défaut) et Papier washi.
+   Ninja Destiny — feuille de style (interface V2)
+
+   Les jetons --nd-* sont la source de vérité : couleurs, rayons, ombres, typographie.
+   Chaque couleur a une fonction, et une seule :
+     violet  (--nd-primary)  l'identité du jeu : actions principales, navigation, sceaux ;
+     or      (--nd-gold)     ce qui compte : récompenses, paroles, moments exceptionnels ;
+     rouge   (--nd-red)      le danger : blessures, échecs, l'ennemi, la mort ;
+     vert    (--nd-green)    les réussites, les soins, les états positifs ;
+     bleu    (--nd-blue)     le chakra et l'information.
+   Les anciens noms (--encre, --ardoise, --papier, --vermillon…) sont des alias : tout le jeu suit la palette.
+   Deux ambiances : Nuit (défaut) et Papier washi.
    ───────────────────────────────────────────────────────────── */
 
 :root {
-  --encre: #0c0e12;
-  --encre-2: #12161c;
-  --ardoise: #171c23;
-  --ardoise-2: #1f262f;
-  --trait: #2d3742;
-  --trait-doux: #222a33;
-  --papier: #f2e7cf;
-  --papier-2: #c9c0ac;
-  --brume: #929ea8;
-  --vermillon: #c32a38;
-  --vermillon-clair: #e5545a;
-  --vin: #3a1219;
-  --or: #d8ab52;
-  --glycine: #8d84e4;
-  --jade: #62b388;
-  --ciel: #3f5a6a;
-  --danger: #e5545a;
-  --texte-bouton: #fff3ec;
-  --voile: rgba(5, 7, 10, 0.72);
-  --ombre: 0 24px 48px -28px rgba(0, 0, 0, 0.85);
+  --nd-bg: #090b11;
+  --nd-bg-soft: #0e121b;
+  --nd-surface: #141a25;
+  --nd-surface-hover: #1b2432;
+  --nd-surface-raised: #222c3d;
+  --nd-border: #2b3547;
+  --nd-border-soft: #1d2533;
+  --nd-text: #f1efea;
+  --nd-text-soft: #c6c9d3;
+  --nd-muted: #929bad;
+  --nd-primary: #8b5cf6;
+  --nd-primary-hover: #a78bfa;
+  --nd-primary-soft: rgba(139, 92, 246, 0.14);
+  --nd-on-primary: #ffffff;
+  --nd-gold: #d8a85c;
+  --nd-red: #e05b68;
+  --nd-red-strong: #c43d4b;
+  --nd-green: #58bd91;
+  --nd-blue: #5e9de8;
+
+  --nd-radius-sm: 9px;
+  --nd-radius-md: 15px;
+  --nd-radius-lg: 22px;
+  --nd-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+  --nd-shadow-raised: 0 22px 60px -18px rgba(0, 0, 0, 0.6);
+  --nd-glow: 0 0 0 1px color-mix(in srgb, var(--nd-primary) 45%, transparent), 0 10px 30px -12px color-mix(in srgb, var(--nd-primary) 60%, transparent);
+  --nd-duree: 180ms;
+  --nd-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Alias historiques : ils suivent les jetons. */
+  --encre: var(--nd-bg);
+  --encre-2: var(--nd-bg-soft);
+  --ardoise: var(--nd-surface);
+  --ardoise-2: var(--nd-surface-raised);
+  --trait: var(--nd-border);
+  --trait-doux: var(--nd-border-soft);
+  --papier: var(--nd-text);
+  --papier-2: var(--nd-text-soft);
+  --brume: var(--nd-muted);
+  --vermillon: var(--nd-primary);
+  --vermillon-clair: var(--nd-primary-hover);
+  --rouge: var(--nd-red-strong);
+  --rouge-clair: var(--nd-red);
+  --vin: #2a1220;
+  --or: var(--nd-gold);
+  --glycine: var(--nd-primary-hover);
+  --jade: var(--nd-green);
+  --ciel: var(--nd-blue);
+  --danger: var(--nd-red);
+  --texte-bouton: var(--nd-on-primary);
+  --voile: rgba(4, 5, 9, 0.74);
+  --ombre: var(--nd-shadow-raised);
 
   --mincho: 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
   --gothic: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Segoe UI', system-ui, sans-serif;
@@ -37,40 +77,42 @@
   --t-2xl: 1.75rem;
   --t-3xl: 2.25rem;
 
-  --rayon-s: 6px;
-  --rayon-m: 10px;
+  --rayon-s: var(--nd-radius-sm);
+  --rayon-m: var(--nd-radius-md);
   --rail: 92px;
   --entete-h: 64px;
   --colonne: 42rem;
-  /* Les deux joueurs d'une campagne : vermillon pour le premier, indigo pour le second. */
-  --joueur-0: #e05a4f;
-  --joueur-1: #7b8cf0;
+  /* Les deux joueurs d'une campagne : ambre pour le premier, bleu pour le second (jamais le rouge du danger). */
+  --joueur-0: #f0a35e;
+  --joueur-1: #6fa8f0;
   color-scheme: dark;
 }
 
 :root[data-ambiance='washi'] {
-  --joueur-0: #a81f2e;
-  --joueur-1: #34449a;
-  --encre: #eee5d1;
-  --encre-2: #e6dcc5;
-  --ardoise: #f7f0e1;
-  --ardoise-2: #ebe1ca;
-  --trait: #cdbd9c;
-  --trait-doux: #ddd0b4;
-  --papier: #1c1714;
-  --papier-2: #3f362c;
-  --brume: #675d4f;
-  --vermillon: #a81f2e;
-  --vermillon-clair: #b7313d;
+  --nd-bg: #efe7d6;
+  --nd-bg-soft: #e7dec9;
+  --nd-surface: #f8f2e5;
+  --nd-surface-hover: #f2eadb;
+  --nd-surface-raised: #ece2cd;
+  --nd-border: #cfc0a2;
+  --nd-border-soft: #ddd1b8;
+  --nd-text: #1d1915;
+  --nd-text-soft: #3e362c;
+  --nd-muted: #6a6052;
+  --nd-primary: #6a3fd1;
+  --nd-primary-hover: #5a30bf;
+  --nd-primary-soft: rgba(106, 63, 209, 0.12);
+  --nd-gold: #8a6215;
+  --nd-red: #a8283a;
+  --nd-red-strong: #a8283a;
+  --nd-green: #2b7150;
+  --nd-blue: #2f63a8;
+  --nd-shadow: 0 14px 34px rgba(60, 40, 10, 0.12);
+  --nd-shadow-raised: 0 22px 44px -30px rgba(60, 40, 10, 0.5);
+  --joueur-0: #b25c12;
+  --joueur-1: #2f5fae;
   --vin: #f1d8d2;
-  --or: #85600f;
-  --glycine: #5546a2;
-  --jade: #2b7150;
-  --ciel: #4b6a7b;
-  --danger: #a81f2e;
-  --texte-bouton: #fff6f0;
   --voile: rgba(40, 30, 15, 0.45);
-  --ombre: 0 22px 44px -30px rgba(60, 40, 10, 0.5);
   color-scheme: light;
 }
 
@@ -567,8 +609,8 @@ p {
   border-color: color-mix(in srgb, var(--or) 50%, transparent);
 }
 .etiquette.rouge {
-  color: var(--vermillon-clair);
-  border-color: color-mix(in srgb, var(--vermillon-clair) 50%, transparent);
+  color: var(--rouge-clair);
+  border-color: color-mix(in srgb, var(--rouge-clair) 50%, transparent);
 }
 .etiquette.violet {
   color: var(--glycine);
@@ -602,7 +644,7 @@ p {
   --c: var(--jade);
 }
 .c-chakra {
-  --c: var(--glycine);
+  --c: var(--nd-blue);
 }
 .c-or {
   --c: var(--or);
@@ -813,7 +855,7 @@ p {
 }
 .choix-meta .risque-eleve,
 .choix-meta .risque-extreme {
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
 }
 .touche {
   display: none;
@@ -890,7 +932,7 @@ p {
   color: var(--papier-2);
 }
 .issue-echec {
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
 }
 .consequences {
   display: flex;
@@ -912,7 +954,7 @@ p {
   color: var(--jade);
 }
 .csq.baisse {
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
 }
 .csq.majeure {
   border-color: var(--glycine);
@@ -1001,8 +1043,8 @@ p {
   margin-top: 12px;
   padding: 10px 12px;
   border-radius: var(--rayon-s);
-  border: 1px solid color-mix(in srgb, var(--vermillon-clair) 45%, transparent);
-  color: var(--vermillon-clair);
+  border: 1px solid color-mix(in srgb, var(--rouge-clair) 45%, transparent);
+  color: var(--rouge-clair);
   font-size: var(--t-s);
 }
 .tl-categories {
@@ -1618,7 +1660,7 @@ p {
   color: var(--danger);
 }
 .ft-rang.rang-A {
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
 }
 .ft-kinjutsu {
   font-size: var(--t-xs);
@@ -1658,7 +1700,7 @@ p {
   border-left-color: var(--danger);
 }
 .fiche-bingo.rang-A {
-  border-left-color: var(--vermillon-clair);
+  border-left-color: var(--rouge-clair);
 }
 .fiche-bingo.toi {
   border-color: var(--or);
@@ -1685,7 +1727,7 @@ p {
   color: var(--danger);
 }
 .rang-A .fb-rang {
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
 }
 .fb-nom {
   margin: 0;
@@ -2170,7 +2212,7 @@ p.entree.inconnue {
   margin: 0;
 }
 .erreurs {
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
   font-size: var(--t-s);
 }
 
@@ -2210,15 +2252,15 @@ p.entree.inconnue {
   display: grid;
   gap: 1px;
   text-align: left;
-  border: 1px solid color-mix(in srgb, var(--vermillon-clair) 45%, var(--trait));
-  background: color-mix(in srgb, var(--vermillon) 9%, var(--ardoise));
+  border: 1px solid color-mix(in srgb, var(--rouge-clair) 45%, var(--trait));
+  background: color-mix(in srgb, var(--rouge) 9%, var(--ardoise));
   border-radius: var(--rayon-s);
   padding: 7px 11px;
   min-width: 0;
 }
 .attaque:hover:not(:disabled) {
-  border-color: var(--vermillon-clair);
-  background: color-mix(in srgb, var(--vermillon) 16%, var(--ardoise));
+  border-color: var(--rouge-clair);
+  background: color-mix(in srgb, var(--rouge) 16%, var(--ardoise));
 }
 .attaque:disabled {
   opacity: 0.5;
@@ -2299,7 +2341,7 @@ p.entree.inconnue {
   height: 30px;
   display: grid;
   place-items: center;
-  background: var(--vermillon);
+  background: var(--rouge);
   color: var(--texte-bouton);
   font-family: var(--mincho);
   border-radius: 4px;
@@ -2308,7 +2350,7 @@ p.entree.inconnue {
 .m-attaque {
   margin-top: 4px;
   font-size: var(--t-xs);
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
 }
 
 .sceau-grand {
@@ -2355,7 +2397,7 @@ p.entree.inconnue {
   color: var(--jade);
 }
 .bilan-gains li.baisse b {
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
 }
 @media (max-width: 1023px) {
   .bilan .titre-scene {
@@ -3035,7 +3077,7 @@ p.entree.inconnue {
 .temps-libre {
   --cat: var(--or);
 }
-.temps-libre[data-cat='missions'] { --cat: var(--vermillon-clair); }
+.temps-libre[data-cat='missions'] { --cat: var(--rouge-clair); }
 .temps-libre[data-cat='route'] { --cat: #b58b5a; }
 .temps-libre[data-cat='entrainement'] { --cat: var(--or); }
 .temps-libre[data-cat='techniques'] { --cat: var(--glycine); }
@@ -3464,8 +3506,6 @@ p.entree.inconnue {
   --accent: var(--or);
 }
 :root[data-ambiance='washi'] {
-  --joueur-0: #a81f2e;
-  --joueur-1: #34449a;
   --texte-2: #5a4f42;
   --n-katon: #b5361c;
   --n-fuuton: #2b7a5b;
@@ -3742,7 +3782,7 @@ body::before {
   height: 18px;
   margin-right: var(--e1);
   border-radius: 3px;
-  background: var(--vermillon);
+  background: var(--rouge);
   color: var(--texte-bouton);
   font-family: var(--pinceau);
   font-size: 0.7rem;
@@ -4341,13 +4381,13 @@ body::before {
   grid-row: 1;
 }
 .fuda-combat .fuda-kanji {
-  background: color-mix(in srgb, var(--vermillon) 22%, var(--ardoise));
-  border-color: color-mix(in srgb, var(--vermillon) 45%, transparent);
+  background: color-mix(in srgb, var(--rouge) 22%, var(--ardoise));
+  border-color: color-mix(in srgb, var(--rouge) 45%, transparent);
   color: #ffd9d4;
 }
 :root[data-ambiance='washi'] .fuda-combat .fuda-kanji {
-  background: color-mix(in srgb, var(--vermillon) 12%, var(--ardoise));
-  color: var(--vermillon);
+  background: color-mix(in srgb, var(--rouge) 12%, var(--ardoise));
+  color: var(--rouge);
 }
 .fuda-epreuve .fuda-kanji {
   background: color-mix(in srgb, var(--or) 16%, var(--ardoise));
@@ -4362,8 +4402,8 @@ body::before {
   transform: rotate(-4deg) scale(1.05);
 }
 .fuda-mortel {
-  border-color: color-mix(in srgb, var(--vermillon) 55%, var(--trait));
-  box-shadow: inset 3px 0 0 var(--vermillon);
+  border-color: color-mix(in srgb, var(--rouge) 55%, var(--trait));
+  box-shadow: inset 3px 0 0 var(--rouge);
 }
 .fuda-mort {
   position: absolute;
@@ -4373,9 +4413,9 @@ body::before {
   height: 22px;
   display: grid;
   place-items: center;
-  border: 1.5px solid var(--vermillon-clair);
+  border: 1.5px solid var(--rouge-clair);
   border-radius: 4px;
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
   font-family: var(--pinceau);
   font-size: 0.85rem;
   transform: rotate(8deg);
@@ -4446,7 +4486,7 @@ body::before {
   color: var(--papier-2);
 }
 .sceau-echec {
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
 }
 :root[data-animations='reduites'] .sceau-issue {
   animation: none;
@@ -4468,7 +4508,7 @@ body::before {
   border-radius: 12px;
   background:
     radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
-    radial-gradient(120% 140% at 100% 50%, color-mix(in srgb, var(--vermillon) 14%, transparent), transparent 60%),
+    radial-gradient(120% 140% at 100% 50%, color-mix(in srgb, var(--rouge) 14%, transparent), transparent 60%),
     var(--ardoise);
 }
 .duel-camp {
@@ -4515,10 +4555,10 @@ body::before {
   background: var(--jade);
 }
 .duel-chakra {
-  background: var(--glycine, #8f84d8);
+  background: var(--nd-blue);
 }
 .duel-ennemi-vie {
-  background: var(--vermillon-clair);
+  background: var(--rouge-clair);
   margin-left: auto;
 }
 .duel-vs {
@@ -4534,11 +4574,11 @@ body::before {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  border: 2px solid var(--vermillon-clair);
-  color: var(--vermillon-clair);
+  border: 2px solid var(--rouge-clair);
+  color: var(--rouge-clair);
   font-family: var(--pinceau);
   font-size: 1.35rem;
-  background: color-mix(in srgb, var(--vermillon) 12%, transparent);
+  background: color-mix(in srgb, var(--rouge) 12%, transparent);
 }
 
 /* L'accueil : la version qui tourne */
@@ -4589,8 +4629,8 @@ body::before {
   background: var(--ardoise);
 }
 .aff-carte.adv {
-  border-color: color-mix(in srgb, var(--vermillon-clair) 40%, var(--trait));
-  background: linear-gradient(200deg, color-mix(in srgb, var(--vermillon) 10%, var(--ardoise)), var(--ardoise) 70%);
+  border-color: color-mix(in srgb, var(--rouge-clair) 40%, var(--trait));
+  background: linear-gradient(200deg, color-mix(in srgb, var(--rouge) 10%, var(--ardoise)), var(--ardoise) 70%);
 }
 .aff-carte.joueur {
   border-color: color-mix(in srgb, var(--jade) 40%, var(--trait));
@@ -4605,8 +4645,8 @@ body::before {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid var(--vermillon-clair);
-  color: var(--vermillon-clair);
+  border: 2px solid var(--rouge-clair);
+  color: var(--rouge-clair);
   font-family: var(--pinceau);
   font-size: 1.15rem;
 }
@@ -4646,13 +4686,13 @@ body::before {
   transition: width 0.4s ease;
 }
 .aff-adv {
-  background: var(--vermillon-clair);
+  background: var(--rouge-clair);
 }
 .aff-endurance {
   background: var(--jade);
 }
 .aff-chakra {
-  background: var(--glycine);
+  background: var(--nd-blue);
 }
 .aff-pastilles {
   display: flex;
@@ -4679,8 +4719,8 @@ body::before {
 }
 .aff-pastille.desequilibre,
 .aff-pastille.sonne {
-  border-color: var(--vermillon-clair);
-  color: var(--vermillon-clair);
+  border-color: var(--rouge-clair);
+  color: var(--rouge-clair);
 }
 .aff-elan {
   display: inline-flex;
@@ -4712,7 +4752,7 @@ body::before {
   width: 24px;
   height: 24px;
   border-radius: 5px;
-  background: var(--vermillon);
+  background: var(--rouge);
   color: var(--texte-bouton);
   font-family: var(--pinceau);
   font-size: 0.85rem;
@@ -4765,7 +4805,7 @@ body::before {
   border-left-color: var(--jade);
 }
 .aff-manche-bloc.ton-mauvais {
-  border-left-color: var(--vermillon-clair);
+  border-left-color: var(--rouge-clair);
 }
 .aff-manche-tete {
   display: flex;
@@ -4792,8 +4832,8 @@ body::before {
   background: color-mix(in srgb, var(--jade) 12%, transparent);
 }
 .aff-issue.mauvais {
-  color: var(--vermillon-clair);
-  background: color-mix(in srgb, var(--vermillon) 12%, transparent);
+  color: var(--rouge-clair);
+  background: color-mix(in srgb, var(--rouge) 12%, transparent);
 }
 .aff-issue.neutre {
   color: var(--or);
@@ -4830,14 +4870,14 @@ body::before {
 .aff-cause.issue-predite,
 .aff-cause.issue-ecrasee,
 .aff-cause.issue-dominee {
-  border-left-color: var(--vermillon-clair);
+  border-left-color: var(--rouge-clair);
 }
 .aff-replique {
   position: relative;
   margin: 10px 0 0;
   padding: 8px 12px;
   border-radius: 4px 12px 12px 12px;
-  background: color-mix(in srgb, var(--vermillon) 9%, var(--ardoise));
+  background: color-mix(in srgb, var(--rouge) 9%, var(--ardoise));
   font-family: var(--mincho);
   font-size: var(--t-m);
   line-height: 1.5;
@@ -4848,7 +4888,7 @@ body::before {
   font-family: var(--gothic);
   font-size: var(--t-xs);
   letter-spacing: 0.04em;
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
 }
 
 /* ── 3. Ce que tu lis ── */
@@ -4894,15 +4934,15 @@ body::before {
   font-style: italic;
 }
 .aff-annonce.mortelle {
-  border-color: var(--vermillon-clair);
-  background: color-mix(in srgb, var(--vermillon) 10%, var(--ardoise));
+  border-color: var(--rouge-clair);
+  background: color-mix(in srgb, var(--rouge) 10%, var(--ardoise));
 }
 .aff-annonce.mortelle .aff-oeil {
-  background: var(--vermillon);
+  background: var(--rouge);
   color: var(--texte-bouton);
 }
 .aff-annonce.mortelle .aff-etiquette {
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
   font-weight: 700;
 }
 .aff-lecture {
@@ -5034,7 +5074,7 @@ body::before {
   font-size: var(--t-xs);
 }
 .aff-cout {
-  color: var(--glycine);
+  color: var(--nd-blue);
   font-weight: 600;
 }
 .aff-action-raison {
@@ -5057,7 +5097,7 @@ body::before {
   color: var(--jade);
 }
 .aff-marque.m-éventée {
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
 }
 .aff-marque.m-peut-tout-finir {
   color: var(--or);
@@ -5767,7 +5807,7 @@ body::before {
 }
 .aff-delta.perte {
   color: var(--texte-bouton);
-  background: var(--vermillon);
+  background: var(--rouge);
 }
 .aff-delta.gain {
   color: var(--encre);
@@ -5799,7 +5839,7 @@ body::before {
 .aff-geste {
   margin: 10px 0 0;
   padding: 6px 12px;
-  border-left: 3px solid var(--vermillon-clair);
+  border-left: 3px solid var(--rouge-clair);
   font-style: italic;
   color: var(--papier-2);
 }
@@ -5999,9 +6039,9 @@ body::before {
 .duo-coherence {
   margin-top: 12px;
   padding: 12px 14px;
-  border: 1px solid var(--vermillon-clair);
+  border: 1px solid var(--rouge-clair);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--vermillon) 8%, var(--ardoise));
+  background: color-mix(in srgb, var(--rouge) 8%, var(--ardoise));
   display: grid;
   gap: 8px;
 }
@@ -6190,7 +6230,7 @@ body::before {
 }
 .duo-alerte {
   margin: 0;
-  color: var(--vermillon-clair);
+  color: var(--rouge-clair);
   font-weight: 600;
 }
 .duo-signe select,
@@ -6219,8 +6259,8 @@ body::before {
   align-items: center;
 }
 .btn-secondaire.danger {
-  border-color: var(--vermillon-clair);
-  color: var(--vermillon-clair);
+  border-color: var(--rouge-clair);
+  color: var(--rouge-clair);
 }
 .scene-privee .commune-etiquette {
   color: var(--vermillon-clair);
@@ -6324,8 +6364,8 @@ body::before {
 
 /* ── Combat vivant : états, visage, allié, événement ── */
 .aff-pastille.etat {
-  color: var(--vermillon-clair);
-  border-color: color-mix(in srgb, var(--vermillon-clair) 45%, transparent);
+  color: var(--rouge-clair);
+  border-color: color-mix(in srgb, var(--rouge-clair) 45%, transparent);
 }
 .aff-pastille.visage {
   color: var(--or);
@@ -6388,8 +6428,8 @@ body::before {
   cursor: pointer;
 }
 .aff-membre.visee {
-  border-color: var(--vermillon-clair);
-  box-shadow: 0 0 0 1px var(--vermillon-clair) inset;
+  border-color: var(--rouge-clair);
+  box-shadow: 0 0 0 1px var(--rouge-clair) inset;
 }
 .aff-membre.hors {
   opacity: 0.45;
@@ -6403,8 +6443,8 @@ body::before {
   height: 28px;
   border-radius: 8px;
   font-family: var(--mincho);
-  background: color-mix(in srgb, var(--vermillon) 18%, transparent);
-  color: var(--vermillon-clair);
+  background: color-mix(in srgb, var(--rouge) 18%, transparent);
+  color: var(--rouge-clair);
 }
 .aff-membre.r-chef .aff-membre-kanji {
   background: color-mix(in srgb, var(--or) 22%, transparent);
@@ -6440,7 +6480,7 @@ body::before {
 .aff-membre-jauge i {
   display: block;
   height: 100%;
-  background: var(--vermillon-clair);
+  background: var(--rouge-clair);
 }
 
 /* ── L'estampe du lieu : un paysage à l'encre, bas et large, que la saison traverse ── */
@@ -6599,7 +6639,7 @@ body::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--vermillon) 34%, transparent), transparent 85%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rouge) 34%, transparent), transparent 85%);
   mix-blend-mode: multiply;
 }
 :root[data-ambiance='washi'] .estampe-combat::after {
@@ -6752,7 +6792,7 @@ body::before {
   stroke: color-mix(in srgb, var(--jade) 30%, var(--encre));
 }
 .aff-transition.ton-mauvais .aff-transition-trait path {
-  stroke: color-mix(in srgb, var(--vermillon) 38%, var(--encre));
+  stroke: color-mix(in srgb, var(--rouge) 38%, var(--encre));
 }
 .aff-transition > span {
   position: relative;
@@ -6826,7 +6866,7 @@ body::before {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--jade) 40%, transparent);
 }
 .aff-carte.joueur.frappee {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--vermillon) 50%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rouge) 50%, transparent);
 }
 @keyframes carte-frappee {
   0%,
@@ -6859,7 +6899,7 @@ body::before {
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  background: var(--vermillon);
+  background: var(--rouge);
   color: var(--texte-bouton);
   font-family: var(--mincho);
   rotate: -5deg;

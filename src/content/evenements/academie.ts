@@ -236,7 +236,7 @@ export const ACADEMIE: EventDef[] = [
     categorie: 'secret_familial',
     lieu: '$maison',
     priorite: 68,
-    si: { tout: [{ age: { min: 9, max: 11 } }, { pnj: '@parent', etat: ['vivant', 'blesse'] }] },
+    si: { tout: [{ age: { min: 9, max: 11 } }, { pnj: '@parent', etat: ['vivant', 'blesse'] }, { nonVu: 'fam_lettre' }] },
     personnages: ['@parent'],
     texte:
       'En cherchant une couverture au grenier, tu trouves un coffre fermé par un simple nœud. Dedans : un masque d’animal fendu, un bandeau d’un autre village taché de sang sec, et une lettre jamais envoyée, adressée à une femme dont tu ne connais pas le nom. « Pardonne-moi pour le pont de Kannabi. Je n’avais pas le choix. Ils étaient quatre. Nous n’étions que deux à pouvoir rentrer. »',

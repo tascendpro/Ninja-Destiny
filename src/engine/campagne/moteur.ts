@@ -13,6 +13,7 @@ import { SCENES_COMMUNES } from '../../content/campagne/scenes';
 import { SCENES_VIE, SCENE_HERITIER_SANG } from '../../content/campagne/scenesVie';
 import { SCENES_SOUVENIRS } from '../../content/campagne/scenesSouvenirs';
 import { SCENES_COMPLICES } from '../../content/campagne/scenesComplices';
+import { SCENES_FAMILLE } from '../../content/campagne/scenesFamille';
 import { SCENE_ECHO_PROMESSE, SCENE_ECHO_SOUVENIR, planifierEchos } from '../../content/campagne/echos';
 import { SCENES_MORT_SIMULEE, SCENE_RETOUR_SEPARATION } from '../../content/campagne/mortSimulee';
 import { SCENES_SECRETS_AUTRE } from '../../content/campagne/secretsAutre';
@@ -25,6 +26,7 @@ import { SCENES_ARCS, SCENES_AKATSUKI } from '../../content/campagne/scenesArcs'
 import { AXES_LIEN } from './types';
 import type { ActionCampagne, ActionLien, AxeLien, Campagne, Changement, ChoixCommun, IdJoueur, IssueCommune, LienJoueurs, OrigineLien, PasseCommun, SceneCommuneDef, SigneCombat, SuiteMort, TypeLien } from './types';
 import type { ActionCombat } from '../combat/types';
+import { REGLES_COMBAT } from '../combat/types';
 import { ageA, autre, borne, bouger, decaler, finie, hash01, jourMonde, noter, planifierCommune, texteCommun } from './outils';
 import { aChoisirCombat, choisirCombatMut, ouvrirCombatDuo } from './combat';
 import { agirLienMut, appliquerRepercussions } from './lien';
@@ -34,7 +36,7 @@ export { texteCommun } from './outils';
 export { vueCombatDuo, SIGNES } from './combat';
 export { actionsLien, ensemble } from './lien';
 
-export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, SCENE_HERITIER_SANG, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES, SCENE_ECHO_SOUVENIR, SCENE_ECHO_PROMESSE, ...SCENES_MORT_SIMULEE, ...SCENES_SECRETS_AUTRE, ...SCENES_LAMES, ...SCENES_RANGS, ...SCENES_SUITES].map((s) => [s.id, s]));
+export const SCENES: Record<string, SceneCommuneDef> = Object.fromEntries([...SCENES_COMMUNES, ...SCENES_VIE, SCENE_HERITIER_SANG, ...SCENES_ENFANCE, ...SCENES_GENIN, ...SCENES_ADULTES, ...SCENES_ARCS, ...SCENES_AKATSUKI, ...SCENES_SOUVENIRS, ...SCENES_COMPLICES, ...SCENES_FAMILLE, SCENE_ECHO_SOUVENIR, SCENE_ECHO_PROMESSE, ...SCENES_MORT_SIMULEE, ...SCENES_SECRETS_AUTRE, ...SCENES_LAMES, ...SCENES_RANGS, ...SCENES_SUITES].map((s) => [s.id, s]));
 
 export const LIBELLES_LIEN: Record<TypeLien, string> = {
   freres: 'Frères et sœurs',
@@ -262,13 +264,19 @@ function partagerFamille(c: Campagne): void {
   }
 }
 
-export function nouvelleCampagne(c1: Creation, c2: Creation, lien: { type: TypeLien; origine?: OrigineLien; passe: PasseCommun; sauveur?: IdJoueur }, graine?: number): Campagne {
+/**
+ * Une nouvelle campagne. `lien.regles` : la version des règles (absent : les règles actuelles, REGLES_COMBAT).
+ * Une partie en ligne se rejoue depuis son lien enregistré : une partie lancée avant les règles 2 n'en porte pas,
+ * et l'appelant (Game, au chargement en ligne) demande alors explicitement les règles 1.
+ */
+export function nouvelleCampagne(c1: Creation, c2: Creation, lien: { type: TypeLien; origine?: OrigineLien; passe: PasseCommun; sauveur?: IdJoueur; regles?: number }, graine?: number): Campagne {
   const v = validerLien(c1, c2, lien.type, lien.origine);
   if (v.erreur) throw new Error(v.erreur);
   const g = (graine ?? Math.floor(Math.random() * 0x7fffffff)) >>> 0;
   const joueurs: [GameState, GameState] = [nouvellePartie(c1, graineDe(g, 0)), nouvellePartie(c2, graineDe(g, 1))];
   const c: Campagne = {
     format: 1,
+    regles: lien.regles ?? REGLES_COMBAT,
     graine: g,
     joueurs,
     creations: [joueurs[0].creation, joueurs[1].creation],
@@ -458,7 +466,10 @@ export function enAttente(c: Campagne, j: IdJoueur): string | undefined {
   if (c.separation?.actif && c.separation.absent !== j && (arrive(c, j) || enAvance(c, j))) return 'Les saisons passent. Il y a des nuits où tu crois entendre des pas sur le toit, comme avant.';
   if (c.separation?.actif && c.separation.absent === j && (arrive(c, j) || enAvance(c, j))) return `Le village n’est plus qu’à quelques jours de marche. ${c.creations[autre(j)].prenom} ne sait rien. Pas encore.`;
   if (arrive(c, j) && !c.commune) return `En attente de ${c.creations[autre(j)].prenom} : un moment que vous vivrez ensemble approche.`;
-  if (enAvance(c, j)) return `En attente de ${c.creations[autre(j)].prenom}, qui a une année de retard sur toi.`;
+  if (enAvance(c, j))
+    return c.joueurs[j].jour - c.joueurs[autre(j)].jour > ECART_MAX
+      ? `En attente de ${c.creations[autre(j)].prenom}, qui a une année de retard sur toi.`
+      : `Tu as ${ageA(c.joueurs[j])} ans, ${c.creations[autre(j)].prenom} pas encore : tu l’attends, pour que vous grandissiez au même rythme.`;
   return undefined;
 }
 
@@ -466,7 +477,28 @@ export function enAttente(c: Campagne, j: IdJoueur): string | undefined {
 
 /** Au-delà de cet écart (un an), le joueur en avance attend l'autre : une barrière douce. */
 export const ECART_MAX = 360;
-const enAvance = (c: Campagne, j: IdJoueur) => !finie(c.joueurs[autre(j)]) && c.joueurs[j].jour - c.joueurs[autre(j)].jour > ECART_MAX;
+/**
+ * Le joueur en avance attend l'autre : au-delà d'un an d'écart (règles 1) ; dès qu'il a passé un anniversaire que
+ * l'autre n'a pas encore atteint (règles 2). L'âge commun n'avance alors que quand les deux ont avancé : on ne joue
+ * jamais ses 10 ans pendant que l'autre en a encore 9. Pendant une séparation, chacun suit son propre temps.
+ */
+const enAvance = (c: Campagne, j: IdJoueur) => {
+  const o = autre(j);
+  if (finie(c.joueurs[o])) return false;
+  const ecart = c.joueurs[j].jour - c.joueurs[o].jour;
+  if (ecart > ECART_MAX) return true;
+  // L'anniversaire n'arrête que si l'autre peut vraiment avancer : sinon, personne ne jouerait plus.
+  // « Passer un anniversaire avant l'autre » : un anniversaire tombé entre le jour de l'autre et le sien (deux personnages
+  // d'âges différents, un départ à 10 ans par exemple, gardent leur écart d'âge naturel).
+  const s = c.joueurs[j];
+  return (c.regles ?? 1) >= 2 && !c.separation?.actif && ecart > 0 && ageA(s) > ageA(s, c.joueurs[o].jour) && peutAvancer(c, o);
+};
+/** Ce joueur peut-il avancer de son côté (ni fini, ni trop en avance, ni arrêté à une barrière sans rien à vivre) ? */
+function peutAvancer(c: Campagne, j: IdJoueur): boolean {
+  const o = autre(j);
+  if (finie(c.joueurs[j]) || (!finie(c.joueurs[o]) && c.joueurs[j].jour - c.joueurs[o].jour > ECART_MAX)) return false;
+  return !arrive(c, j) || !!c.resultatPrive[j] || !!priveeDue(c, j);
+}
 
 function apresAction(c: Campagne): void {
   suivreMonde(c);
@@ -1029,7 +1061,7 @@ export function rejouerCampagne(c1: Creation, c2: Creation, lien: Parameters<typ
 
 /** Ce qui suffit à rejouer la campagne (pour une sauvegarde vérifiable). */
 export function parametresLien(c: Campagne): Parameters<typeof nouvelleCampagne>[2] {
-  return { type: c.lien.type, origine: c.lien.origine, passe: c.lien.passe, sauveur: c.lien.sauveur };
+  return { type: c.lien.type, origine: c.lien.origine, passe: c.lien.passe, sauveur: c.lien.sauveur, regles: c.regles ?? 1 };
 }
 
 /** Les souvenirs que ce joueur connaît, du plus récent au plus ancien. */

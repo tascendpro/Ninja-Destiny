@@ -176,3 +176,17 @@ export function vueChangements(s: GameState, ch: Changement[]): VueChangement[] 
   }
   return res;
 }
+
+/** Les objets gardés : ce qu'ils sont, et pourquoi on les garde. Un objet sans fiche s'affiche par son identifiant lisible. */
+export const OBJETS: Record<string, { nom: string; kanji: string; texte: string }> = {
+  carte_mei: { nom: 'La carte de Mei', kanji: '図', texte: 'Échangée contre ton plus beau kunai d’entraînement. Les chemins y sont tracés d’une main d’enfant.' },
+  masque_renard: { nom: 'Le masque de renard', kanji: '狐', texte: 'Peint à la main, acheté un soir de fête.' },
+  masque_blanc: { nom: 'Un masque blanc', kanji: '面', texte: 'Lisse, sans nom. Ceux qui le portent n’existent dans aucun registre.' },
+  affiche_prime: { nom: 'Une affiche de prime', kanji: '賞', texte: 'Pliée en quatre, un visage et une somme.' },
+  sceau_branche: { nom: 'Le sceau de la branche', kanji: '印', texte: 'Ce que tu as reçu, ce jour-là, sans pouvoir dire non.' },
+  porte_bonheur_confie: { nom: 'Un porte-bonheur confié', kanji: '守', texte: 'Il n’est plus à toi. Quelqu’un te l’a rendu, ou le garde encore.' },
+  boite_cabane: { nom: 'La boîte de la cabane', kanji: '箱', texte: 'Des billes, un sifflet en os, un dessin : « Quand on sera ninjas, on ne se quittera jamais. »' },
+  empreinte_stele: { nom: 'Le nom relevé au fusain', kanji: '碑', texte: 'Akihiko, tel que la pierre le gardait encore sous le burin.' },
+  message_grue: { nom: 'Le message à la grue', kanji: '鶴', texte: 'Le sceau de cire est rompu. Ce qu’il disait n’appartient qu’à {parent}.' },
+  kunai_grue: { nom: 'Le kunai à la grue', kanji: '鶴', texte: 'Il revient toujours à son nid, disait celui qui te l’a donné.' },
+};

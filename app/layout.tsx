@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import '../src/ui/styles.css';
+import '../src/ui/interface.css';
 
 export const metadata: Metadata = {
   title: 'Ninja Destiny',
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#0d1320',
+  themeColor: '#090b11',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

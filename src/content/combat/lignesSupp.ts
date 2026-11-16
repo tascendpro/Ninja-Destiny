@@ -61,6 +61,26 @@ export const RECITS_SUPP: ContenuRacine['recits'] = {
   'defense:permutation:ok': ['Une bûche explose sous son coup. Toi, tu es déjà sur la branche au-dessus de {lui}.'],
   'observation:observer:ok': ['Tu le regardes respirer. Juste avant de frapper, {il} retient son souffle. Maintenant, tu le sais.'],
   'observation:observer:ko': ['Tu cherches la faille. {Il} n’en montre aucune. Pas encore.'],
+  // Les règles 2 : la feinte, la concentration, le souffle.
+  'taijutsu:feinte:ok': [
+    'Tes épaules partent à gauche, ton poids reste à droite. {Il} lève la garde contre un coup qui n’existe pas.',
+    'Tu armes un coup de pied que tu ne donnes jamais. {Il} recule d’un demi-pas, la garde trop haute.',
+    'Un pas en avant, un regard vers ses jambes. {Il} baisse les mains pour se protéger, et son visage reste nu.',
+  ],
+  'taijutsu:feinte:ko': [
+    'Tu esquisses ton faux départ. {Il} ne cille même pas.',
+    'Ton geste ment, et {il} le sait : ses yeux n’ont pas quitté tes hanches.',
+  ],
+  'observation:concentration:ok': [
+    'Tu laisses le bruit s’éloigner. Il ne reste que son souffle, le tien, et la distance entre vous.',
+    'Tu fermes les mains, tu respires une fois, lentement. Le prochain geste est déjà dessiné dans ta tête.',
+  ],
+  'observation:concentration:ko': ['Tu cherches le calme. Son coup arrive avant.'],
+  'defense:souffle:ok': [
+    'Tu recules hors de portée et tu respires, enfin. Tes jambes cessent de trembler.',
+    'Trois respirations, profondes, la main sur les côtes. Le chakra revient en filet.',
+  ],
+  'defense:souffle:ko': ['Tu baisses les bras pour respirer. {Il} n’attendait que ça.'],
   'parole:provoquer:ok': ['Tu lui dis ce que tout le monde pense tout bas. Ses jointures blanchissent sur son arme.'],
   'parole:provoquer:ko': ['Tes mots tombent à côté. {Il} sourit presque.'],
   'fuite:fuir:ok': ['Un fumigène, un saut, et tu n’es plus qu’un bruit de feuilles qui s’éloigne.'],

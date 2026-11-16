@@ -13,12 +13,31 @@ Ce dépôt contient **le moteur complet** et **une vie entière en six chapitres
 
 La voie de la route traverse aussi les cinq chapitres (mercenaires, guerre sans drapeau, compagnie ou village à soi, maître errant).
 
+## Version 2.51 : combats expliqués, jutsu par nature
+
+- **Chaque manche s'explique** (`src/engine/combat/explication.ts`) : ce que tu as fait, ce qu'il faisait vraiment (et si ta lecture était juste), les PV perdus de part et d'autre, la règle qui a décidé, et la leçon à en tirer.
+- **Avant de choisir**, « Ce que tu lis » dit ce que ta lecture permet d'en conclure et les réponses qui marchent ; l'intention n'est nommée que si la lecture est fiable.
+- **Jutsu : d'abord la nature** (Katon, Raiton, Suiton…), puis la technique ; chaque technique a sa fiche (description, effets tactiques, portée, avantage de nature si elle est connue).
+- **Règles en sept lignes** dans l'écran de combat, ouvertes d'office au premier combat.
+- **Plus de portraits** : les personnages sont désignés par leur nom.
+- Contenu 2.51.0 : les sauvegardes 2.50 se chargent sans rejeu (le journal des manches gagne des champs).
+
+## Version 2.50 : interface V2, combat tactique, chronologie commune
+
+- **Interface V2.** Une palette où chaque couleur a une fonction : violet pour l’identité et les actions principales, or pour ce qui compte, rouge réservé au danger, vert pour les réussites, bleu pour le chakra. Les jetons `--nd-*` sont en tête de `src/ui/styles.css` ; les composants V2 sont dans `src/ui/interface.css`. Navigation resserrée (Récit, Ninja, Carnet, Magasin, Menu ; le son passe dans l’en-tête). La fiche Ninja s’ouvre sur une présentation du personnage (portrait, rang, jauges, aptitudes, techniques, ce qu’il vit, la prochaine étape, ceux qui comptent). Dans les dialogues, celui qui parle est nommé au-dessus de sa réplique quand l’incise le désigne sans doute.
+- **Combat, règles 2.** Feinte (ouvre la garde de qui attend, inutile contre qui frappe, éventée si on la répète), concentration (la prochaine attaque part plus juste et plus fort, au prix d’une manche exposée), reprendre son souffle (de moins en moins efficace). Deux attaques qui se croisent font un échange ; une esquive réussie déséquilibre l’adversaire ; une manche de plus par combat. L’adversaire lit tes habitudes selon son niveau (`finesseTactique`) et punit la passivité. Chaque combat annonce sa gravité (entraînement, duel amical, combat sérieux, combat mortel). **Entre 6 et 12 ans, un duel amical s’arrête sous 30 % des PV** : hors de combat, jamais mort.
+- **Versions de règles.** Un combat, et une campagne, gardent les règles de leur ouverture (`REGLES_COMBAT`, champ `regles`) : une partie en ligne lancée avant la 2.50 se rejoue avec les règles 1, et rien ne change d’issue.
+- **Chronologie commune (campagne).** Celui qui a passé un anniversaire attend l’autre tant que l’autre peut avancer : on ne joue jamais ses 10 ans pendant que l’autre en a 9.
+- **Création à deux.** Le lien se choisit d’abord ; chaque ninja est ensuite créé sous les contraintes du lien (frères : même famille ; villages différents : l’autre village est fermé…).
+- **Temps libre.** Nouvelle case « Découvrir » : explorer les environs (perception, lieux, une cabane à trouver) et mener une enquête quand l’histoire a ouvert une piste. Le conseil ne lance jamais rien : il montre une activité, le joueur choisit.
+- **L’oncle Akihiko.** Une intrigue de 8 à 17 ans (`evenements/secretsFamille.ts`) : la lettre oubliée, le nom rayé de la stèle, la cabane sous les racines, l’homme à la grue. À deux (`campagne/scenesFamille.ts`), chacun voit son propre indice ; rien n’est su qui n’ait été dit.
+
 ## Démarrer
 
 ```bash
 npm install
 npm run dev               # application Next.js sur http://localhost:3000
-npm test                  # 100 tests : règles de cohérence, tirages du destin, natures, diagnostic, parties simulées
+npm test                  # toute la suite : règles, combat, campagnes simulées, textes, diagnostic, vecteurs dorés
 npm run diagnostic        # rapport détaillé du contenu (erreurs et contenus prévus)
 npm run build             # site statique dans out/ (à déployer sur Vercel ou Netlify)
 npm run build:standalone  # version jouable en un seul fichier HTML (dist-standalone/index.html)
@@ -66,7 +85,7 @@ Le moteur ne dépend d’aucun framework : il tourne tel quel côté serveur.
 - **Dōjutsu volés** : selon la vie, on peut croiser un marchand d’yeux au marché noir, un frère d’armes mourant, un savant inquiétant ou un cadavre sur le champ de bataille. L’œil greffé arrive éveillé, coûte de la réserve de chakra et plafonne au palier 3.
 - **Deuil** : un retour de mission peut révéler la mort d’un proche ; chez les Uchiha dont l’œil dort encore, c’est fréquent, et c’est ce qui l’éveille.
 - **Entraînement double** (dès genin) : au temps libre, on coche une technique (onglet Techniques) et une discipline (onglet Disciplines : clan, natures, ninjutsu, genjutsu, taijutsu, armes) ; les deux progressent ensemble, chacune à 60 % du rythme. Chaque ligne montre son palier et sa progression ; ce que l’entraînement ne peut plus faire avancer (âge, expérience réelle…) apparaît en rouge avec la raison, et la période s’arrête d’elle-même au lieu de répéter le même message.
-- **Interface texte** : pas d’illustration de scène ni de carte ; seul l’accueil garde son image (version portrait sur téléphone, paysage sur PC). La barre du haut et la navigation restent fixes, le contenu défile entre les deux.
+- **Interface** : l’accueil garde son illustration (portrait sur téléphone, paysage sur PC) ; les scènes ont leur estampe de lieu, teintée par la saison. La barre du haut et la navigation restent fixes, le contenu défile entre les deux ; en combat sur téléphone, les quatre grands choix restent collés en bas, sous le pouce.
 - **Temps libre** : une seule décision par période. Le moteur répète ce choix (entraînement, technique, liens, repos…) jusqu’au prochain moment d’histoire, un an au plus pour un enfant et six mois ensuite ; un imprévu peut couper la période. Achats, réparations et changement d’arme sont instantanés.
 - **Techniques** : 65, de rang E à A (natures, ninjutsu, taijutsu, genjutsu, armes, médecine, sceaux, fusions, bijū). Le rang fixe l’âge normal d’apprentissage ; intelligence, contrôle du chakra, réserve de chakra, talent de prodige et héritage « Esprit vif » l’avancent chacun d’un an (trois ans au plus, jamais avant 6 ans). Certaines ne s’apprennent qu’au village, d’autres seul·e, d’autres auprès d’un maître rencontré sur la route.
 - **Points de stat** : à chaque anniversaire (dès 7 ans), l’année vécue rapporte des points à répartir soi-même entre les huit aptitudes : croissance (2), rang (1 à 4, ou 1 sur la route), missions réussies (jusqu’à 3), combats gagnés (jusqu’à 2), épreuves réussies (jusqu’à 2), entraînement (jusqu’à 2), études (1), talent de prodige (1). Un niveau coûte 1 point jusqu’à 60, 2 jusqu’à 80, 3 au-delà. Le corps grandit seul (force et agilité +1 par an jusqu’à 20 ans) ; le reste se gagne.
@@ -91,11 +110,7 @@ Le moteur ne dépend d’aucun framework : il tourne tel quel côté serveur.
 
 ## Persistance
 
-Aucun serveur, aucune base de données. La partie est gardée dans le `sessionStorage` de l’onglet :
-
-- elle survit à un rechargement de la page (y compris quand un navigateur mobile recharge un onglet mis en arrière-plan) ;
-- elle disparaît quand l’onglet ou la page est fermé, avec les emplacements manuels, la méta-progression et les réglages ;
-- si `sessionStorage` est indisponible, le jeu bascule en mémoire : la partie dure alors jusqu’au prochain rechargement.
+En solo et à deux sur un téléphone, aucun serveur : la partie est gardée dans le `localStorage` du navigateur (`src/ui/stockage.ts`). Elle survit à la fermeture du navigateur ; seul l’effacement des données du site (ou la navigation privée) la fait disparaître. Si le stockage est indisponible, le jeu bascule en mémoire. La partie en ligne (deux téléphones) partage son journal d’actions par Supabase (`supabase/schema.sql`).
 
 Une sauvegarde stocke la création, la graine, les décisions et l’état, plus une empreinte. Au chargement, la partie est **rejouée** et l’empreinte comparée : une sauvegarde modifiée à la main est reconstruite à partir des décisions.
 

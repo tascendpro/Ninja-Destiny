@@ -20,6 +20,13 @@ export interface Ligne {
 /** Une incise où c'est toi qui parles (« tu réponds », « dis-tu ») : la parole qui suit est celle de l'autre. */
 const INCISE_TOI = /^\s*,\s*(?:tu|toi)\b|-tu\b/i;
 
+/**
+ * L'incise : « …, dit-il » après une virgule, ou « … ? demande Minoru » après un point d'interrogation, d'exclamation
+ * ou de suspension, quand un verbe de parole suit immédiatement.
+ */
+const VERBES_INCISE = /^\s*(?:demande|répond|dit|souffle|murmure|crie|lance|ajoute|reprend|grogne|soupire|fait|s’exclame|chuchote|tranche|siffle|gronde|insiste|hurle|rétorque|coupe|proteste|répète|conclut|marmonne|explique|continue|ricane)\b/;
+const estIncise = (apres: string, parole: string) => /^\s*,/.test(apres) || (/[!?…]$/.test(parole.trim()) && VERBES_INCISE.test(apres));
+
 /** Ce qui est entre guillemets est-il une parole ? Oui s'il finit comme une phrase, ou s'il est suivi d'une incise. */
 function estParole(contenu: string, apres: string): boolean {
   return /[.!?…]$/.test(contenu.trim()) || /^\s*,/.test(apres);
@@ -72,11 +79,13 @@ export function decouper(paragraphe: string): Ligne[] {
     }
     let t = p.t;
     if (!t.trim()) continue;
-    if (cur?.replique && /^\s*,/.test(t)) {
+    const derniere = cur?.morceaux.filter((m) => m.parole).at(-1)?.texte ?? '';
+    if (cur?.replique && estIncise(t, derniere)) {
       // L'incise : jusqu'à la fin de sa phrase. Le reste est du récit.
       const fin = t.search(/[.!?…](?=\s|$)/);
       const incise = fin >= 0 ? t.slice(0, fin + 1) : t;
-      cur.morceaux.push({ texte: incise.replace(/^\s+/, '') });
+      // Après une virgule, l’incise colle à la parole ; après « ? » ou « ! », une espace les sépare.
+      cur.morceaux.push({ texte: (/^\s*,/.test(incise) ? '' : ' ') + incise.replace(/^\s+/, '') });
       cur.incise = incise;
       t = fin >= 0 ? t.slice(fin + 1) : '';
       if (!t.trim()) continue;

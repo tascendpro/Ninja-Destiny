@@ -185,6 +185,7 @@ export const ENCYCLOPEDIE: EntreeEncyclopedie[] = [
   S('purges_kiri', 'La peur du Mizukage', 'Les purges sont nées de la peur de ce que le Mizukage ne contrôle pas.'),
   S('lignee_yuki', 'Ta lignée', 'Ta famille appartient au clan Yuki. À Kiri, c’est un crime.'),
   S('passe_parent', 'Le coffre du grenier', 'Ton parent a dû abandonner des camarades pendant la guerre.'),
+  S('oncle_akihiko', 'L’oncle Akihiko', 'Le frère cadet de ton parent n’est pas mort à la guerre. Il a refusé un ordre à la frontière, et le village a rayé son nom de la stèle.'),
   S('unites_ombre', 'Les masques blancs', 'Il existe des unités qui n’apparaissent dans aucun registre.'),
   S('dissidence_kiri', 'Ceux qui disent non', 'Une dissidence existe à Kiri, jusque parmi les jōnin.'),
   S('frontiere_incidents', 'Les ninjas sans bandeau', 'Les incidents de frontière sont l’œuvre de ninjas de village, pas de bandits.'),

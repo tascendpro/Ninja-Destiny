@@ -35,7 +35,8 @@ export type CategorieActivite =
   | 'travail'
   | 'technique'
   | 'route'
-  | 'equipement';
+  | 'equipement'
+  | 'exploration';
 
 export interface Activite {
   id: string;
@@ -479,6 +480,35 @@ export function genererActivites(s: GameState): Activite[] {
     });
   }
 
+  // Explorer : les toits, les berges, la forêt au-delà des palissades. On n'y apprend pas une technique, on y trouve des choses.
+  if (a >= 6 && (s.statut === 'actif' || s.statut === 'errant' || s.statut === 'exile')) {
+    res.push({
+      id: 'explorer',
+      libelle: s.statut === 'actif' ? 'Explorer les environs du village' : 'Explorer les alentours',
+      description:
+        a < 12
+          ? 'Les toits, les berges, les ruelles où les adultes ne vont pas. Tes yeux s’aiguisent ; parfois, on trouve quelque chose. Parfois, on se fait mal.'
+          : 'Sortir des chemins connus : sentiers de contrebandiers, ruines, cols. La perception s’aiguise, et le monde finit par te livrer un secret.',
+      duree: 30,
+      categorie: 'exploration',
+      disponible: !grave,
+      raison: grave ? 'Ta blessure ne te laisse pas aller bien loin.' : undefined,
+    });
+  }
+
+  // Une piste ouverte par l'histoire (une lettre, un nom) : elle ne se suit que si on lui consacre du temps.
+  if (drapeauVrai(s, 'lettre_piste') && (Number(s.drapeaux['lettre_enquete']) || 0) < 2 && a >= 9 && s.statut === 'actif') {
+    res.push({
+      id: 'enqueter',
+      libelle: 'Chercher la trace de l’oncle Akihiko',
+      description: 'Le registre des familles, les vieux du quartier, la stèle des morts : quelqu’un sait ce qu’il est devenu. Personne n’a envie de le dire.',
+      duree: 30,
+      categorie: 'exploration',
+      disponible: !epuise,
+      raison: epuise ? 'Tu es trop fatigué·e pour courir après des fantômes.' : undefined,
+    });
+  }
+
   if (s.metier.principal && s.statut === 'actif') {
     const m = R.metiers[s.metier.principal];
     res.push({
@@ -531,7 +561,7 @@ export function periodeMax(s: GameState): number {
 // on garde l'essentiel (la trame tombe toujours), le reste se raréfie.
 const IMPREVU = { enfant: 0.35, ado: 0.25, jeune: 0.22, adulte: 0.12 };
 
-const BOUCLABLES = new Set(['duo', 'entrainer', 'nature', 'technique', 'repos', 'famille', 'social', 'travail', 'etudier', 'metier', 'route']);
+const BOUCLABLES = new Set(['duo', 'entrainer', 'nature', 'technique', 'repos', 'famille', 'social', 'travail', 'etudier', 'metier', 'route', 'explorer', 'enqueter']);
 const ENTRAINEMENT = new Set(['duo', 'entrainer', 'nature', 'technique', 'route']);
 
 /**
@@ -616,7 +646,7 @@ export function faireActivite(s: GameState, id: string, ctx: Ctx): ResultatActiv
   }
   if (!BOUCLABLES.has(type)) throw new Error(`[temps libre] activité inconnue : ${id}`);
   if (ENTRAINEMENT.has(type) && type !== 'route') noterMerite(s, 'entrainement');
-  if (type === 'etudier') noterMerite(s, 'etude');
+  if (type === 'etudier' || type === 'enqueter') noterMerite(s, 'etude');
 
   const debut = s.jour;
   const max = periodeMax(s);
@@ -788,7 +818,7 @@ function forge(s: GameState, id: string, ctx: Ctx): string {
 /** Un bloc de temps (une saison pour un enfant, un mois ensuite) consacré à une activité. Renvoie son récit. */
 function bloc(s: GameState, id: string, ctx: Ctx, opts: { sansTemps?: boolean; jours?: number } = {}): string {
   const [type, cible] = id.split(':');
-  const dBloc = type === 'repos' || type === 'famille' || type === 'social' || type === 'travail' || type === 'etudier' || type === 'metier' ? 30 : dureeBase(s);
+  const dBloc = type === 'repos' || type === 'famille' || type === 'social' || type === 'travail' || type === 'etudier' || type === 'metier' || type === 'explorer' || type === 'enqueter' ? 30 : dureeBase(s);
   // Programme double : chaque moitié reçoit une part du temps, et le temps ne passe qu'une fois (voir blocDuo).
   const d = opts.jours ?? dBloc;
   const duree = libelleDuree(dBloc);
@@ -916,6 +946,10 @@ function bloc(s: GameState, id: string, ctx: Ctx, opts: { sansTemps?: boolean; j
       avancerTemps(s, d, ctx);
       return `Un mois au service de ton unité (${R.metiers[mid]?.nom}). Le travail est rarement glorieux, toujours formateur.`;
     }
+    case 'explorer':
+      return explorer(s, d, ctx);
+    case 'enqueter':
+      return enqueter(s, d, ctx);
     case 'route': {
       const crime = CRIMES_ROUTE.find((c) => c.id === cible);
       return crime ? crimeDeRoute(s, crime, d, ctx) : combatDeRoute(s, cible === 'contrat', d, ctx);
@@ -923,6 +957,56 @@ function bloc(s: GameState, id: string, ctx: Ctx, opts: { sansTemps?: boolean; j
     default:
       throw new Error(`[temps libre] bloc inconnu : ${id}`);
   }
+}
+
+/**
+ * Explorer un mois : la perception s'aiguise, on trouve parfois un lieu, quelques ryō, une cicatrice.
+ * La deuxième exploration d'un enfant de 7 à 13 ans mène à la cabane sous les racines (une scène, une seule fois).
+ */
+function explorer(s: GameState, d: number, ctx: Ctx): string {
+  avancerTemps(s, d, ctx);
+  s.jauges.fatigue = clamp(s.jauges.fatigue + 8, 0, 100);
+  const n = (Number(s.drapeaux['explorations']) || 0) + 1;
+  s.drapeaux['explorations'] = n;
+  const a = age(s);
+  const lignes: string[] = [];
+  if (alea(s) < 0.45) {
+    appliquerEffet(s, { stat: 'attributs.perception', delta: 1 }, ctx);
+    lignes.push(a < 12 ? 'Tu apprends à voir ce que les autres enjambent : une trace, un nid, une porte qu’on ne regarde jamais.' : 'Tu apprends à lire un paysage comme on lit un visage : ce qui a bougé, ce qui ne devrait pas être là.');
+  }
+  const r = alea(s);
+  if (r < 0.2) {
+    const gain = aleaEntier(s, 5, 20);
+    s.jauges.ryo += gain;
+    ctx.changements.push({ t: 'stat', chemin: 'jauges.ryo', delta: gain });
+    lignes.push('Dans la boue d’une berge, une bourse oubliée. Personne ne la réclamera.');
+  } else if (r < 0.28) {
+    appliquerEffet(s, { stat: 'jauges.sante', delta: -6 }, ctx);
+    lignes.push('Une tuile qui cède, une chute bête. Tu rentres en boitant, et tu ne dis à personne où tu étais.');
+  }
+  const inconnus = R.contenu.lieux.filter((l) => !s.decouvertes.includes(`lieu:${l.id}`) && (l.village === s.creation.village || (!l.village && l.danger <= 2)));
+  if (inconnus.length && alea(s) < 0.35) {
+    const l = inconnus[Math.floor(alea(s) * inconnus.length)];
+    decouvrir(s, `lieu:${l.id}`);
+    ctx.changements.push({ t: 'info', message: `Lieu découvert : ${l.nom}.` });
+    lignes.push(`Tu découvres ${l.nom}.`);
+  }
+  if (n >= 2 && a >= 7 && a <= 13 && s.statut === 'actif' && !s.evenementsVus['tl_cabane_racines']) appliquerEffet(s, { retour: 'tl_cabane_racines', chance: 1, entre: [10, 60] }, ctx);
+  return [a < 12 ? 'Un mois à courir les toits et les berges, à rentrer à la nuit tombée.' : 'Un mois à arpenter ce que les cartes ne montrent pas.', ...lignes].join(' ');
+}
+
+/** Suivre la piste de l'oncle Akihiko : deux mois de questions mènent au nom rayé de la stèle. */
+function enqueter(s: GameState, d: number, ctx: Ctx): string {
+  avancerTemps(s, d, ctx);
+  s.jauges.fatigue = clamp(s.jauges.fatigue + 5, 0, 100);
+  const n = (Number(s.drapeaux['lettre_enquete']) || 0) + 1;
+  s.drapeaux['lettre_enquete'] = n;
+  appliquerEffet(s, { stat: alea(s) < 0.5 ? 'attributs.intellect' : 'attributs.perception', delta: 1 }, ctx);
+  if (n >= 2) {
+    appliquerEffet(s, { retour: 'fam_nom_raye', chance: 1, entre: [15, 45] }, ctx);
+    return 'Un vieux gardien des archives a fini par lever les yeux de son registre quand tu as dit « Akihiko ». Il n’a rien répondu. Mais il a regardé, malgré lui, vers la stèle des morts, au bout de l’allée.';
+  }
+  return resoudreTexte('Tu poses des questions qui ne se posent pas. Les vieux du quartier changent de sujet ; le registre des familles a une page arrachée. Quelqu’un a pris soin d’effacer ce nom. {Parent} ne doit pas savoir que tu cherches.', s);
 }
 
 interface CrimeRoute {

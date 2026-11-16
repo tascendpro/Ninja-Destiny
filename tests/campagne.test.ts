@@ -80,8 +80,10 @@ describe('La campagne à deux : deux vies, une histoire', () => {
   });
 
   it('toute la campagne se rejoue à l’identique depuis les fiches, le lien, la graine et le journal', () => {
-    const c = jouer(deux(21), 3, () => false, 600);
-    const r = rejouerCampagne(c.creations[0], c.creations[1], parametresLien(c), c.graine, c.actions);
+    // Les fiches de départ : un héritier peut remplacer un joueur mort en cours de route (c.creations change alors).
+    const base = deux(21);
+    const c = jouer(base, 3, () => false, 600);
+    const r = rejouerCampagne(base.creations[0], base.creations[1], parametresLien(c), c.graine, c.actions);
     expect(JSON.stringify(r.joueurs)).toBe(JSON.stringify(c.joueurs));
     expect(JSON.stringify(r.lien)).toBe(JSON.stringify(c.lien));
   });

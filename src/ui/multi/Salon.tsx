@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Creation as CreationT } from '../../engine/types';
 import type { PasseCommun, TypeLien } from '../../engine/campagne/types';
+import { REGLES_COMBAT } from '../../engine/combat/types';
 import { LIBELLES_LIEN, LIBELLES_PASSE, passesDuLien, validerLien } from '../../engine/campagne/moteur';
 import { R } from '../../engine/registre';
 import Creation from '../Creation';
@@ -84,7 +85,7 @@ export default function Salon({ onDemarrer, onRetour }: { onDemarrer: (p: Partie
     if (!partie || moi !== 0 || partie.etat !== 'creation' || !partie.pretHote || !partie.pretInvite || incoherent || lancement.current) return;
     lancement.current = true;
     void essayer(async () => {
-      await service.lancer(partie.id, { ...partie.lien!, origine });
+      await service.lancer(partie.id, { ...partie.lien!, origine, regles: partie.lien!.regles ?? REGLES_COMBAT });
       setPartie(await service.lire(partie.id));
     }).finally(() => (lancement.current = false));
   }, [partie?.pretHote, partie?.pretInvite, partie?.etat, incoherent]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -259,7 +260,7 @@ export default function Salon({ onDemarrer, onRetour }: { onDemarrer: (p: Partie
             </div>
           </section>
           <button className="btn-principal" disabled={envoi} onClick={() => void essayer(async () => {
-            await service.choisirLien(partie.id, { type, passe, sauveur: passe === 'dette' ? 0 : undefined });
+            await service.choisirLien(partie.id, { type, passe, sauveur: passe === 'dette' ? 0 : undefined, regles: REGLES_COMBAT });
             setPartie(await service.lire(partie.id));
           })}>
             {envoi ? 'Envoi…' : 'Valider le lien : chacun crée son ninja'}
