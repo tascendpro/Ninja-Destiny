@@ -23,6 +23,7 @@ import { canalReputation, changeCareer, quitterMetier } from './metiers';
 import { avancerTemps } from './temps';
 import { declencherRage, estProche } from './pertes';
 import { apprendreDuo } from './duo';
+import { revueMentor } from './proches';
 
 /** Drapeaux qui disent qu'un être cher vient de mourir sous les yeux du personnage. */
 const DEUILS_TEMOINS = new Set(['conjoint_mort', 'enfant_mort', 'ami_mort_quartier']);
@@ -147,6 +148,10 @@ export function appliquerEffet(s: GameState, e: Effect, ctx: Ctx): void {
       ctx.changements.push({ t: 'reconciliation', pnj: id });
       ajouterJournal(s, `Réconciliation avec ${defPnj(s, id)?.nom ?? id}.`, 2);
     }
+    return;
+  }
+  if ('revueMentor' in e) {
+    revueMentor(s);
     return;
   }
   if ('souvenir' in e) {

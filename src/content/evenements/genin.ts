@@ -322,7 +322,11 @@ export const GENIN: EventDef[] = [
         id: 'feliciter',
         texte: 'Le féliciter pour ses missions',
         effets: [{ relation: '@rival', delta: { respect: 6, amitie: 4 } }, { stat: 'attributs.charisme', delta: 1 }],
-        resultat: '{Il:@rival} te regarde, méfiant{e:@rival}, cherchant l’ironie. {Il:@rival} n’en trouve pas. « …Merci. » Ça lui coûte. {Il:@rival} le dit quand même.',
+        resultat: [
+          // Un rival qui te hait cherche l'ironie ; un rival devenu proche n'en a plus besoin.
+          { si: { posture: 'rival', est: ['rival', 'ennemi'] }, texte: '{Il:@rival} te regarde, méfiant{e:@rival}, cherchant l’ironie. {Il:@rival} n’en trouve pas. « …Merci. » Ça lui coûte. {Il:@rival} le dit quand même.' },
+          { si: { posture: 'rival', est: ['respect', 'complice'] }, texte: '{Il:@rival} lève un sourcil. « Toi, tu me félicites ? » Puis, plus bas, sans te regarder : « Merci. Vraiment. » Venant de {@rival}, c’est presque un discours.' },
+        ],
       },
       {
         id: 'ignorer',

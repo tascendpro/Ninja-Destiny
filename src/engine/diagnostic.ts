@@ -87,6 +87,8 @@ export function diagnostiquer(): Probleme[] {
       if ('objectif' in x && !R.objectifs[x.objectif]) err('objectif_inconnu', `${ou} : objectif inconnu ${x.objectif}.`);
       if ('relation' in x) verifierPnj(x.relation, ou);
       if ('relationRompue' in x) verifierPnj(x.relationRompue, ou);
+      if ('connu' in x) verifierPnj(x.connu, ou);
+      if ('souvenirAvec' in x) verifierPnj(x.souvenirAvec, ou);
       if ('pnj' in x) verifierPnj(x.pnj, ou);
       if ('clanPnj' in x) verifierPnj(x.clanPnj, ou);
       if ('age' in x && x.age.min !== undefined && x.age.max !== undefined && x.age.min > x.age.max)
@@ -167,7 +169,7 @@ export function diagnostiquer(): Probleme[] {
     }
     for (const j of jetonsDe(t)) {
       if (JETONS_CONNUS.includes(j)) continue;
-      const m = /^(?:(il|Il|e|le|lui|clan):)?(@?[\w-]+)$/.exec(j);
+      const m = /^(?:(il|Il|e|le|lui|clan|souvenir):)?(@?[\w-]+)$/.exec(j);
       if (m && m[2].startsWith('@')) {
         verifierPnj(m[2], ou);
         continue;

@@ -2,7 +2,7 @@ import { activite, chapitreSuivant, chapitreSuivantDisponible, choisir, choixVis
 import { vueAffrontement } from '../src/engine/combat/affrontement';
 import { genererActivites } from '../src/engine/tempsLibre';
 import { R } from '../src/engine/registre';
-import { SCENES, actionsLien, agir, agirLien, choisirCombat, choisirCommune, choisirMort, choisirPrivee, decider, joueurActif, lireNotes, lireResultat, vueCommune, vuePrivee } from '../src/engine/campagne/moteur';
+import { SCENES, actionsLien, agir, agirLien, choisirCombat, choisirCommune, choisirMort, choisirPrivee, decider, joueurActif, lireNotes, lireResultat, suitesMort, vueCommune, vuePrivee } from '../src/engine/campagne/moteur';
 import type { Campagne, IdJoueur, TypeLien } from '../src/engine/campagne/types';
 import { nouvelleCampagne } from '../src/engine/campagne/moteur';
 import { creation } from './aide';
@@ -77,7 +77,11 @@ export function jouer(c: Campagne, graine: number, jusqua: (c: Campagne) => bool
     const j = joueurActif(c);
     if (j === null) break;
     const profil = profils[j];
-    if (c.morts[j] === 'a_choisir') c = choisirMort(c, j, (['heritier', 'spectateur', 'retour'] as const)[pick(3)]);
+    if (c.morts[j] === 'a_choisir') {
+      // Les suites que le jeu propose vraiment : tué·e de la main de l'autre, on ne revient pas.
+      const suites = suitesMort(c, j);
+      c = choisirMort(c, j, suites[pick(suites.length)]);
+    }
     else if (c.resultat?.decision && !c.resultat.decision.prise) {
       // La décision commune : accepter la proposition de l'autre, le plus souvent, ou en proposer une autre.
       const options = SCENES[c.resultat.id].decision!.choix;

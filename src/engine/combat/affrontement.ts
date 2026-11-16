@@ -8,6 +8,7 @@ import { alea } from '../rng';
 import { age } from '../calendrier';
 import { Ctx, clamp, defPnj, resoudrePnj } from '../etat';
 import { interpoler, resoudreTexte } from '../texte';
+import { evaluer } from '../conditions';
 import { appliquerEffets } from '../effets';
 import { applyCombatExperience } from '../maitrise';
 import { noterMerite } from '../progression';
@@ -109,7 +110,8 @@ function nouveauRegistre(id: string): RegistreAdversaire {
 /** Ouvre un affrontement à partir d'un choix de scène. Tirages : plafond, réplique d'entrée, puis l'ouverture de la manche 1. */
 export function ouvrirAffrontement(s: GameState, ev: EventDef, ch: ChoiceDef): void {
   const af = affrontementPour(ev.id, ch.id)!;
-  const d = adversaireDef(af.adversaire);
+  // Le même duel n'oppose pas toujours à la même personne : le rival s'il est là, quelqu'un d'autre sinon.
+  const d = adversaireDef(af.selon?.find((x) => evaluer(x.si, s))?.adversaire ?? af.adversaire);
   const nAdv = niveauAdversaire(s, d);
   const nJ = niveauJoueur(s);
   const st = statsAdversaire(s, d);

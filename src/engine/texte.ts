@@ -2,6 +2,7 @@ import type { GameState, Texte } from './types';
 import { R } from './registre';
 import { evaluer } from './conditions';
 import { defPnj, resoudrePnj } from './etat';
+import { JETONS_PROCHES, jetonProche } from './proches';
 
 export const JETONS_CONNUS = [
   'prenom',
@@ -49,6 +50,7 @@ export const JETONS_CONNUS = [
   'mortRecente',
   'mortRecente_e',
   'mortRecenteCause',
+  ...JETONS_PROCHES,
 ];
 
 /** La famille fondée au chapitre 4 : genres choisis ou tirés (drapeaux), prénoms stables tirés des noms du village. */
@@ -86,6 +88,8 @@ export function valeurJeton(s: GameState, jeton: string): string | undefined {
   const orphelin = s.creation.origine === 'orphelin';
 
   if (jeton.startsWith('@')) return defPnj(s, resoudrePnj(s, jeton))?.nom;
+  // La mémoire des proches : le compte avec le rival, ton habitude, la revue du mentor, le dernier souvenir partagé.
+  if (JETONS_PROCHES.includes(jeton) || jeton.startsWith('souvenir:')) return jetonProche(s, jeton);
   const m = /^(il|Il|e|le|lui|clan):(@?[\w-]+)$/.exec(jeton);
   if (m) {
     const d = defPnj(s, resoudrePnj(s, m[2]));

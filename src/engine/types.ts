@@ -131,6 +131,16 @@ export type Condition =
   | { metierEligible: string }
   | { trait: string }
   | { orphelin: boolean }
+  /** Ce qu'un proche est pour toi maintenant (voir proches.ts) : « fier », « inquiet », « complice », « ennemi »… */
+  | { posture: 'aine' | 'parent' | 'rival' | 'ami' | 'sensei'; est: string | string[] }
+  /** Le compte des vrais combats contre le rival : qui mène. */
+  | { rivalBilan: 'devant' | 'derriere' | 'egal' | 'aucun' | ('devant' | 'derriere' | 'egal' | 'aucun')[] }
+  /** Une habitude assez ancrée pour qu'un proche la remarque (trois périodes de temps libre au même usage). */
+  | { habitudeConnue: boolean }
+  /** Au moins un souvenir partagé avec ce personnage. */
+  | { souvenirAvec: string }
+  /** Déjà rencontré : une scène de souvenirs ne doit pas tenir lieu de première rencontre. */
+  | { connu: string }
   | { aptitude: AttributId }
   | { objectif: string }
   | { presentation: Presentation }
@@ -168,6 +178,8 @@ export type Effect =
   | { rompre: string }
   | { reconcilier: string }
   | { souvenir: string; pnj: string }
+  /** La revue du mentor : ce qui a progressé depuis la dernière, et un conseil jamais donné (lus par {revue_progres}, {revue_conseil}). */
+  | { revueMentor: true }
   | { promesse: string; pnj: string; texte: string }
   | { promesseTenue: string }
   | { promesseRompue: string }

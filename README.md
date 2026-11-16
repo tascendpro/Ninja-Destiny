@@ -13,6 +13,14 @@ Ce dépôt contient **le moteur complet** et **une vie entière en six chapitres
 
 La voie de la route traverse aussi les cinq chapitres (mercenaires, guerre sans drapeau, compagnie ou village à soi, maître errant).
 
+## Version 2.53 : les proches ont une posture et une mémoire
+
+- **Postures** (`src/engine/proches.ts`) : chaque proche est lu dans ses axes de relation. L'aîné·e est complice, protecteur·rice, sévère, jaloux·se ou distant·e ; le parent fier, inquiet, protecteur ou distant ; le rival rival, respectueux·se, complice ou ennemi·e ; l'ami·e proche, ami·e, déçu·e (promesse rompue) ou distant·e ; le mentor exigeant, confiant ou déçu. Condition `{ posture: 'rival', est: 'complice' }`.
+- **Mémoire** : `{rival_bilan}` (le compte réel des duels, tiré du registre de combat), `{habitude}` (ce que tu fais de ton temps libre, compté par le moteur), `{souvenir:@x}` (le dernier souvenir partagé), `{revue_progres}` et `{revue_conseil}` (la revue du mentor : ce qui a progressé depuis la dernière, et un conseil **jamais donné**, tiré de tes habitudes de combat ou de ta plus grande faiblesse). Conditions `rivalBilan`, `habitudeConnue`, `souvenirAvec`, `connu`.
+- **Cinq scènes récurrentes** (`src/content/evenements/proches.ts`) : l'aîné·e et ton habitude, le dîner avec le parent (qui réagit à ton rang, à l'aîné·e disparu·e, à l'examen raté, au secret d'Akihiko), le compte avec le rival (qui cite le shuriken, la fiole, le tournoi), le muret avec l'ami·e, la revue annuelle du mentor.
+- **Le vrai adversaire** : une quinzaine de duels annoncés contre le rival tiraient un adversaire générique au nom inventé. Ils opposent maintenant le rival lui-même (`rival_academie`, sa mémoire, ses revanches). L'entraînement avec l'aîné·e oppose l'aîné·e (contexte entraînement), le coéquipier sous genjutsu est bien le coéquipier. Au tournoi, au dernier combat et pour le déserteur, c'est le rival s'il est vivant, quelqu'un d'autre sinon (`selon` dans les fiches de combat).
+- Tests : `tests/proches.test.ts`. Le pilote des campagnes de test ne choisit plus une suite de mort que le jeu interdit. Contenu 2.53.0.
+
 ## Version 2.52 : audit narratif, une famille et des proches cohérents
 
 - **La famille qu'on a vraiment** : le jeu ne connaît qu'un parent et un·e aîné·e, tirés avec leur genre. Les leçons de clan, le tournoi chūnin, le devoir de clan, la tablette Uchiha et une dizaine d'autres scènes disaient « ton père », « ta mère » ou « ton frère » en dur : elles passent par {parent}, {Parent}, {Aine}. Si le parent n'est plus là, un ancien du clan enseigne à sa place, et sa place reste vide dans la tribune.

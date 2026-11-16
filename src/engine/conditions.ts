@@ -5,6 +5,7 @@ import { defPnj, lireStat, rangIndex, resoudrePnj } from './etat';
 import { R } from './registre';
 import { checkCareerEligibility } from './metiers';
 import { duoPossible } from './duo';
+import { habitude, positionRival, posture } from './proches';
 
 function inclut<T>(valeur: T, attendu: T | T[]): boolean {
   return Array.isArray(attendu) ? attendu.includes(valeur) : valeur === attendu;
@@ -103,6 +104,17 @@ export function evaluer(c: Condition | undefined, s: GameState): boolean {
   if ('sansMetier' in c) return !s.metier.principal;
   if ('metierEligible' in c) return checkCareerEligibility(s, c.metierEligible).ok;
   if ('trait' in c) return s.creation.traits.includes(c.trait);
+  if ('posture' in c) return (Array.isArray(c.est) ? c.est : [c.est]).includes(posture(s, c.posture));
+  if ('rivalBilan' in c) return (Array.isArray(c.rivalBilan) ? c.rivalBilan : [c.rivalBilan]).includes(positionRival(s));
+  if ('habitudeConnue' in c) return !!habitude(s) === c.habitudeConnue;
+  if ('connu' in c) {
+    const id = resoudrePnj(s, c.connu);
+    return !!id && !!s.pnj[id]?.rencontre;
+  }
+  if ('souvenirAvec' in c) {
+    const id = resoudrePnj(s, c.souvenirAvec);
+    return !!id && (s.relations[id]?.souvenirs.length ?? 0) > 0;
+  }
   if ('orphelin' in c) return (s.creation.clan === 'sans_clan' && s.creation.origine === 'orphelin') === c.orphelin;
   if ('aptitude' in c) return s.creation.aptitude === c.aptitude;
   if ('objectif' in c) return s.creation.objectif === c.objectif;

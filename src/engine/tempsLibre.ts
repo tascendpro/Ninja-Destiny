@@ -1,6 +1,7 @@
 // Temps libre : entre deux événements de trame, le joueur choisit à quoi consacrer son temps.
 // Chaque activité coûte du temps : s'entraîner, c'est manquer autre chose.
 
+import { noterHabitude } from './proches';
 import { noterMerite } from './progression';
 import { CONSOMMABLE, CONSOMMABLES, STOCK_MAX, acheterConsommable, stock } from './consommables';
 
@@ -645,6 +646,8 @@ export function faireActivite(s: GameState, id: string, ctx: Ctx): ResultatActiv
     return { libelle: act.libelle, texte: `Tu acceptes la mission « ${m.titre} ».`, suite: m.evenement };
   }
   if (!BOUCLABLES.has(type)) throw new Error(`[temps libre] activité inconnue : ${id}`);
+  // Ce que tu fais de ton temps, ton aîné·e le voit (proches.ts : {habitude}).
+  noterHabitude(s, id);
   if (ENTRAINEMENT.has(type) && type !== 'route') noterMerite(s, 'entrainement');
   if (type === 'etudier' || type === 'enqueter') noterMerite(s, 'etude');
 

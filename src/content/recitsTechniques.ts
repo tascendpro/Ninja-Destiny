@@ -466,6 +466,7 @@ export const AFFRONTEMENTS: Record<string, Affrontement> = {
   'm4_sabotage/reveiller': EA,
   'x_fille_ministre/combattre': DV,
   'r_terrain_rival/duel': D,
+  'pr_rival_compte/accepter': D,
   'r_foret_poursuite/poursuivre': D,
   'r_village_attaque/combattre': EA,
   'r_base_secrete/prisonnier': DV,

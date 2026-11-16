@@ -26,6 +26,12 @@ export const ADVERSAIRES_SCENES: Record<string, { type: TypeAdversaire; nom: str
   'mc_caravane/eau': { type: 'bandit', nom: 'La bande de pillards', genre: 'f' },
   'mg_bateau/combat': { type: 'bandit', nom: 'L’équipage', genre: 'm' },
   'md_marchand/combat': { type: 'bandit', nom: 'La bande de la route', genre: 'f' },
+  // La vendetta : des gens de ton propre village, que tu connais de vue. Pas un ninja étranger tiré au hasard.
+  'vc_clan_rival/duel': { type: 'ninja', nom: 'Le frère endeuillé', genre: 'm' },
+  'vc_embuscade/combattre': { type: 'ninja', nom: 'Les trois masqués', genre: 'm' },
+  // Le tournoi et le dernier combat, quand le rival n'est plus là pour les livrer (voir combat/index.ts, « selon »).
+  'c5_rival/combat': { type: 'ninja', nom: 'Le jeune ninja de son clan', genre: 'm' },
+  'm4_deserteur/combattre': { type: 'ninja', nom: 'Ton ancien camarade', genre: 'm' },
 };
 
 /** Les mots qui trahissent l'adversaire, lus dans le titre, le choix, la cause de mort et le début de la scène. */

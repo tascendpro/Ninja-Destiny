@@ -195,6 +195,11 @@ export interface AffrontementDef {
   conclusions?: Partial<Record<FinCombat, ConclusionDef>>;
   /** Familles interdites par la règle du combat (l'épreuve des lames : ni ninjutsu, ni pouvoirs). */
   interdit?: Famille[];
+  /**
+   * Un autre adversaire selon l'histoire, choisi à l'ouverture (le premier dont la condition tient) : au tournoi, c'est
+   * le rival s'il est encore en vie, sinon un inconnu. Le contexte, lui, ne change pas (la scène l'a déjà annoncé).
+   */
+  selon?: { si: import('../types').Condition; adversaire: string }[];
 }
 
 /** La mémoire persistante d'un adversaire récurrent (§13). */
