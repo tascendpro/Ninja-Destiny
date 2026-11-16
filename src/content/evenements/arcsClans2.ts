@@ -163,7 +163,7 @@ export const ARCS_CLANS_2: EventDef[] = [
         id: 'discret',
         texte: 'Un seul insecte, en silence, sous ta manche',
         effets: [{ entrainer: 'kikaichu', jours: 15 }, { stat: 'attributs.discretion', delta: 3 }, { stat: 'attributs.intellect', delta: 1 }],
-        resultat: 'Personne ne voit l’insecte qui quitte ton poignet. Tu fais semblant de chercher comme les autres, tu ouvres des placards au hasard, et tu « trouves » le sceau dans la cheminée au bout de vingt minutes. Personne ne saura. C’est ce que ton père appelle « la politesse du clan ».',
+        resultat: 'Personne ne voit l’insecte qui quitte ton poignet. Tu fais semblant de chercher comme les autres, tu ouvres des placards au hasard, et tu « trouves » le sceau dans la cheminée au bout de vingt minutes. Personne ne saura. C’est ce que {parent} appelle « la politesse du clan ».',
       },
       {
         id: 'repondre',

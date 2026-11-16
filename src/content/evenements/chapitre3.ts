@@ -193,8 +193,8 @@ export const CHAPITRE3: EventDef[] = [
     enchaine: true,
     si: ACTIF,
     texte: [
-      { si: A_VIVANT, texte: 'Une embuscade, un pont, une nuit sans lune. {@coequipierA} se jette devant toi quand le kunai explosif arrive. Il te reste dans les bras le temps de dire ton prénom, et rien d’autre.' },
-      { si: { tout: [{ non: A_VIVANT }, SENSEI_VIVANT] }, texte: 'On te ramène le bandeau de {@sensei}, fendu en deux. Il a tenu un col seul pendant une nuit entière pour que son unité puisse se replier. On n’a pas retrouvé le corps.' },
+      { si: A_VIVANT, texte: 'Une embuscade, un pont, une nuit sans lune. {@coequipierA} se jette devant toi quand le kunai explosif arrive. {Il:@coequipierA} te reste dans les bras le temps de dire ton prénom, et rien d’autre.' },
+      { si: { tout: [{ non: A_VIVANT }, SENSEI_VIVANT] }, texte: 'On te ramène le bandeau de {@sensei}, fendu en deux. {Il:@sensei} a tenu un col seul{e:@sensei} pendant une nuit entière pour que son unité puisse se replier. On n’a pas retrouvé le corps.' },
       { si: { tout: [{ non: A_VIVANT }, { non: SENSEI_VIVANT }] }, texte: 'Une lettre arrive du village. {Parent} n’a pas survécu au bombardement du quartier est. Tu lis la lettre trois fois avant de comprendre qu’elle parle de toi.' },
     ],
     choix: [

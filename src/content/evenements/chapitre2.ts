@@ -10,6 +10,7 @@ const ACTIF: Condition = { statut: 'actif' };
 const ROUTE: Condition = { statut: ['errant', 'deserteur', 'exile'] };
 const A_VIVANT: Condition = { pnj: '@coequipierA', etat: ['vivant', 'blesse'] };
 const RIVAL_VIVANT: Condition = { pnj: '@rival', etat: ['vivant', 'blesse'] };
+const PARENT_VIVANT: Condition = { pnj: '@parent', etat: ['vivant', 'blesse'] };
 
 /** L'ennemi naturel de chaque village, et sa nature dominante (avantage d'élément des attaques). */
 const ADVERSAIRES = [
@@ -264,7 +265,7 @@ export const CHAPITRE2: EventDef[] = [
     choix: [
       {
         id: 'porter',
-        texte: 'Porter ton coéquipier jusqu’à la tour',
+        texte: 'Marcher jusqu’à la tour, le blessé sur ton dos',
         test: {
           type: 'competence',
           difficulte: 48,
@@ -295,7 +296,10 @@ export const CHAPITRE2: EventDef[] = [
             suite: 'c2_tournoi',
           },
           echec: {
-            texte: 'Tu en retires une partie. L’autre reste. Vous arrivez à la tour, mais ton coéquipier ne pourra pas combattre.',
+            texte: [
+              { si: A_VIVANT, texte: 'Tu en retires une partie. L’autre reste. Vous arrivez à la tour, mais {@coequipierA} ne pourra pas combattre.' },
+              { si: { non: A_VIVANT }, texte: 'Tu en retires une partie. L’autre reste. Vous arrivez à la tour, mais {@coequipierB} ne pourra pas combattre.' },
+            ],
             effets: [{ drapeau: 'c2_equipier_blesse' }, { relation: '@coequipierA', delta: { amitie: 4 } }],
             suite: 'c2_tournoi',
           },
@@ -311,10 +315,13 @@ export const CHAPITRE2: EventDef[] = [
       },
       {
         id: 'abandonner',
-        texte: 'Le laisser avec le rouleau et finir seul·e',
+        texte: 'Partir seul·e avec le rouleau, et laisser le blessé derrière toi',
         effets: [{ relation: '@coequipierA', delta: { confiance: -25, amitie: -20 } }, { relation: '@coequipierB', delta: { confiance: -15 } }, { ethique: { compassion: -8, ambition: 6 } }, { drapeau: 'c2_abandon_equipier' }],
         suite: 'c2_tournoi',
-        resultat: 'Une équipe de secours le ramasse le lendemain. Il survivra. Il ne te regardera plus jamais de la même façon, et l’examinateur non plus.',
+        resultat: [
+          { si: A_VIVANT, texte: 'Une équipe de secours ramasse {@coequipierA} le lendemain. {Il:@coequipierA} survivra. {Il:@coequipierA} ne te regardera plus jamais de la même façon, et l’examinateur non plus.' },
+          { si: { non: A_VIVANT }, texte: 'Une équipe de secours ramasse {@coequipierB} le lendemain. {Il:@coequipierB} survivra. {Il:@coequipierB} ne te regardera plus jamais de la même façon, et l’examinateur non plus.' },
+        ],
       },
     ],
   },
@@ -333,11 +340,14 @@ export const CHAPITRE2: EventDef[] = [
       { si: { non: RIVAL_VIVANT }, texte: 'Le tirage au sort te place face à un genin étranger qui a tué deux candidats dans la forêt.' },
       { si: { clan: 'uchiha' }, texte: 'Dans la tribune du clan, la police militaire Uchiha au grand complet. On attend de toi que tu montres les yeux de ton sang.' },
       { si: { clan: 'hyuga' }, texte: 'La branche principale des Hyūga occupe le premier rang. La branche secondaire se tient debout derrière elle. Les deux te regardent pour des raisons différentes.' },
-      { si: { clan: 'nara' }, texte: 'Ton père a parié contre toi par superstition. Les Nara font tout à l’envers, même espérer.' },
+      { si: { tout: [{ clan: 'nara' }, PARENT_VIVANT] }, texte: '{Parent} a parié contre toi par superstition. Les Nara font tout à l’envers, même espérer.' },
+      { si: { tout: [{ clan: 'nara' }, { non: PARENT_VIVANT }] }, texte: 'Les Nara ont parié contre toi par superstition, comme {parent} l’aurait fait. Ils font tout à l’envers, même espérer.' },
       { si: { clan: 'akimichi' }, texte: 'Les Akimichi ont apporté à manger pour toute la tribune. Ils crient ton nom la bouche pleine.' },
-      { si: { clan: 'yamanaka' }, texte: 'Ta famille a fleuri la tribune. Ta mère dit que les fleurs portent chance. Ton père dit qu’elles cachent les sorties.' },
+      { si: { tout: [{ clan: 'yamanaka' }, PARENT_VIVANT] }, texte: 'Ta famille a fleuri la tribune. {Parent} dit que les fleurs portent chance. Ton oncle dit qu’elles cachent les sorties.' },
+      { si: { tout: [{ clan: 'yamanaka' }, { non: PARENT_VIVANT }] }, texte: 'Ta famille a fleuri la tribune. Au milieu des fleurs, une place est restée vide : celle de {parent}.' },
       { si: { clan: 'aburame' }, texte: 'Les Aburame ne crient pas. Ils sont là, alignés, et tes insectes savent qu’ils sont là.' },
-      { si: { clan: 'inuzuka' }, texte: 'Ton chien tire sur sa laisse. Dans la tribune, ta mère hurle plus fort que tous les chiens du clan réunis.' },
+      { si: { tout: [{ clan: 'inuzuka' }, PARENT_VIVANT] }, texte: 'Ton chien tire sur sa laisse. Dans la tribune, {parent} hurle plus fort que tous les chiens du clan réunis.' },
+      { si: { tout: [{ clan: 'inuzuka' }, { non: PARENT_VIVANT }] }, texte: 'Ton chien tire sur sa laisse. Dans la tribune, les chiens du clan hurlent pour toi, assez fort pour couvrir une voix qui manque.' },
       { si: { clan: 'senju' }, texte: 'On a peint l’emblème des Senju sur un drapeau que personne n’avait sorti depuis la guerre. Le poids d’un nom.' },
       { si: { clan: 'uzumaki' }, texte: 'Quelqu’un dans la foule murmure « Uzumaki » comme un mot ancien. Ton clan n’existe plus qu’en toi, ou presque.' },
       { si: { clan: 'hozuki' }, texte: 'Les Hōzuki ont parié de l’argent sur toi, beaucoup d’argent. Ils te le rappelleront si tu perds.' },
@@ -471,14 +481,14 @@ export const CHAPITRE2: EventDef[] = [
     personnages: ['@sensei'],
     texte: [
       { texte: 'L’examen continue sans toi. Tu regardes la suite depuis les gradins, avec les autres éliminés, qui parlent fort pour ne pas penser.' },
-      { si: A_VIVANT, texte: '{@coequipierA} vient s’asseoir à côté de toi. Il ne dit rien. C’est mieux comme ça.' },
+      { si: A_VIVANT, texte: '{@coequipierA} vient s’asseoir à côté de toi. {Il:@coequipierA} ne dit rien. C’est mieux comme ça.' },
     ],
     choix: [
       {
         id: 'travailler',
         texte: 'Te remettre au travail dès le lendemain',
         effets: [{ planifier: 'c2_seconde_chance', dansJours: 180 }, { stat: 'attributs.controleEmotionnel', delta: 2 }, { relation: '@sensei', delta: { respect: 6 } }, ...SUITE_VILLAGE],
-        resultat: '{@sensei} te trouve sur le terrain à l’aube. Il ne dit rien, enlève sa veste et se met en garde. Vous recommencez tout.',
+        resultat: '{@sensei} te trouve sur le terrain à l’aube. {Il:@sensei} ne dit rien, enlève sa veste et se met en garde. Vous recommencez tout.',
       },
       {
         id: 'colere',
@@ -556,7 +566,8 @@ export const CHAPITRE2: EventDef[] = [
     texte: [
       { si: { clan: 'uchiha' }, texte: 'Le chef du clan Uchiha te convoque. On parle à voix basse dans le quartier : le Conseil retire peu à peu la police militaire des rues. « Le clan a besoin de savoir de quel côté tu te tiens. Nous avons besoin d’yeux à la tour du Hokage. »' },
       { si: { clan: 'hyuga' }, texte: 'Les anciens Hyūga t’annoncent qu’on va apposer le sceau de l’oiseau en cage sur ton cousin de la branche secondaire. On te demande d’être présent·e, et de tenir le pinceau.' },
-      { si: { clan: 'nara' }, texte: 'Une biche du troupeau sacré des Nara est retrouvée morte, une flèche de braconnier dans le flanc. Ton père te confie l’enquête : « C’est ennuyeux, je sais. C’est pour ça que c’est toi. »' },
+      { si: { tout: [{ clan: 'nara' }, PARENT_VIVANT] }, texte: 'Une biche du troupeau sacré des Nara est retrouvée morte, une flèche de braconnier dans le flanc. {Parent} te confie l’enquête : « C’est ennuyeux, je sais. C’est pour ça que c’est toi. »' },
+      { si: { tout: [{ clan: 'nara' }, { non: PARENT_VIVANT }] }, texte: 'Une biche du troupeau sacré des Nara est retrouvée morte, une flèche de braconnier dans le flanc. Le chef du clan te confie l’enquête, en bâillant : « C’est ennuyeux, je sais. C’est pour ça que c’est toi. »' },
       { si: { clan: 'yamanaka' }, texte: 'Le service d’interrogatoire veut t’emprunter : un prisonnier refuse de parler, et ta technique d’esprit est la seule assez fine pour entrer sans le briser. Ta famille n’aime pas ça.' },
       { si: { clan: 'akimichi' }, texte: 'Le clan Akimichi te propose les pilules des trois couleurs, la technique secrète qui décuple la force au prix de la vie. On veut savoir si tu es prêt·e à en porter une sur toi, toujours.' },
       { si: { clan: 'aburame' }, texte: 'Ta colonie d’insectes a commencé à mourir. Les anciens Aburame parlent d’un parasite venu de l’étranger, et d’une reine à capturer dans une forêt de la frontière.' },
@@ -933,7 +944,7 @@ export const CHAPITRE2: EventDef[] = [
       { si: { rangMin: 'chunin' }, texte: 'Une veste de chūnin pend sur une chaise de ta chambre. Elle te va mieux qu’au premier jour.' },
       { si: { rang: 'genin' }, texte: 'Tu portes toujours ton bandeau de genin. Tu as cessé d’en avoir honte. Tu n’as pas cessé d’en vouloir plus.' },
       { si: A_VIVANT, texte: '{@coequipierA} monte te rejoindre, comme toujours.' },
-      { texte: '{@sensei} t’a dit hier qu’il y aurait bientôt une guerre. Il ne l’a pas dit comme une menace. Il l’a dit comme une météo.' },
+      { texte: '{@sensei} t’a dit hier qu’il y aurait bientôt une guerre. {Il:@sensei} ne l’a pas dit comme une menace. {Il:@sensei} l’a dit comme une météo.' },
     ],
     choix: [
       {

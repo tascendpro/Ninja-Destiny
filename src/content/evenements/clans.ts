@@ -183,13 +183,13 @@ export const EVENEMENTS_CLANS: EventDef[] = [
     si: enfance('akimichi'),
     personnages: ['@rival'],
     texte:
-      'Le clan Akimichi fête la fin de l’hiver par un banquet qui dure tout l’après-midi. En chemin, des enfants t’ont suivi en gonflant les joues. Parmi eux, {@rival}, qui ne rit pas — il observe, et c’est pire.',
+      'Le clan Akimichi fête la fin de l’hiver par un banquet qui dure tout l’après-midi. En chemin, des enfants t’ont suivi en gonflant les joues. Parmi eux, {@rival}, qui ne rit pas — {il:@rival} observe, et c’est pire.',
     choix: [
       {
         id: 'rire',
         texte: 'Rire avec eux et les inviter au banquet',
         effets: [{ stat: 'attributs.charisme', delta: 4 }, { stat: 'social.reputation', delta: 2 }, { relation: '@rival', delta: { respect: 4 } }],
-        resultat: 'Ils ne s’attendaient pas à ça. La moitié vient, mange, et repart ton ami. {@rival} refuse l’invitation, mais il ne se moque plus jamais de toi.',
+        resultat: 'Ils ne s’attendaient pas à ça. La moitié vient, mange, et repart ton ami. {@rival} refuse l’invitation, mais {il:@rival} ne se moque plus jamais de toi.',
       },
       {
         id: 'frapper',
@@ -226,7 +226,7 @@ export const EVENEMENTS_CLANS: EventDef[] = [
         id: 'cacher',
         texte: 'Rappeler l’insecte et cacher tes bras',
         effets: [{ stat: 'attributs.discretion', delta: 3 }, { stat: 'attributs.controleEmotionnel', delta: 2 }],
-        resultat: 'Tu apprends ce jour-là à respirer lentement pour calmer la colonie. Ce sera utile toute ta vie.',
+        resultat: 'Tu apprends ce jour-là à respirer lentement pour calmer la colonie. Ce soir-là, c’est elle qui s’endort avant toi.',
       },
       {
         id: 'expliquer',
@@ -364,7 +364,7 @@ export const EVENEMENTS_CLANS: EventDef[] = [
           attributs: { controleChakra: 2, controleEmotionnel: 1 },
           maitrises: { hydrification: 2 },
           succes: {
-            texte: 'Son poing traverse ton ventre comme de l’eau. Les autres enfants sifflent. {@rival} te regarde pour la première fois comme un égal.',
+            texte: 'Son poing traverse ton ventre comme de l’eau. Les autres enfants sifflent. {@rival} te regarde pour la première fois comme un·e égal·e.',
             effets: [{ relation: '@rival', delta: { respect: 10 } }, { stat: 'social.confianceClan', delta: 5 }, { entrainer: 'hydrification', jours: 15 }],
           },
           echec: {
@@ -377,7 +377,7 @@ export const EVENEMENTS_CLANS: EventDef[] = [
         id: 'retourner',
         texte: 'Le frapper d’abord',
         effets: [{ relation: '@rival', delta: { rivalite: 10, respect: 4 } }, { stat: 'attributs.force', delta: 2 }, { stat: 'attributs.controleEmotionnel', delta: -2 }],
-        resultat: 'Ton poing traverse son épaule — il s’est liquéfié avant toi. Il éclate de rire. « T’es pas si mou, finalement. » C’est le début d’une rivalité.',
+        resultat: 'Ton poing traverse son épaule — {il:@rival} s’est liquéfié{e:@rival} avant toi. {Il:@rival} éclate de rire. « T’es pas si nul·le, finalement. » C’est le début d’une rivalité.',
       },
       {
         id: 'boire',
@@ -420,7 +420,7 @@ export const EVENEMENTS_CLANS: EventDef[] = [
         id: 'refuser',
         texte: 'Refuser de combattre',
         effets: [{ stat: 'social.confianceClan', delta: -12 }, { ethique: { compassion: 8, honneur: 4 } }, { relation: '@coequipierB', delta: { respect: 8 } }, { drapeau: 'refus_danse' }],
-        resultat: 'Le chant s’arrête net. Un ancien te gifle. {@coequipierB}, en face, baisse ses poings lui aussi, très lentement. Vous serez punis tous les deux. Vous ne le regretterez ni l’un ni l’autre.',
+        resultat: 'Le chant s’arrête net. Un ancien te gifle. {@coequipierB}, en face, baisse ses poings {lui:@coequipierB} aussi, très lentement. Vous serez punis tous les deux. Vous ne le regretterez ni l’un ni l’autre.',
       },
       {
         id: 'epargner',
@@ -644,7 +644,7 @@ export const EVENEMENTS_CLANS: EventDef[] = [
       },
       {
         id: 'demander',
-        texte: 'Le soir, demander à {parent} qui étaient tes parents',
+        texte: 'Le soir, demander à {parent} d’où tu viens vraiment',
         effets: [{ relation: '@parent', delta: { confiance: 8 } }, { indice: 'origines_orphelin' }, { stat: 'attributs.perception', delta: 2 }],
         resultat:
           '{Parent} te regarde longtemps. « Je ne sais pas tout. Tu es arrivé{e} une nuit de la dernière année de guerre, avec une couverture et rien d’autre. Celui qui t’a déposé{e} portait un bandeau du village. » {Parent_il} hésite. « Quand tu seras ninja, les archives te diront peut-être le reste. Peut-être pas. »',

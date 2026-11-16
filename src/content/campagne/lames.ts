@@ -21,6 +21,12 @@ interface LameQuete {
   rumeur: string;
   entree: string;
   defaite: string;
+  /** Où il vous attend, au bout de la piste. */
+  attente: string;
+  /** Ceux qu'on interroge sur sa façon de se battre. */
+  temoins: string;
+  /** Ce qui reste d'une légende qu'on laisse dormir. */
+  laissee: string;
 }
 
 const LAMES: LameQuete[] = [
@@ -33,6 +39,9 @@ const LAMES: LameQuete[] = [
     rumeur: 'Un marchand de la côte jure avoir vu Kurozawa Zantō, le déserteur de Kiri, dans un village de pêcheurs à trois jours d’ici. Sur son dos, une lame large comme une porte, avec un trou rond près de la garde. Kubikiribōchō.',
     entree: 'Deux enfants. On m’envoie des enfants, maintenant. Ma lame a faim de fer : elle va se régaler.',
     defaite: 'La lame… la lame se souviendra… de moi…',
+    attente: 'sur la grève du village de pêcheurs, assis sur un rocher, la lame plantée dans le sable à côté de lui',
+    temoins: 'les pêcheurs, les veuves du port, un vieux passeur qui a vu Zantō couper une barque en deux',
+    laissee: 'Sur le chemin du retour, vous croisez une barque coupée en deux, échouée sur la plage. Vous ne vous arrêtez pas.',
   },
   {
     lame: 'samehada',
@@ -43,6 +52,9 @@ const LAMES: LameQuete[] = [
     rumeur: 'On a vu Fukaji Mōryō sur les quais du Pays de l’Eau, au service de gens qu’on ne nomme pas. Une épée enveloppée de bandages, qui bouge toute seule quand on passe trop près. Samehada. Elle mange le chakra de ceux qu’elle touche.',
     entree: 'Votre chakra sent bon. Elle l’a senti avant moi. Approchez : elle n’aime pas attendre.',
     defaite: 'Elle… elle vous choisit… Elle m’a toujours dit… que je n’étais qu’un prêt…',
+    attente: 'au bout du dernier quai, dans la brume, l’épée bandée posée en travers des genoux',
+    temoins: 'les dockers, un marchand qui lui doit de l’argent, une guérisseuse qui a soigné ceux qu’elle a vidés de leur chakra',
+    laissee: 'Ce soir-là, vous mangez du poisson grillé sur le port, et vous ne parlez ni de quais ni d’épées. C’est peut-être la décision la plus sage de votre vie.',
   },
   {
     lame: 'yunagi',
@@ -53,6 +65,9 @@ const LAMES: LameQuete[] = [
     rumeur: 'Un caravanier rentré du désert parle d’un déserteur de Suna, Sabure, qui campe dans les ruines de Shōsa. La nuit, on entend une lame chanter dans le vent. Yūnagi, la lame de verre, qu’on croyait ensevelie depuis soixante ans.',
     entree: 'Le sable m’a rendu cette lame. Je ne la rendrai à personne d’autre.',
     defaite: 'Le vent… le vent tourne…',
+    attente: 'dans les ruines de Shōsa, debout sur une tour de verre à moitié ensevelie, la lame qui chante au vent',
+    temoins: 'les caravaniers, un guide qui refuse d’approcher des ruines, un vieux soldat de Suna qui a vu Yūnagi avant qu’on l’enterre',
+    laissee: 'La nuit, quand le vent souffle du désert, vous croyez encore l’entendre chanter. Vous ne le dites ni l’un ni l’autre.',
   },
 ];
 
@@ -179,13 +194,13 @@ function scenePiste(l: LameQuete): SceneCommuneDef {
       { id: 'laisser', texte: 'Laisser cette lame à sa légende', famille: 'partir' },
     ],
     issues: [
-      { cle: 'traquer+traquer', texte: `Trois jours de marche, deux nuits sans feu. Le quatrième matin, ${l.nomPorteur} vous attend sur la grève, assis sur un rocher, comme s’il savait.`, lien: { les2: { loyaute: 3 } }, combat: ID_COMBAT(l) },
-      { cle: 'renseigner+renseigner', texte: `Une semaine à interroger les pêcheurs, les marchands, un vieil homme qui a vu ${l.nomPorteur} se battre. Vous savez où il frappe, et quand. Puis vous partez.`, lien: { les2: { respect: 3 } }, accord: 6, combat: ID_COMBAT(l) },
+      { cle: 'traquer+traquer', texte: `Trois jours de marche, deux nuits sans feu. Le quatrième matin, ${l.nomPorteur} vous attend ${l.attente}, comme s’il savait.`, lien: { les2: { loyaute: 3 } }, combat: ID_COMBAT(l) },
+      { cle: 'renseigner+renseigner', texte: `Une semaine à interroger ${l.temoins}. Vous savez où ${l.nomPorteur} frappe, et quand. Puis vous partez.`, lien: { les2: { respect: 3 } }, accord: 6, combat: ID_COMBAT(l) },
       { cle: 'traquer+renseigner', texte: `{un} veut partir tout de suite ; {deux} insiste pour savoir d’abord. Vous partez avec la moitié des réponses. C’est mieux que rien.`, accord: 3, combat: ID_COMBAT(l) },
-      { cle: 'laisser+laisser', texte: `Vous vous regardez, et vous haussez les épaules en même temps. Il y a des légendes qu’on laisse dormir. ${l.nomLame} restera loin de vous, et vous resterez vivants.`, lien: { les2: { confiance: 2 } }, souvenir: { id: `lame_laissee_${l.lame}`, texte: `${l.nomLame}, que vous avez laissée à sa légende.`, poids: 2, tonalite: 'chaud' } },
+      { cle: 'laisser+laisser', texte: `Vous vous regardez, et vous haussez les épaules en même temps. ${l.nomLame} restera loin de vous, et vous resterez vivants. ${l.laissee}`, lien: { les2: { confiance: 2 } }, souvenir: { id: `lame_laissee_${l.lame}`, texte: `${l.nomLame}, que vous avez laissée à sa légende.`, poids: 2, tonalite: 'chaud' } },
       {
         cle: 'laisser+*',
-        texte: `{un} ne viendra pas. {deux} part quand même, seul, avant l’aube, sans dire au revoir.`,
+        texte: `{un} ne viendra pas. {deux} part quand même, seul{e:deux}, avant l’aube, sans dire au revoir.`,
         lien: { un: { peur_de_perdre: 8 }, deux: { ressentiment: 5 } },
         apres: (c, un) => seul(c, autre(un), l),
       },

@@ -592,7 +592,7 @@ export const ENFANCE: EventDef[] = [
     poids: 4,
     personnages: ['@coequipierB'],
     si: { tout: [ENFANT, { saison: 'ete' }, { pnj: '@coequipierB', etat: ['vivant', 'blesse'] }] },
-    texte: '{@coequipierB} frappe à ta fenêtre en pleine nuit. « Viens. Les lucioles sont sorties, près de l’étang. Si on attend, il n’y en aura plus. » Tes parents dorment. La permission n’existe pas, à cette heure.',
+    texte: '{@coequipierB} frappe à ta fenêtre en pleine nuit. « Viens. Les lucioles sont sorties, près de l’étang. Si on attend, il n’y en aura plus. » {Parent} dort. La permission n’existe pas, à cette heure.',
     choix: [
       {
         id: 'sortir',
@@ -862,7 +862,7 @@ export const ENFANCE: EventDef[] = [
     lieu: '$village',
     poids: 3,
     si: { tout: [ENFANT, { age: { min: 8 } }] },
-    texte: 'Tout le village est en noir. Un chūnin que tu ne connaissais pas est tombé à la frontière. Sa photo est posée devant la stèle, entre deux bougies. Il avait l’air jeune. Plus jeune que tes parents.',
+    texte: 'Tout le village est en noir. Un chūnin que tu ne connaissais pas est tombé à la frontière. Sa photo est posée devant la stèle, entre deux bougies. Il avait l’air jeune. Plus jeune que {parent}.',
     choix: [
       {
         id: 'rester',

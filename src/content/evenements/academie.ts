@@ -84,7 +84,7 @@ export const ACADEMIE: EventDef[] = [
           attributs: { agilite: 2, perception: 1 },
           maitrises: { famille_kunai: 2 },
           critique: {
-            texte: 'Trois au centre. Comme {@rival}. Il ne dit rien non plus. Ce silence-là, tu le gardes longtemps.',
+            texte: 'Trois au centre. Comme {@rival}. L’instructeur ne dit rien non plus. Ce silence-là, tu le gardes longtemps.',
             effets: [{ stat: 'social.reputation', delta: 4 }, { relation: '@rival', delta: { respect: 10, rivalite: 6 } }, { entrainer: 'famille_kunai', jours: 15 }],
           },
           succes: {
@@ -92,7 +92,7 @@ export const ACADEMIE: EventDef[] = [
             effets: [{ entrainer: 'famille_kunai', jours: 15 }, { relation: '@rival', delta: { rivalite: 3 } }],
           },
           echec: {
-            texte: 'Le premier shuriken rebondit sur le poteau. Les rires fusent. {@rival} ne rit pas : il t’a déjà oublié·e. C’est pire.',
+            texte: 'Le premier shuriken rebondit sur le poteau. Les rires fusent. {@rival} ne rit pas : {il:@rival} t’a déjà oublié·e. C’est pire.',
             effets: [{ entrainer: 'famille_kunai', jours: 15 }, { stat: 'attributs.controleEmotionnel', delta: -1 }, { drapeau: 'humilie_lancer' }],
           },
         },
@@ -409,7 +409,7 @@ export const ACADEMIE: EventDef[] = [
         id: 'sensei',
         texte: 'En parler à {@sensei}, l’instructeur qui ne crie jamais',
         effets: [{ secret: 'dissidence_kiri' }, { relation: '@sensei', delta: { confiance: 10, respect: 6 } }, { decouvrir: 'organisation:dissidence_kiri' }],
-        resultat: '{@sensei} écoute sans rien dire, puis désigne la brume. « Certains d’entre nous pensent que cet examen doit cesser. Pas assez encore. Mais certains. » Il ne dira rien de plus. C’est déjà beaucoup trop.',
+        resultat: '{@sensei} écoute sans rien dire, puis désigne la brume. « Certains d’entre nous pensent que cet examen doit cesser. Pas assez encore. Mais certains. » {Il:@sensei} ne dira rien de plus. C’est déjà beaucoup trop.',
       },
     ],
   },
@@ -527,7 +527,7 @@ export const ACADEMIE: EventDef[] = [
           attributs: { agilite: 1, force: 1, controleEmotionnel: 1 },
           maitrises: { taijutsu: 2 },
           critique: {
-            texte: '{@rival} touche terre le premier. Il reste allongé un moment, puis rit — un vrai rire, que personne ne lui connaissait. « Encore. Demain. »',
+            texte: '{@rival} touche terre en premier. {Il:@rival} reste allongé{e:@rival} un moment, puis rit — un vrai rire, que personne ne lui connaissait. « Encore. Demain. »',
             effets: [{ relation: '@rival', delta: { respect: 15, rivalite: 10, amitie: 6 } }, { stat: 'social.reputation', delta: 5 }],
           },
           succes: {
@@ -535,7 +535,7 @@ export const ACADEMIE: EventDef[] = [
             effets: [{ relation: '@rival', delta: { respect: 10, rivalite: 8 } }, { stat: 'social.reputation', delta: 2 }],
           },
           echec: {
-            texte: 'Il te met à terre en trois mouvements. Puis il te tend la main. « Tu progresses. Pas assez vite. »',
+            texte: '{Il:@rival} te met à terre en trois mouvements. Puis {il:@rival} te tend la main. « Tu progresses. Pas assez vite. »',
             effets: [{ relation: '@rival', delta: { rivalite: 10 } }, { stat: 'jauges.sante', delta: -8 }, { stat: 'attributs.controleEmotionnel', delta: -1 }],
           },
         },
@@ -544,7 +544,7 @@ export const ACADEMIE: EventDef[] = [
         id: 'refuser',
         texte: 'Refuser : ce n’est pas le moment',
         effets: [{ stat: 'social.reputation', delta: -3 }, { stat: 'attributs.controleEmotionnel', delta: 3 }, { relation: '@rival', delta: { respect: -4 } }],
-        resultat: 'Les spectateurs sifflent. {@rival} hausse les épaules. « Comme tu veux. Mais je ne te le reproposerai pas. » Il ment. Il te le reproposera.',
+        resultat: 'Les spectateurs sifflent. {@rival} hausse les épaules. « Comme tu veux. Mais je ne te le reproposerai pas. » {Il:@rival} ment. {Il:@rival} te le reproposera.',
       },
       {
         id: 'autre',
@@ -554,11 +554,11 @@ export const ACADEMIE: EventDef[] = [
           difficulte: 44,
           attributs: { intellect: 2, perception: 1 },
           succes: {
-            texte: 'La partie dure deux heures. Tu gagnes d’un coup. {@rival} fixe le plateau très longtemps. « Tu triches avec ta tête », dit-il. C’est sa façon de dire bravo.',
+            texte: 'La partie dure deux heures. Tu gagnes d’un coup. {@rival} fixe le plateau très longtemps. « Tu triches avec ta tête », dit-{il:@rival}. C’est sa façon de dire bravo.',
             effets: [{ relation: '@rival', delta: { respect: 12 } }, { stat: 'attributs.intellect', delta: 2 }],
           },
           echec: {
-            texte: 'Il te bat aussi à ce jeu-là. Évidemment. Mais il a accepté de jouer selon tes règles, et ça, c’est une victoire.',
+            texte: '{Il:@rival} te bat aussi à ce jeu-là. Évidemment. Mais {il:@rival} a accepté de jouer selon tes règles, et ça, c’est une victoire.',
             effets: [{ relation: '@rival', delta: { respect: 6 } }, { stat: 'attributs.intellect', delta: 1 }],
           },
         },

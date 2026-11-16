@@ -217,19 +217,19 @@ export const ALEATOIRES: EventDef[] = [
     poids: 4,
     si: { tout: [ACTIF, { age: { min: 9 } }, { pnj: '@rival', etat: ['vivant', 'blesse'] }] },
     personnages: ['@rival'],
-    texte: 'Tout le monde en parle : {@rival} s’entraînerait à l’aube avec un jōnin de son clan, et aurait progressé plus en un mois que les autres en un an. Tu le croises au détour d’un couloir. Il a l’air épuisé, et heureux.',
+    texte: 'Tout le monde en parle : {@rival} s’entraînerait à l’aube avec un jōnin de son clan, et aurait progressé plus en un mois que les autres en un an. Tu {le:@rival} croises au détour d’un couloir. {Il:@rival} a l’air épuisé{e:@rival}, et pourtant ravi{e:@rival}.',
     choix: [
       {
         id: 'redoubler',
         texte: 'Redoubler d’efforts',
         effets: [{ entrainer: 'taijutsu', jours: 20 }, { stat: 'jauges.fatigue', delta: 15 }, { relation: '@rival', delta: { rivalite: 5 } }],
-        resultat: 'Tu t’entraînes avec une rage nouvelle. Pas pour toi : contre lui. Ce n’est pas la meilleure raison. Ça marche quand même.',
+        resultat: 'Tu t’entraînes avec une rage nouvelle. Pas pour toi : contre {lui:@rival}. Ce n’est pas la meilleure raison. Ça marche quand même.',
       },
       {
         id: 'demander',
-        texte: 'Lui demander comment il s’entraîne',
+        texte: 'Lui demander comment {il:@rival} s’entraîne',
         effets: [{ relation: '@rival', delta: { respect: 5, amitie: 4 } }, { stat: 'attributs.intellect', delta: 1 }],
-        resultat: 'Il hésite, méfiant. Puis il te montre un exercice de respiration. « Ne le dis à personne. » C’est presque de la confiance.',
+        resultat: '{Il:@rival} hésite, méfiant{e:@rival}. Puis {il:@rival} te montre un exercice de respiration. « Ne le dis à personne. » C’est presque de la confiance.',
       },
     ],
   },

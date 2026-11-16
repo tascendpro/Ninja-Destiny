@@ -12,6 +12,17 @@ const vivant = (id: string): Condition => ({ tout: [{ drapeau: `akatsuki_mort_${
 const P1 = { drapeau: 'passage', max: 1 } as const;
 const P2 = { drapeau: 'passage', min: 2 } as const;
 
+/** Quand il se retire avant la fin : chacun à sa façon. */
+const RECUL: Record<string, string> = {
+  itachi: 'Itachi recule d’un pas, te regarde comme on regarde un enfant qui a grandi trop vite, et se défait en corbeaux.',
+  kisame: 'Kisame rengaine Samehada en riant. « Pas aujourd’hui. Tu n’as pas encore assez de chakra pour qu’elle ait faim. »',
+  deidara: 'Deidara remonte sur son oiseau en jurant. « Tu ne mérites même pas une œuvre d’art, hm. » Il disparaît dans le soleil.',
+  sasori: 'La marionnette se replie sur elle-même avec un bruit de bois sec. « Je déteste perdre mon temps. » Sasori s’en va. C’est déjà une victoire.',
+  hidan: 'Kakuzu tire Hidan en arrière par le col. « On n’est pas payés pour celui-là. » Hidan crache par terre en partant, et promet de revenir.',
+  kakuzu: 'Kakuzu calcule, devant toi, à voix basse, le prix de ta tête et celui de ses blessures. Le compte n’est pas bon. Il s’en va.',
+  konan: 'Le papier se défait, feuille après feuille, et s’envole avec elle. « Tu m’as coûté une fleur. » C’est tout ce qu’elle dit.',
+};
+
 function combat(id: string, nom: string, texte: string, difficulte: number, causeMort: string, echec: string, element?: CheckDef['elementAdverse']): ChoiceDef {
   return {
     id,
@@ -28,21 +39,31 @@ function combat(id: string, nom: string, texte: string, difficulte: number, caus
       elementAdverse: element,
       causeMort,
       // La conclusion du combat raconte la mise à mort ; ce succès sert quand il se retire avant la fin.
-      succes: { texte: `${nom} recule, puis disparaît. Tu l’as fait reculer : peu de gens peuvent en dire autant.`, effets: [{ drapeau: 'akatsuki_ennemie' }, { stat: 'social.reputation', delta: 6 }] },
+      succes: { texte: RECUL[id] ?? `${nom} recule, puis disparaît.`, effets: [{ drapeau: 'akatsuki_ennemie' }, { stat: 'social.reputation', delta: 6 }] },
       echec: { texte: echec, effets: [{ blessure: { id: `akatsuki_${id}`, nom: `Blessures laissées par ${nom}`, gravite: 3, jours: 90 } }, { drapeau: 'akatsuki_ennemie' }] },
     },
   };
 }
 
-const FUIR: ChoiceDef = {
-  id: 'fuir',
-  texte: 'Rebrousser chemin avant qu’ils te remarquent',
-  effets: [{ hasard: [{ poids: 70, effets: [{ stat: 'attributs.discretion', delta: 1 }] }, { poids: 30, effets: [{ stat: 'jauges.fatigue', delta: 30 }, { drapeau: 'akatsuki_t_a_vu' }] }] }],
-  resultat: [
-    { si: { drapeau: 'akatsuki_t_a_vu', absent: true }, texte: 'Tu recules dans l’ombre, pas à pas, jusqu’à ce que les manteaux noirs ne soient plus que deux taches au loin. Tu respires enfin.' },
-    { si: { drapeau: 'akatsuki_t_a_vu' }, texte: 'Au moment où tu te retournes, l’un d’eux lève les yeux vers toi. Il ne bouge pas. Il n’en a pas besoin : désormais, il sait à quoi tu ressembles.' },
-  ],
-};
+/**
+ * Rebrousser chemin : chaque rencontre a sa propre retraite (deux voyageurs sur la route, une femme seule sur un toit).
+ * « Repéré·e » se tire à chaque fois : le drapeau de la rencontre précédente est d'abord effacé. Le souvenir durable
+ * (akatsuki_t_a_vu) reste, pour la suite de l'histoire.
+ */
+function fuir(texte: string, discret: string, repere: string): ChoiceDef {
+  return {
+    id: 'fuir',
+    texte,
+    effets: [
+      { drapeau: 'akc_repere', retirer: true },
+      { hasard: [{ poids: 70, effets: [{ stat: 'attributs.discretion', delta: 1 }] }, { poids: 30, effets: [{ stat: 'jauges.fatigue', delta: 30 }, { drapeau: 'akc_repere' }, { drapeau: 'akatsuki_t_a_vu' }] }] },
+    ],
+    resultat: [
+      { si: { drapeau: 'akc_repere', absent: true }, texte: discret },
+      { si: { drapeau: 'akc_repere' }, texte: repere },
+    ],
+  };
+}
 
 /** Les sept membres qu'on peut avoir à sa merci. */
 const MEMBRES = Object.keys(PRIMES_AKATSUKI);
@@ -195,7 +216,7 @@ export const AKATSUKI_CHASSE: EventDef[] = [
         effets: [{ stat: 'attributs.controleEmotionnel', delta: 2 }],
         resultat: 'Tu fixes ton thé jusqu’à ce qu’il refroidisse. Quand tu relèves la tête, la table est vide, et quelqu’un a payé ta tasse. Sous la soucoupe, une plume de corbeau.',
       },
-      FUIR,
+      fuir('Laisser ta tasse et sortir avant qu’ils te remarquent', 'Tu laisses ta tasse à moitié pleine et tu sors par la cuisine. Sur la route, tu ne te retournes qu’une fois : les deux chapeaux de paille n’ont pas bougé. Tu respires enfin.', 'Au moment où tu passes la porte, le plus petit des deux relève son chapeau d’un doigt. Ses yeux sont rouges. Il ne se lève pas. Il n’en a pas besoin : désormais, il sait à quoi tu ressembles.'),
     ],
   },
   {
@@ -213,7 +234,7 @@ export const AKATSUKI_CHASSE: EventDef[] = [
     choix: [
       combat('deidara', 'Deidara', 'Affronter Deidara avant qu’il prenne de la hauteur', 86, 'emporté·e par une explosion de Deidara, au milieu du désert', 'L’explosion t’a soufflé·e à cinquante pas. Quand tu rouvres les yeux, l’oiseau n’est plus qu’un point dans le ciel, et tes oreilles sifflent encore.'),
       combat('sasori', 'Sasori', 'Affronter Sasori, avec un antidote sous la langue', 88, 'empoisonné·e par les marionnettes de Sasori', 'Le poison a eu le temps d’agir. Tu survis par miracle, grâce à l’antidote, mais tes mains trembleront longtemps.'),
-      FUIR,
+      fuir('Te coucher derrière une dune avant qu’ils te repèrent', 'Tu te laisses glisser derrière une dune et tu attends, le visage dans le sable, que l’ombre de l’oiseau passe. Elle passe. Tu respires enfin.', 'L’ombre de l’oiseau s’arrête au-dessus de toi, une seconde de trop. Là-haut, le blond se penche, te fait un petit signe de la main, et repart. Il t’a vu·e. Il voulait que tu le saches.'),
     ],
   },
   {
@@ -231,7 +252,7 @@ export const AKATSUKI_CHASSE: EventDef[] = [
     choix: [
       combat('hidan', 'Hidan', 'Affronter Hidan, sans jamais le laisser goûter ton sang', 88, 'sacrifié·e à Jashin par Hidan', 'Il t’a entaillé·e une seule fois, et c’est ton propre cœur que tu as senti transpercé quand il s’est planté la lance dans la poitrine. Kakuzu l’a arrêté avant la fin. « Pas de prime sur celui-là. »'),
       combat('kakuzu', 'Kakuzu', 'Affronter Kakuzu, et ses cœurs volés', 92, 'tué·e par Kakuzu, qui t’a pris ton cœur', 'Les fils noirs t’ont serré jusqu’à ce que tu perdes connaissance. Kakuzu t’a jeté·e devant le bureau. « Revenir quand tu vaudras plus cher. »', 'raiton'),
-      FUIR,
+      fuir('Faire demi-tour avant le guichet', 'Tu fais demi-tour avant le guichet, comme quelqu’un qui a oublié sa bourse. Personne ne te suit dans les galeries. Tu respires enfin.', 'Dans le reflet de la vitre du guichet, l’homme au masque cousu te regarde partir. Il note quelque chose dans un carnet, à côté d’un chiffre. Le tien, sans doute.'),
     ],
   },
   {
@@ -254,7 +275,7 @@ export const AKATSUKI_CHASSE: EventDef[] = [
         effets: [{ drapeau: 'konan_ecoutee' }, { secret: 'reve_yahiko' }, { ethique: { compassion: 3 } }],
         resultat: 'Elle parle longtemps, d’un garçon qui voulait arrêter la guerre, et d’un autre qui a voulu la gagner à sa place. Quand elle se tait, elle te tourne le dos. « Ne reviens pas. » Tu redescends l’escalier avec une histoire que personne d’autre ne connaît.',
       },
-      FUIR,
+      fuir('Redescendre avant qu’elle te remarque', 'Tu redescends l’escalier de fer marche après marche, sous la pluie qui couvre tes pas. Quand tu relèves la tête, il n’y a plus personne sur le toit : seulement une fleur de papier qui tourne dans le vent.', 'À mi-escalier, une feuille de papier se colle à ta joue, puis se replie toute seule en forme d’œil. Elle ne te fera rien. Elle voulait seulement te voir de près.'),
     ],
   },
   AKATSUKI_VERDICT,

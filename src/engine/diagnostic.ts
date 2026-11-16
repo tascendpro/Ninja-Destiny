@@ -155,6 +155,16 @@ export function diagnostiquer(): Probleme[] {
   };
 
   const verifierTexte = (t: Texte | undefined, ou: string) => {
+    for (const brut of t === undefined ? [] : typeof t === 'string' ? [t] : t.map((x) => x.texte)) {
+      // Le récit ne dit jamais « ton père » ou « ta grande sœur » en dur : le jeu ne connaît qu'un parent et un·e aîné·e,
+      // tirés avec leur genre ({parent}, {Aine}…). Dans une réplique (« … »), un personnage peut parler de sa propre famille.
+      const recit = brut.replace(/«[^»]*»/g, '');
+      const fige = /\b(ton père|ta mère|tes parents|ton grand frère|ta grande sœur)\b/i.exec(recit);
+      if (fige) err('famille_figee', `${ou} : « ${fige[0]} » écrit en dur ; utiliser {parent}, {Parent}, {aine} ou {Aine}.`);
+      // « le{e:@x} » donnerait « lee » : le pronom s'écrit {le:@x}.
+      const mal = /\b[Ll]e\{e(?::[^}]+)?\}/.exec(brut);
+      if (mal) err('jeton_mal_forme', `${ou} : ${mal[0]} (écrire {le:@…}).`);
+    }
     for (const j of jetonsDe(t)) {
       if (JETONS_CONNUS.includes(j)) continue;
       const m = /^(?:(il|Il|e|le|lui|clan):)?(@?[\w-]+)$/.exec(j);

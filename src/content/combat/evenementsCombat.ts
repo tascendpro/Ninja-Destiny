@@ -286,9 +286,9 @@ export const EVENEMENTS_COMBAT: EvenementCombatDef[] = [
     type: 'scenario',
     poids: 3,
     si: { mancheMin: 2, pasBete: true, contextes: ['mission', 'embuscade', 'combat_a_mort', 'duel'] },
-    texte: '{nom} s’arrête net et te dévisage. « Attends… Je connais ce visage. Ton père se battait exactement comme toi. »',
+    texte: '{nom} s’arrête net et te dévisage. « Attends… Je connais cette garde. Quelqu’un de ton sang se battait exactement comme ça. »',
     choix: [
-      { id: 'demander', nom: 'Lui demander ce qu’il sait', detail: 'Le combat peut attendre une phrase.', succes: { texte: '{Il} parle, du bout des lèvres : une mission, il y a longtemps, et ton père qui l’avait épargné. Sa garde a baissé d’un cran.', moral: { determination: -20, peur: 5 }, ouverture: 8 } },
+      { id: 'demander', nom: 'Lui demander ce qu’il sait', detail: 'Le combat peut attendre une phrase.', succes: { texte: '{Il} parle, du bout des lèvres : une mission, il y a longtemps, et quelqu’un qui te ressemblait, qui l’avait épargné{e}. Sa garde a baissé d’un cran.', moral: { determination: -20, peur: 5 }, ouverture: 8 } },
       { id: 'couper_court', nom: 'Couper court', detail: 'Il cherche à te déstabiliser.', succes: { texte: '« Tais-toi. » Tu frappes avant qu’il finisse sa phrase.', ouverture: 10 } },
     ],
     ignore: { texte: 'Ses mots restent en toi, et te troublent un instant.', etatJoueur: ['desoriente', 1] },

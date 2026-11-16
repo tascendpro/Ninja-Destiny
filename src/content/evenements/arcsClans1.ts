@@ -52,7 +52,7 @@ export const ARCS_CLANS_1: EventDef[] = [
         id: 'froid',
         texte: '« Non. Mais toi, rien ne fera de toi un Uchiha. »',
         effets: [{ relation: '@rival', delta: { hostilite: 10, rivalite: 8 } }, { entrainer: 'genjutsu', jours: 20 }, { stat: 'attributs.controleEmotionnel', delta: -2 }, { stat: 'social.confianceClan', delta: 2 }],
-        resultat: 'La classe retient son souffle. {@rival} pâlit, puis pose sa paume contre la tienne si fort que tes doigts craquent. Le flux de chakra qui passe entre vous n’a rien d’un équilibre : c’est une guerre. L’instructeur vous sépare au bout d’une minute. Le soir, ton père apprend la phrase et sourit. C’est le sourire qui te gêne.',
+        resultat: 'La classe retient son souffle. {@rival} pâlit, puis pose sa paume contre la tienne si fort que tes doigts craquent. Le flux de chakra qui passe entre vous n’a rien d’un équilibre : c’est une guerre. L’instructeur vous sépare au bout d’une minute. Le soir, {parent} apprend la phrase et sourit. C’est le sourire qui te gêne.',
       },
       {
         id: 'apaiser',
@@ -94,20 +94,21 @@ export const ARCS_CLANS_1: EventDef[] = [
     categorie: 'clan_rare',
     lieu: '$village',
     poids: 7,
-    si: { tout: [ACTIF, { clan: 'uchiha' }, { maitrise: 'sharingan', eveille: true }, { age: { max: 16 } }] },
-    texte: 'La nouvelle de tes yeux a fait le tour du quartier avant le dîner. Ce soir, ton père t’emmène au temple Naka, sous la septième natte, là où les Uchiha gardent une tablette que personne d’autre ne lit. « Ce qui est écrit là n’est pas pour les enfants. Tu n’es plus un enfant. »',
+    // C'est le parent qui t'y emmène : il faut qu'il soit là.
+    si: { tout: [ACTIF, { clan: 'uchiha' }, { maitrise: 'sharingan', eveille: true }, { age: { max: 16 } }, { pnj: '@parent', etat: ['vivant', 'blesse'] }] },
+    texte: 'La nouvelle de tes yeux a fait le tour du quartier avant le dîner. Ce soir, {parent} t’emmène au temple Naka, sous la septième natte, là où les Uchiha gardent une tablette que personne d’autre ne lit. « Ce qui est écrit là n’est pas pour les enfants. Tu n’es plus un enfant. »',
     choix: [
       {
         id: 'lire',
         texte: 'Lire la tablette',
         effets: [{ stat: 'attributs.intellect', delta: 2 }, { stat: 'social.confianceClan', delta: 5 }, { secret: 'clan_guerre' }, { drapeau: 'tablette_naka' }],
-        resultat: 'Ton œil déchiffre des lignes que l’œil nu ne voit pas. Une histoire de deux frères, d’un pouvoir qu’on n’obtient qu’en perdant ce qu’on aime, et d’un œil qui voit au-delà. Tu relèves la tête. Ton père te regarde comme un homme regarde un héritier, pour la première fois. Ça ne ressemble pas à de la tendresse.',
+        resultat: 'Ton œil déchiffre des lignes que l’œil nu ne voit pas. Une histoire de deux frères, d’un pouvoir qu’on n’obtient qu’en perdant ce qu’on aime, et d’un œil qui voit au-delà. Tu relèves la tête. {Parent} te regarde comme on regarde un héritier, plus comme son enfant. Ça ne ressemble pas à de la tendresse.',
       },
       {
         id: 'refuser',
         texte: 'Refuser : tu ne veux pas de ce genre d’héritage',
         effets: [{ stat: 'attributs.controleEmotionnel', delta: 3 }, { stat: 'social.confianceClan', delta: -4 }, { ethique: { compassion: 3 } }],
-        resultat: 'Ton père ne dit rien pendant tout le chemin du retour. À la porte, seulement : « Le sang finit toujours par lire ce qu’il doit lire. » Tu dors mal. Mais tu dors.',
+        resultat: '{Parent} ne dit rien pendant tout le chemin du retour. À la porte, seulement : « Le sang finit toujours par lire ce qu’il doit lire. » Tu dors mal. Mais tu dors.',
       },
     ],
   },

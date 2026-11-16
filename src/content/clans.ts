@@ -316,7 +316,7 @@ export const CLANS: ClanDef[] = [
     avantages: ['Aucune obligation de clan', 'Progression plus rapide dans les disciplines générales', 'Libre de tes alliances'],
     faiblesses: ['Aucune technique héréditaire', 'Pas de réseau', 'Préjugés des clans'],
     relations: 'Libre, et donc seul·e.',
-    personnages: 'Tes parents, qui ne comprennent pas toujours ton monde.',
+    personnages: 'Ta famille, qui ne comprend pas toujours ton monde.',
     evenementsHistoriques: 'La moitié des ninjas des villages n’ont jamais eu de clan.',
     secrets: 'Aucun — en apparence.',
     accesAvance: 'Tout s’apprend, rien ne s’hérite.',

@@ -340,7 +340,7 @@ export const EVENEMENTS_MISSIONS: EventDef[] = [
           attributs: { perception: 2, intellect: 1 },
           maitrises: { souffle_dunes: 2 },
           succes: {
-            texte: 'La tempête avale tout. Quand elle se lève, les pillards ont disparu, et la caravane est intacte. {@sensei} te regarde comme s’il te voyait pour la première fois.',
+            texte: 'La tempête avale tout. Quand elle se lève, les pillards ont disparu, et la caravane est intacte. {@sensei} te regarde comme s’{il:@sensei} te voyait pour la première fois.',
             effets: [{ mission: 'c_caravane', statut: 'reussie' }, { drapeau: 'pays_vent' }, { relation: '@sensei', delta: { respect: 12 } }, { stat: 'social.reputation', delta: 3 }, { decouvrir: 'lieu:suna' }],
           },
           echec: {

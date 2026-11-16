@@ -255,7 +255,7 @@ export const CHAPITRE5: EventDef[] = [
     si: ACTIF,
     texte: [
       { si: { pnj: '@rival', etat: ['vivant', 'blesse'] }, texte: '{@rival} t’attend sur le terrain d’entraînement où vous vous battiez enfants. Des rides, une cicatrice que tu ne connaissais pas, et le même regard. « Un dernier combat. Pour savoir. »' },
-      { si: { non: { pnj: '@rival', etat: ['vivant', 'blesse'] } }, texte: 'Sur la tombe de {@rival}, quelqu’un a laissé un kunai planté dans la terre, comme une invitation. Un jeune ninja de son clan t’attend à côté : « Il disait que vous n’aviez jamais fini votre combat. »' },
+      { si: { non: { pnj: '@rival', etat: ['vivant', 'blesse'] } }, texte: 'Sur la tombe de {@rival}, quelqu’un a laissé un kunai planté dans la terre, comme une invitation. Un jeune ninja de son clan t’attend à côté : « {Il:@rival} disait que vous n’aviez jamais fini votre combat. »' },
     ],
     choix: [
       {
@@ -282,7 +282,11 @@ export const CHAPITRE5: EventDef[] = [
         id: 'paix',
         texte: 'Refuser, et l’inviter à boire un thé',
         effets: [{ relation: '@rival', delta: { amitie: 12, rivalite: -25 } }, { ethique: { compassion: 4 } }],
-        resultat: 'Vous parlez jusqu’à la nuit de tous ceux qui ne sont plus là. Vous auriez dû faire ça il y a trente ans.',
+        resultat: [
+          // Trente ans de rivalité, ou trente ans d'amitié déjà : la même soirée ne se raconte pas pareil.
+          { si: { relation: '@rival', axe: 'amitie', min: 50 }, texte: 'Vous parlez jusqu’à la nuit de tous ceux qui ne sont plus là. Vous l’avez déjà fait cent fois. Ce soir, vous vous surprenez à compter combien de fois il vous reste.' },
+          { si: { relation: '@rival', axe: 'amitie', max: 49 }, texte: 'Vous parlez jusqu’à la nuit de tous ceux qui ne sont plus là. Vous auriez dû faire ça il y a trente ans.' },
+        ],
       },
     ],
   },

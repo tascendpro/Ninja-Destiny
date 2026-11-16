@@ -42,7 +42,7 @@ export const RENCONTRES: EventDef[] = [
     repetable: { delaiJours: 500, max: 3 },
     si: { tout: [ACTIF, RIVAL, { rangMin: 'genin' }, { age: { min: 12 } }] },
     personnages: ['@rival'],
-    texte: 'À l’aube, sur le terrain désert, {@rival} répète une technique nouvelle. Le poteau en face de lui explose en échardes. Il t’a vu. Il ne fait pas semblant du contraire. « Tu veux voir de plus près ? »',
+    texte: 'À l’aube, sur le terrain désert, {@rival} répète une technique nouvelle. Le poteau en face de {lui:@rival} explose en échardes. {Il:@rival} t’a vu·e. {Il:@rival} ne fait pas semblant du contraire. « Tu veux voir de plus près ? »',
     choix: [
       {
         id: 'duel',
@@ -53,8 +53,8 @@ export const RENCONTRES: EventDef[] = [
           attributs: { agilite: 1, force: 1, perception: 1 },
           maitrises: { taijutsu: 1, ninjutsu: 1 },
           manches: 2,
-          succes: { texte: 'Tu le mets au sol deux fois. Il se relève en riant, pour une fois. « La prochaine fois, je ne retiens rien. »', effets: [{ relation: '@rival', delta: { respect: 10, rivalite: 5 } }, { stat: 'social.reputation', delta: 2 }, { entrainer: 'taijutsu', jours: 20 }] },
-          echec: { texte: 'Sa technique te prend de plein fouet. Il te tend la main pour te relever. Ce geste-là fait plus mal que le coup.', effets: [{ relation: '@rival', delta: { rivalite: 8 } }, { stat: 'jauges.sante', delta: -10 }, { entrainer: 'taijutsu', jours: 15 }] },
+          succes: { texte: 'Tu {le:@rival} mets au sol deux fois. {Il:@rival} se relève en riant, pour une fois. « La prochaine fois, je ne retiens rien. »', effets: [{ relation: '@rival', delta: { respect: 10, rivalite: 5 } }, { stat: 'social.reputation', delta: 2 }, { entrainer: 'taijutsu', jours: 20 }] },
+          echec: { texte: 'Sa technique te prend de plein fouet. {Il:@rival} te tend la main pour te relever. Ce geste-là fait plus mal que le coup.', effets: [{ relation: '@rival', delta: { rivalite: 8 } }, { stat: 'jauges.sante', delta: -10 }, { entrainer: 'taijutsu', jours: 15 }] },
         },
       },
       {
@@ -65,8 +65,8 @@ export const RENCONTRES: EventDef[] = [
           difficulte: 46,
           attributs: { perception: 2, intellect: 1 },
           maitrises: { sharingan: 1 },
-          succes: { texte: 'Tu comprends le mouvement avant qu’il ne le comprenne lui-même. Le soir, seul·e, tu le refais. Presque.', effets: [{ entrainer: 'ninjutsu', jours: 40 }, { stat: 'attributs.perception', delta: 1 }] },
-          echec: { texte: 'Tu ne vois que le résultat, jamais le geste. Il le sait, et il recommence exprès.', effets: [{ relation: '@rival', delta: { rivalite: 4 } }] },
+          succes: { texte: 'Tu comprends le mouvement avant qu’{il:@rival} ne le comprenne {lui:@rival}-même. Le soir, seul·e, tu le refais. Presque.', effets: [{ entrainer: 'ninjutsu', jours: 40 }, { stat: 'attributs.perception', delta: 1 }] },
+          echec: { texte: 'Tu ne vois que le résultat, jamais le geste. {Il:@rival} le sait, et {il:@rival} recommence exprès.', effets: [{ relation: '@rival', delta: { rivalite: 4 } }] },
         },
       },
     ],
@@ -445,8 +445,8 @@ export const RENCONTRES: EventDef[] = [
           attributs: { agilite: 1, force: 1, perception: 1, controleEmotionnel: 1 },
           maitrises: { taijutsu: 1, ninjutsu: 1 },
           manches: 3,
-          succes: { texte: 'Le combat creuse la falaise et fend une statue. À la fin, vous êtes allongés tous les deux dans la rivière, à bout de souffle. « Toi », dit-il simplement. Ça veut dire : tu as gagné.', effets: [{ relation: '@rival', delta: { respect: 20, rivalite: -10, amitie: 10 } }, { stat: 'social.reputation', delta: 8 }, { drapeau: 'vallee_fin_vaincue' }] },
-          echec: { texte: 'Il te laisse sur la tête de Hashirama, inconscient·e. Quand tu te réveilles, il a gravé un seul mot dans la pierre : « Encore. »', effets: [{ relation: '@rival', delta: { rivalite: 12 } }, { blessure: { id: 'vallee', nom: 'Blessures de la Vallée de la Fin', gravite: 2, jours: 40 } }] },
+          succes: { texte: 'Le combat creuse la falaise et fend une statue. À la fin, vous êtes allongés tous les deux dans la rivière, à bout de souffle. « Toi », dit-{il:@rival} simplement. Ça veut dire : tu as gagné.', effets: [{ relation: '@rival', delta: { respect: 20, rivalite: -10, amitie: 10 } }, { stat: 'social.reputation', delta: 8 }, { drapeau: 'vallee_fin_vaincue' }] },
+          echec: { texte: '{Il:@rival} te laisse sur la tête de Hashirama, inconscient·e. Quand tu te réveilles, {il:@rival} a gravé un seul mot dans la pierre : « Encore. »', effets: [{ relation: '@rival', delta: { rivalite: 12 } }, { blessure: { id: 'vallee', nom: 'Blessures de la Vallée de la Fin', gravite: 2, jours: 40 } }] },
         },
       },
       {

@@ -4,6 +4,8 @@ import type { Condition, Effect, EventDef, MissionDef } from '../../engine/types
 // et des missions périlleuses qui dépendent de la voie choisie (renseignement, assassinat, garde, chasse…).
 // Chaque dilemme laisse des traces (drapeaux) que la suite de l'histoire relit.
 
+/** Le déserteur est ton rival d'enfance s'il est encore en vie ; sinon, un ancien camarade (un garçon). */
+const RIVAL_LA: Condition = { pnj: '@rival', etat: ['vivant', 'blesse'] };
 const base = { chapitre: 4, chapitres: [4, 5, 6], arc: 'apres_guerre' as const };
 const ACTIF: Condition = { statut: 'actif' };
 const FAMILLE: Condition = { tout: [ACTIF, { drapeau: 'famille_fondee' }] };
@@ -40,8 +42,8 @@ const SORT_ENFANT: Effect = {
 
 /** Le récit de ce qu'on n'a pas pu empêcher, lu après coup. */
 const BILAN_QUARTIER = [
-  { si: { drapeau: 'ami_mort_quartier' }, texte: 'Quand tu arrives enfin chez {@coequipierA}, il est trop tard. Il s’est battu jusqu’au bout, adossé à sa porte. Il a tenu assez longtemps pour que les voisins s’enfuient.' },
-  { si: { drapeau: 'ami_blesse_quartier' }, texte: '{@coequipierA} a survécu, de justesse, une lame dans l’épaule. Il ne te reproche rien. Il n’a pas besoin de le dire.' },
+  { si: { drapeau: 'ami_mort_quartier' }, texte: 'Quand tu arrives enfin chez {@coequipierA}, il est trop tard. {Il:@coequipierA} s’est battu{e:@coequipierA} jusqu’au bout, adossé{e:@coequipierA} à sa porte. {Il:@coequipierA} a tenu assez longtemps pour que les voisins s’enfuient.' },
+  { si: { drapeau: 'ami_blesse_quartier' }, texte: '{@coequipierA} a survécu, de justesse, une lame dans l’épaule. {Il:@coequipierA} ne te reproche rien. {Il:@coequipierA} n’a pas besoin de le dire.' },
   { si: { drapeau: 'conjoint_mort' }, texte: '{Conjoint} ne s’est pas relevé{conjoint_e}. {conjointNom} avait protégé la porte de la maison jusqu’au dernier souffle. Tu restes longtemps à genoux dans les décombres.' },
   { si: { tout: [{ drapeau: 'conjoint_blesse' }, CONJOINT_VIVANT] }, texte: '{Conjoint} s’en sortira : une longue cicatrice, des semaines au lit, et un regard qui a changé.' },
   { si: { drapeau: 'enfant_mort' }, texte: '{Enfant}, {enfantNom}, n’a pas survécu. Il n’y a pas de phrase pour la suite. Il n’y en aura jamais.' },
@@ -116,7 +118,7 @@ export const ADULTE: EventDef[] = [
     si: { tout: [FAMILLE, ENFANT_VIVANT, CONJOINT_VIVANT] },
     texte: [
       { texte: 'Les cloches sonnent au milieu de la nuit. Des ninjas sans bandeau, un tatouage d’ancre noire au poignet, sont entrés dans le quartier par les toits. Ils ne volent rien. Ils viennent tuer les familles des jōnin.' },
-      { texte: 'Depuis ta fenêtre, tu vois tout à la fois : au fond de la rue, {@coequipierA} se bat seul contre trois ombres devant sa porte. Dans la cour, {conjoint} tente d’en retenir deux autres. Et dans la chambre, au-dessus, une silhouette se penche sur le lit de {enfantNom}.' },
+      { texte: 'Depuis ta fenêtre, tu vois tout à la fois : au fond de la rue, {@coequipierA} se bat seul{e:@coequipierA} contre trois ombres devant sa porte. Dans la cour, {conjoint} tente d’en retenir deux autres. Et dans la chambre, au-dessus, une silhouette se penche sur le lit de {enfantNom}.' },
       { texte: 'Tu as le temps d’en sauver un. Peut-être.' },
     ],
     choix: [
@@ -144,7 +146,7 @@ export const ADULTE: EventDef[] = [
         si: AMI_VIVANT,
         test: {
           ...ATTAQUE_QUARTIER(58),
-          succes: { texte: [{ texte: 'Tu tombes du toit au milieu des trois ombres. {@coequipierA} rit, du sang plein les dents : « Toujours en retard. » Vous les finissez ensemble. Puis il voit ton visage, et il comprend ce que tu as laissé derrière toi pour venir.' }, ...BILAN_QUARTIER], effets: [SORT_CONJOINT, SORT_ENFANT, { relation: '@coequipierA', delta: { amitie: 20, confiance: 15 } }, { drapeau: 'quartier_choix', valeur: 'ami' }] },
+          succes: { texte: [{ texte: 'Tu tombes du toit au milieu des trois ombres. {@coequipierA} rit, du sang plein les dents : « Toujours en retard. » Vous les finissez ensemble. Puis {il:@coequipierA} voit ton visage, et {il:@coequipierA} comprend ce que tu as laissé derrière toi pour venir.' }, ...BILAN_QUARTIER], effets: [SORT_CONJOINT, SORT_ENFANT, { relation: '@coequipierA', delta: { amitie: 20, confiance: 15 } }, { drapeau: 'quartier_choix', valeur: 'ami' }] },
           echec: { texte: [{ texte: 'Vous tenez à deux, à peine.' }, ...BILAN_QUARTIER], effets: [SORT_CONJOINT, SORT_ENFANT, { pnjEtat: '@coequipierA', etat: 'blesse' }, { drapeau: 'quartier_choix', valeur: 'ami' }] },
         },
       },
@@ -175,7 +177,7 @@ export const ADULTE: EventDef[] = [
     texte: [
       { si: { drapeau: 'enfant_mort' }, texte: 'La chambre de {enfantNom} est restée telle quelle. Personne n’ose y entrer. Toi, tu y passes des nuits entières, assis·e par terre.' },
       { si: { tout: [{ drapeau: 'conjoint_mort' }, { drapeau: 'enfant_mort', absent: true }] }, texte: 'Le bol de {conjointNom} est toujours sur l’étagère. {Enfant} demande chaque soir quand {conjoint_il} rentre.' },
-      { si: { tout: [{ drapeau: 'ami_mort_quartier' }, { drapeau: 'conjoint_mort', absent: true }, { drapeau: 'enfant_mort', absent: true }] }, texte: 'Le nom de {@coequipierA} est gravé sur la stèle. Tu passes devant chaque matin. Il est mort pendant que tu sauvais les tiens. Tu le referais. C’est ça, le pire.' },
+      { si: { tout: [{ drapeau: 'ami_mort_quartier' }, { drapeau: 'conjoint_mort', absent: true }, { drapeau: 'enfant_mort', absent: true }] }, texte: 'Le nom de {@coequipierA} est gravé sur la stèle. Tu passes devant chaque matin. {Il:@coequipierA} est mort{e:@coequipierA} pendant que tu sauvais les tiens. Tu le referais. C’est ça, le pire.' },
       { texte: 'Le rapport dit : commando de l’Ancre noire, douze hommes, un chef en fuite. Le rapport ne dit rien d’autre.' },
     ],
     choix: [
@@ -326,8 +328,8 @@ export const ADULTE: EventDef[] = [
           type: 'competence',
           difficulte: 52,
           attributs: { agilite: 2, force: 1 },
-          succes: { texte: 'Tes doigts se referment sur son poignet au moment où la racine lâche. Tu le{e:@coequipierB} remontes. Derrière vous, les cris de {@coequipierA} se sont tus.', effets: [SORT_DE('@coequipierA', 'tué·e pendant une retraite, quand personne n’est venu', 'a'), { relation: '@coequipierB', delta: { amitie: 12, attachement: 10 } }, { drapeau: 'choix_camarade', valeur: 'b' }] },
-          echec: { texte: 'La racine cède avant que tu arrives. Tu le{e:@coequipierB} rattrapes plus bas, sur une corniche, tous les deux en sang. Et là-haut, {@coequipierA} est seul.', effets: [SORT_DE('@coequipierA', 'tué·e pendant une retraite, quand personne n’est venu', 'a'), { pnjEtat: '@coequipierB', etat: 'blesse' }, { drapeau: 'choix_camarade', valeur: 'b' }] },
+          succes: { texte: 'Tes doigts se referment sur son poignet au moment où la racine lâche. Tu {le:@coequipierB} remontes. Derrière vous, les cris de {@coequipierA} se sont tus.', effets: [SORT_DE('@coequipierA', 'tué·e pendant une retraite, quand personne n’est venu', 'a'), { relation: '@coequipierB', delta: { amitie: 12, attachement: 10 } }, { drapeau: 'choix_camarade', valeur: 'b' }] },
+          echec: { texte: 'La racine cède avant que tu arrives. Tu {le:@coequipierB} rattrapes plus bas, sur une corniche, tous les deux en sang. Et là-haut, {@coequipierA} est seul{e:@coequipierA}.', effets: [SORT_DE('@coequipierA', 'tué·e pendant une retraite, quand personne n’est venu', 'a'), { pnjEtat: '@coequipierB', etat: 'blesse' }, { drapeau: 'choix_camarade', valeur: 'b' }] },
         },
       },
       {
@@ -606,13 +608,13 @@ export const ADULTE: EventDef[] = [
     enchaine: true,
     si: ACTIF,
     texte: [
-      { si: { pnj: '@rival', etat: ['vivant', 'blesse'] }, texte: 'Tu le trouves dans une auberge de la route du sel, et le dossier s’ouvre enfin : {@rival}. Ton rival d’enfance. Il a quitté le village il y a deux ans, avec un rouleau interdit. Il pose ses baguettes. « Je savais que ce serait toi. »' },
-      { si: { non: { pnj: '@rival', etat: ['vivant', 'blesse'] } }, texte: 'Tu le trouves dans une auberge de la route du sel : un ancien camarade d’Académie, assis deux rangs derrière toi pendant six ans. Il a déserté avec un rouleau interdit. Il pose ses baguettes. « Je savais que ce serait toi. »' },
+      { si: RIVAL_LA, texte: 'Le dossier ne porte qu’un nom, et tu le reconnais avant d’avoir fini de le lire : {@rival}. Ton rival d’enfance. {Il:@rival} a quitté le village il y a deux ans, avec un rouleau interdit. Tu {le:@rival} trouves dans une auberge de la route du sel. {Il:@rival} pose ses baguettes. « Je savais que ce serait toi. »' },
+      { si: { non: RIVAL_LA }, texte: 'Tu le trouves dans une auberge de la route du sel : un ancien camarade d’Académie, assis deux rangs derrière toi pendant six ans. Il a déserté avec un rouleau interdit. Il pose ses baguettes. « Je savais que ce serait toi. »' },
     ],
     choix: [
       {
         id: 'combattre',
-        texte: 'Le ramener, mort ou vif',
+        texte: 'Remplir la mission : le rouleau, et son porteur, mort ou vif',
         test: {
           type: 'combat',
           difficulte: 60,
@@ -622,15 +624,15 @@ export const ADULTE: EventDef[] = [
           letal: true,
           manches: 3,
           causeMort: 'tombé·e face à un ancien camarade devenu déserteur',
-          succes: { texte: 'Vous vous connaissez trop bien : chaque coup est une vieille conversation. À la fin, il est à terre, et il sourit presque.', effets: [{ mission: 'a4_deserteur', statut: 'reussie' }] },
-          echec: { texte: 'Il te laisse en vie. « On est quittes pour l’Académie. » Il emporte le rouleau.', effets: [{ mission: 'a4_deserteur', statut: 'echouee' }, { blessure: { id: 'deserteur', nom: 'Blessures d’un vieux camarade', gravite: 2, jours: 40 } }] },
+          succes: { texte: [{ si: RIVAL_LA, texte: 'Vous vous connaissez trop bien : chaque coup est une vieille conversation. À la fin, {@rival} est à terre, et {il:@rival} sourit presque.' }, { si: { non: RIVAL_LA }, texte: 'Vous vous connaissez trop bien : chaque coup est une vieille conversation. À la fin, il est à terre, et il sourit presque.' }], effets: [{ mission: 'a4_deserteur', statut: 'reussie' }] },
+          echec: { texte: [{ si: RIVAL_LA, texte: '{@rival} te laisse en vie. « On est quittes pour l’Académie. » {Il:@rival} emporte le rouleau.' }, { si: { non: RIVAL_LA }, texte: 'Il te laisse en vie. « On est quittes pour l’Académie. » Il emporte le rouleau.' }], effets: [{ mission: 'a4_deserteur', statut: 'echouee' }, { blessure: { id: 'deserteur', nom: 'Blessures d’un vieux camarade', gravite: 2, jours: 40 } }] },
         },
       },
       {
         id: 'ecouter',
-        texte: 'Le laisser t’expliquer pourquoi',
+        texte: 'Écouter ses raisons',
         effets: [{ mission: 'a4_deserteur', statut: 'echouee' }, { indice: 'rouleau_conseil' }, { ethique: { compassion: 6 } }, { stat: 'social.suspicion', delta: 6 }],
-        resultat: '« Le rouleau prouve ce que le Conseil a fait pendant la guerre. » Il le pose sur la table, entre vous. Tu le lis. Tu rentres au village les mains vides, et avec une question que tu ne pourras plus jamais oublier.',
+        resultat: [{ si: RIVAL_LA, texte: '« Le rouleau prouve ce que le Conseil a fait pendant la guerre. » {@rival} le pose sur la table, entre vous. Tu le lis. Tu rentres au village les mains vides, et avec une question que tu ne pourras plus jamais oublier.' }, { si: { non: RIVAL_LA }, texte: '« Le rouleau prouve ce que le Conseil a fait pendant la guerre. » Il le pose sur la table, entre vous. Tu le lis. Tu rentres au village les mains vides, et avec une question que tu ne pourras plus jamais oublier.' }],
       },
     ],
   },

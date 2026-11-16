@@ -13,6 +13,15 @@ Ce dépôt contient **le moteur complet** et **une vie entière en six chapitres
 
 La voie de la route traverse aussi les cinq chapitres (mercenaires, guerre sans drapeau, compagnie ou village à soi, maître errant).
 
+## Version 2.52 : audit narratif, une famille et des proches cohérents
+
+- **La famille qu'on a vraiment** : le jeu ne connaît qu'un parent et un·e aîné·e, tirés avec leur genre. Les leçons de clan, le tournoi chūnin, le devoir de clan, la tablette Uchiha et une dizaine d'autres scènes disaient « ton père », « ta mère » ou « ton frère » en dur : elles passent par {parent}, {Parent}, {Aine}. Si le parent n'est plus là, un ancien du clan enseigne à sa place, et sa place reste vide dans la tribune.
+- **Le genre de ceux qui nous entourent** : à Kumo la rivale est une fille, à Konoha et à Iwa la sensei est une femme. Une soixantaine de phrases disaient « il » en dur (défis, retour du rival, déserteur, sensei, coéquipiers) : elles s'accordent maintenant au personnage réel.
+- **Ce qui s'est déjà passé** : un premier fou rire, une réconciliation « trente ans trop tard » ou « la première fois qu'il te parle comme à une personne » ne se racontent plus quand l'histoire commune les dément (conditions sur la relation).
+- **Sans copier-coller** : les rencontres de l'Akatsuki ont chacune leur retraite et leur sortie de combat (Konan, seule sur son toit, n'est plus « deux taches au loin ») ; les lames légendaires ont chacune leur lieu (Sabure ne vous attend plus « sur la grève » du désert).
+- **Diagnostic** : deux nouvelles erreurs bloquantes, `famille_figee` (un parent ou un aîné écrit en dur hors d'une réplique) et `jeton_mal_forme` (`le{e:@x}` donnait « lee »). Tests : `tests/narration.test.ts`.
+- Contenu 2.52.0 : les sauvegardes antérieures se chargent sans rejeu.
+
 ## Version 2.51 : combats expliqués, jutsu par nature
 
 - **Chaque manche s'explique** (`src/engine/combat/explication.ts`) : ce que tu as fait, ce qu'il faisait vraiment (et si ta lecture était juste), les PV perdus de part et d'autre, la règle qui a décidé, et la leçon à en tirer.

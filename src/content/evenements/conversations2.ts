@@ -293,7 +293,7 @@ export const CONVERSATIONS_2: EventDef[] = [
     poids: 10,
     si: { tout: [ACTIF, VIVANT('@coequipierB'), { vu: 'dl_lettre' }, { age: { min: 22, max: 40 } }] },
     texte: [
-      { texte: 'Le père de {@coequipierB} est mort au début de l’hiver. Tu trouves ton coéquipier dans l’atelier vide, assis{e:@coequipierB} sur l’établi, un rabot à la main.' },
+      { texte: 'Le père de {@coequipierB} est mort au début de l’hiver. Tu {le:@coequipierB} trouves dans l’atelier vide, assis{e:@coequipierB} sur l’établi, un rabot à la main.' },
       { si: { drapeau: 'dl_lettre', egal: 'refus' }, texte: '« Je l’ai portée trop tard, cette lettre. Il était déjà malade. Il l’a lue, il a hoché la tête, et on a parlé du temps. » {Il:@coequipierB} pose le rabot. « Tu avais raison de refuser. J’ai juste mis trois ans à avoir ton courage. »' },
       { si: { non: { drapeau: 'dl_lettre', egal: 'refus' } }, texte: '« J’ai retrouvé la lettre dans ses affaires. Il l’avait gardée dans sa boîte à outils, avec ses meilleurs ciseaux. » {Il:@coequipierB} sourit à moitié. « Grâce à toi, on a eu dix ans. Des dîners ratés, des disputes, des silences. Dix ans. Je ne t’ai jamais dit merci. »' },
     ],

@@ -102,7 +102,7 @@ export const ORIGINES: EventDef[] = [
         texte:
           'À Kiri, la brume ne se lève jamais tout à fait. Ce matin, elle avale le bruit des pas des chasseurs masqués qui remontent ta ruelle. Ils emmènent une famille entière — accusée de porter un kekkei genkai. La mère ne crie pas. Elle sait que crier ne sert à rien.\n\nDans l’ombre d’un porche, un garçon de ton âge s’est caché. Il te regarde. Il a compris que tu l’avais vu.',
       },
-      { si: { clan: 'yuki' }, texte: 'Tu reconnais la famille : ce sont des cousins éloignés de ta mère. C’est ta lignée qu’on traque.' },
+      { si: { clan: 'yuki' }, texte: 'Tu reconnais la famille : ce sont des cousins éloignés de {parent}. C’est ta lignée qu’on traque.' },
     ],
     choix: [
       {

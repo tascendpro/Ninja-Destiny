@@ -297,7 +297,7 @@ export const GENIN: EventDef[] = [
     enchaine: true,
     si: { tout: [ACTIF, { pnj: '@rival', etat: ['vivant', 'blesse'] }] },
     personnages: ['@rival'],
-    texte: 'Tu croises {@rival} sur le terrain d’entraînement, seul. Il a changé : plus mince, plus lent à parler, plus rapide à frapper. Son équipe a vu de vrais combats. « Toi aussi, tu t’es fait une équipe », dit-il. « Voyons si ça t’a rendu plus fort ou plus faible. »',
+    texte: 'Tu croises {@rival} sur le terrain d’entraînement, seul{e:@rival}. {Il:@rival} a changé : plus mince, plus lent{e:@rival} à parler, plus rapide à frapper. Son équipe a vu de vrais combats. « Toi aussi, tu t’es fait une équipe », dit-{il:@rival}. « Voyons si ça t’a rendu·e plus fort·e ou plus faible. »',
     choix: [
       {
         id: 'combattre',
@@ -309,11 +309,11 @@ export const GENIN: EventDef[] = [
           maitrises: { taijutsu: 2, arme: 1 },
           arme: true,
           succes: {
-            texte: 'Il ne gagne pas. Pas cette fois. Au moment où vous vous séparez, tu vois ses yeux changer — un éclat rouge, ou un éclair, ou rien. Il est en train de devenir quelque chose.',
+            texte: '{Il:@rival} ne gagne pas. Pas cette fois. Au moment où vous vous séparez, tu vois ses yeux changer — un éclat rouge, ou un éclair, ou rien. {Il:@rival} est en train de devenir quelque chose.',
             effets: [{ relation: '@rival', delta: { respect: 12, rivalite: 8 } }, { eveillerPnj: '@rival', maitrise: 'sharingan' }, { eveillerPnj: '@rival', maitrise: 'armure_foudre' }],
           },
           echec: {
-            texte: 'Il te met à terre, puis s’assoit à côté de toi. « J’ai vu un ami mourir le mois dernier. Depuis, je n’arrive plus à perdre. » C’est la première fois qu’il te parle comme à une personne.',
+            texte: '{Il:@rival} te met à terre, puis s’assoit à côté de toi. « J’ai vu un ami mourir le mois dernier. Depuis, je n’arrive plus à perdre. » Ce n’est pas une provocation. C’est une chose qu’{il:@rival} n’a dite à personne d’autre.',
             effets: [{ relation: '@rival', delta: { amitie: 8, rivalite: 6 } }, { stat: 'jauges.sante', delta: -10 }, { eveillerPnj: '@rival', maitrise: 'sharingan' }, { eveillerPnj: '@rival', maitrise: 'armure_foudre' }],
           },
         },
@@ -322,7 +322,7 @@ export const GENIN: EventDef[] = [
         id: 'feliciter',
         texte: 'Le féliciter pour ses missions',
         effets: [{ relation: '@rival', delta: { respect: 6, amitie: 4 } }, { stat: 'attributs.charisme', delta: 1 }],
-        resultat: 'Il te regarde, méfiant, cherchant l’ironie. Il n’en trouve pas. « …Merci. » Ça lui coûte. Il le dit quand même.',
+        resultat: '{Il:@rival} te regarde, méfiant{e:@rival}, cherchant l’ironie. {Il:@rival} n’en trouve pas. « …Merci. » Ça lui coûte. {Il:@rival} le dit quand même.',
       },
       {
         id: 'ignorer',
@@ -370,7 +370,7 @@ export const GENIN: EventDef[] = [
         si: { tout: [{ clan: 'yuki' }, { village: 'kiri' }, { secret: 'dissidence_kiri' }] },
         verrou: 'Il faudrait savoir de quel côté se trouve vraiment {@sensei}.',
         effets: [{ relation: '@sensei', delta: { confiance: 10 } }, { stat: 'social.suspicion', delta: 5 }, { drapeau: 'protege_dissidence' }],
-        resultat: '{@sensei} ne pose aucune question. Il te fait inscrire sur la liste d’une mission longue, loin du village, le temps que l’intérêt retombe. « Ici, on se cache en partant. »',
+        resultat: '{@sensei} ne pose aucune question. {Il:@sensei} te fait inscrire sur la liste d’une mission longue, loin du village, le temps que l’intérêt retombe. « Ici, on se cache en partant. »',
       },
       {
         id: 'clan_uchiha',

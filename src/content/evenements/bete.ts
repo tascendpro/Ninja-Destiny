@@ -80,7 +80,7 @@ export const BETE: EventDef[] = [
         texte: 'Hurler le nom de {@sensei}',
         si: SENSEI,
         effets: [{ stat: 'jauges.chakraMax', delta: -5 }, { relation: '@sensei', delta: { confiance: 10, attachement: 8 } }, { stat: 'social.suspicion', delta: 5 }],
-        resultat: '{@sensei} arrive en trois bonds et plaque sa paume sur ton ventre. Le sceau se referme, d’un coup, avec un bruit de verrou. Tu t’effondres. Quand tu rouvres les yeux, il est encore là. « Pas aujourd’hui », dit-il. À elle, ou à toi.',
+        resultat: '{@sensei} arrive en trois bonds et plaque sa paume sur ton ventre. Le sceau se referme, d’un coup, avec un bruit de verrou. Tu t’effondres. Quand tu rouvres les yeux, {il:@sensei} est encore là. « Pas aujourd’hui », dit-{il:@sensei}. À la bête, ou à toi.',
       },
     ],
   },

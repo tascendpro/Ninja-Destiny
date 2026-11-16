@@ -312,7 +312,7 @@ export const VILLAGES_VIVANTS: EventDef[] = [
         id: 'apprendre',
         texte: 'T’accroupir à côté d’elle et apprendre',
         effets: [{ stat: 'attributs.perception', delta: 3 }, { drapeau: 'suna_sables', valeur: 'appris' }],
-        resultat: 'Elle te montre jusqu’au coucher du soleil : le sable rouge qui brûle, le sable gris qui avale, le sable blanc qui tient. Le soir, ton père s’étonne que tu marches autrement dans la cour. Tu marches où le sable tient.',
+        resultat: 'Elle te montre jusqu’au coucher du soleil : le sable rouge qui brûle, le sable gris qui avale, le sable blanc qui tient. Le soir, {parent} s’étonne que tu marches autrement dans la cour. Tu marches où le sable tient.',
       },
       {
         id: 'moquer',

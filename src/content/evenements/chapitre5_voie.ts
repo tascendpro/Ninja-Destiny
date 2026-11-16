@@ -330,7 +330,7 @@ export const CHAPITRE5_VOIE: EventDef[] = [
     personnages: ['@sensei'],
     texte: [
       { texte: 'Tu as quarante ans, et le matin, il te faut quelques secondes de plus pour te lever. Les jeunes jōnin t’appellent « maître ». Tu détestes ça, et tu t’y habitues.' },
-      { si: { pnj: '@sensei', etat: ['vivant', 'blesse'] }, texte: '{@sensei}, très vieux maintenant, te fait appeler. Il veut te parler avant qu’il ne soit trop tard.' },
+      { si: { pnj: '@sensei', etat: ['vivant', 'blesse'] }, texte: '{@sensei}, très âgé{e:@sensei} maintenant, te fait appeler. {Il:@sensei} veut te parler avant qu’il ne soit trop tard.' },
       { si: { non: { pnj: '@sensei', etat: ['vivant', 'blesse'] } }, texte: 'Sur la pierre du souvenir, tu comptes les noms de ta génération. Tu es l’un des derniers.' },
       { si: { drapeau: 'famille_fondee' }, texte: 'Ton enfant vient de recevoir son bandeau. Tu ne sais pas si tu es fier·e ou terrifié·e.' },
     ],

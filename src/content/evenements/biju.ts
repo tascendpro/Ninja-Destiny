@@ -128,7 +128,7 @@ export const EVENEMENTS_BIJU: EventDef[] = [
           '« Le soir de ta naissance, nous avons scellé en toi {biju}. Pas pour te punir : parce que le village ne pouvait pas la garder autrement, et que seul un nouveau-né peut la porter. Les adultes qui détournent les yeux le savent. Toi seul{e}, tu l’ignorais. »',
       },
       { si: { tout: [{ clan: 'sans_clan' }, { drapeau: 'orphelin' }] }, texte: 'Tu poses la question qui te brûle : pourquoi toi ? {@kage} détourne les yeux. « Il fallait un enfant que personne ne viendrait réclamer. Pas de clan pour protester, pas de parents pour pleurer. » Il ne s’excuse pas. Il n’a jamais su comment.' },
-      { si: { tout: [{ clan: 'sans_clan' }, { drapeau: 'orphelin', absent: true }] }, texte: 'Tu poses la question qui te brûle : pourquoi toi ? {@kage} soupire. « Les clans auraient refusé. Une famille du commun, on la dédommage, et elle se tait. » Tu comprends que ta mère le sait depuis toujours.' },
+      { si: { tout: [{ clan: 'sans_clan' }, { drapeau: 'orphelin', absent: true }] }, texte: 'Tu poses la question qui te brûle : pourquoi toi ? {@kage} soupire. « Les clans auraient refusé. Une famille du commun, on la dédommage, et elle se tait. » Tu comprends que {parent} le sait depuis toujours.' },
       { si: { non: { clan: 'sans_clan' } }, texte: 'Tu demandes pourquoi toi, un enfant de clan. « Parce que ton clan l’a proposé. Pour gagner une place au conseil. » Tu ne regarderas plus jamais ton clan de la même façon.' },
       { si: { drapeau: 'entendu_kage' }, texte: 'Tu reconnais la voix du couloir, la nuit de la fièvre. Tu ne dis rien. {@kage} le remarque.' },
     ],
@@ -221,7 +221,7 @@ export const EVENEMENTS_BIJU: EventDef[] = [
       { si: { drapeau: 'fusion', egal: 'jiton' }, texte: 'Les kunai de ta sacoche se soulèvent tout seuls et viennent se coller à ton bras, comme des aiguilles à un aimant.' },
       { si: { drapeau: 'fusion', egal: 'ranton' }, texte: 'Un rayon de lumière liquide jaillit de tes doigts et se courbe, contre toute logique, pour frapper la cible par derrière.' },
       { si: { drapeau: 'fusion', egal: 'bakuton' }, texte: 'Une poignée de terre, une étincelle de foudre : le sol explose à deux pas de toi. Tu as les oreilles qui sifflent et le sourire aux lèvres.' },
-      { texte: 'C’est une lignée. Elle dormait dans ton sang, et personne ne le savait, toi le premier.' },
+      { texte: 'C’est une lignée. Elle dormait dans ton sang, et personne ne le savait, toi compris·e.' },
     ],
     choix: [
       {

@@ -26,24 +26,24 @@ const pouvoirEtNature = (pouvoir: string, technique: string): Effect[] => [{ ten
 
 const LECON_PAR_CLAN: Record<string, { maitre: string; effets: Effect[]; reussite: string }> = {
   uchiha: {
-    maitre: 'Ton père t’emmène sur le ponton du lac, derrière le quartier. « Tous les Uchiha apprennent ça avant leurs dix ans. Tous. » Il compose les signes, inspire, et une boule de feu large comme une maison roule sur l’eau.',
+    maitre: '{Parent} t’emmène sur le ponton du lac, derrière le quartier. « Tous les Uchiha apprennent ça avant leurs dix ans. Tous. » {Parent_il} compose les signes, inspire, et une boule de feu large comme une maison roule sur l’eau.',
     effets: [{ enseigner: 'katon_boule' }, { entrainer: 'nature_katon', jours: 30, mentor: true }],
-    reussite: 'Au quarantième essai, une boule de feu de la taille d’un melon sort de ta bouche et s’écrase sur l’eau en sifflant. Ta gorge brûle. Ton père ne sourit pas. Il hoche la tête une fois, et rentre. C’est plus qu’il n’a jamais donné.',
+    reussite: 'Au quarantième essai, une boule de feu de la taille d’un melon sort de ta bouche et s’écrase sur l’eau en sifflant. Ta gorge brûle. {Parent} ne sourit pas. {Parent_il} hoche la tête une fois, et rentre. C’est plus qu’{parent_il} ne t’a jamais donné.',
   },
   hyuga: {
     maitre: 'Un ancien de la branche principale t’attend dans la cour du domaine, les mains derrière le dos. « Le Jūken n’est pas un art de frapper. C’est un art de fermer. Montre-moi tes paumes. »',
     effets: [signature('juken', 2, 'hyuga_kusho')],
-    reussite: 'Tu frappes le vide, et pour la première fois, l’air répond : une onde de chakra fait trembler la lanterne à trois pas. L’ancien plisse les yeux. « Encore. » Tu recommences jusqu’au soir, jusqu’à ce que la lanterne tombe.',
+    reussite: 'Tu frappes le vide, et cette fois, l’air répond : une onde de chakra fait trembler la lanterne à trois pas. L’ancien plisse les yeux. « Encore. » Tu recommences jusqu’au soir, jusqu’à ce que la lanterne tombe.',
   },
   nara: {
-    maitre: 'Ton père s’allonge dans l’herbe de la forêt des cerfs et te fait signe de faire pareil. « La technique des Nara, c’est d’abord savoir où est le soleil. Ensuite seulement, on fait bouger son ombre. »',
+    maitre: '{Parent} s’allonge dans l’herbe de la forêt des cerfs et te fait signe de faire pareil. « La technique des Nara, c’est d’abord savoir où est le soleil. Ensuite seulement, on fait bouger son ombre. »',
     effets: [{ tenterEveil: 'kagemane', intensite: 25 }, { entrainer: 'kagemane', jours: 60, mentor: true }, { stat: 'attributs.intellect', delta: 2 }],
-    reussite: 'Ton ombre se détache de toi, rampe sur un pas, et touche celle d’un cerf qui broutait. Il se fige, la tête levée. Tu le tiens trois secondes. Ton père ouvre un œil. « Bien. Maintenant, apprends à le lâcher sans qu’il te charge. »',
+    reussite: 'Ton ombre se détache de toi, rampe sur un pas, et touche celle d’un cerf qui broutait. Il se fige, la tête levée. Tu le tiens trois secondes. {Parent} ouvre un œil. « Bien. Maintenant, apprends à le lâcher sans qu’il te charge. »',
   },
   yamanaka: {
-    maitre: 'Ta mère ferme la boutique de fleurs pour l’après-midi. Elle pose un oiseau blessé sur la table. « Avant d’entrer dans un humain, on apprend à entrer dans quelque chose de petit, et à en ressortir intact. »',
+    maitre: '{Parent} ferme la boutique de fleurs pour l’après-midi. {Parent_il} pose un oiseau blessé sur la table. « Avant d’entrer dans un humain, on apprend à entrer dans quelque chose de petit, et à en ressortir intact. »',
     effets: [{ tenterEveil: 'shintenshin', intensite: 25 }, { entrainer: 'shintenshin', jours: 60, mentor: true }, { stat: 'attributs.controleEmotionnel', delta: 2 }],
-    reussite: 'Pendant une seconde, tu vois la pièce d’en haut, avec les yeux de l’oiseau, et ton propre corps affalé sur la chaise. Tu reviens d’un coup, nauséeux·se. Ta mère te tend un verre d’eau. « La première fois, tout le monde vomit. Toi non. C’est bon signe. »',
+    reussite: 'Pendant une seconde, tu vois la pièce d’en haut, avec les yeux de l’oiseau, et ton propre corps affalé sur la chaise. Tu reviens d’un coup, nauséeux·se. {Parent} te tend un verre d’eau. « La première fois, tout le monde vomit. Toi non. C’est bon signe. »',
   },
   akimichi: {
     maitre: 'Ton oncle, deux fois plus large que la porte, te met une boulette de riz dans chaque main. « Mange. Puis gonfle. Puis roule. Dans cet ordre. Toujours. »',
@@ -51,14 +51,14 @@ const LECON_PAR_CLAN: Record<string, { maitre: string; effets: Effect[]; reussit
     reussite: 'Tu gonfles, tu te roules en boule, et tu dévales la colline du clan en hurlant. Tu finis dans la haie d’un voisin. Ton oncle rit tellement qu’il doit s’asseoir. « Parfait ! La haie, c’est pour la prochaine leçon : freiner. »',
   },
   aburame: {
-    maitre: 'Ton père te conduit dans la grange aux ruches, où les insectes du clan vivent l’hiver. « Ils ne t’obéissent pas. Ils te font confiance. Ce n’est pas la même chose, et c’est toute la leçon. »',
+    maitre: '{Parent} te conduit dans la grange aux ruches, où les insectes du clan vivent l’hiver. « Ils ne t’obéissent pas. Ils te font confiance. Ce n’est pas la même chose, et c’est toute la leçon. »',
     effets: [signature('kikaichu', 1, 'aburame_essaim')],
-    reussite: 'Tu ouvres la main et un essaim sort de ta paume, tourne une fois autour de la grange, et revient. Pas un insecte ne manque. Ton père remonte son col sur un sourire que tu devines.',
+    reussite: 'Tu ouvres la main et un essaim sort de ta paume, tourne une fois autour de la grange, et revient. Pas un insecte ne manque. {Parent} remonte son col sur un sourire que tu devines.',
   },
   inuzuka: {
-    maitre: 'Ta mère siffle, et ton chien arrive en courant. « Le Croc sur croc, ça se fait à deux. Si tu tournes et qu’il ne tourne pas, tu te prends un arbre. Si lui tourne et pas toi, il te prend, toi. »',
+    maitre: '{Parent} siffle, et ton chien arrive en courant. « Le Croc sur croc, ça se fait à deux. Si tu tournes et qu’il ne tourne pas, tu te prends un arbre. Si lui tourne et pas toi, il te prend, toi. »',
     effets: [signature('ninken_lien', 1, 'inuzuka_gatsuga')],
-    reussite: 'Vous tournez ensemble, ton chien et toi, deux vrilles qui labourent la cour. Tu te prends quand même un arbre. Lui aussi. Vous vous relevez en même temps, couverts de boue. Ta mère applaudit en hurlant de rire.',
+    reussite: 'Vous tournez ensemble, ton chien et toi, deux vrilles qui labourent la cour. Tu te prends quand même un arbre. Lui aussi. Vous vous relevez en même temps, couverts de boue. {Parent} applaudit en hurlant de rire.',
   },
   senju: {
     maitre: 'Une grand-tante du clan t’emmène au pied d’un vieux mur de pierre, celui que le Premier a dressé, dit-on, en une nuit. « Avant le bois, il y a la terre. Avant de faire pousser, on apprend à tenir. »',
@@ -66,14 +66,14 @@ const LECON_PAR_CLAN: Record<string, { maitre: string; effets: Effect[]; reussit
     reussite: 'Tu frappes le sol. Un muret de terre se dresse devant toi, de la hauteur d’un enfant, puis s’effrite à moitié. La grand-tante pose la main dessus. « Il tient. Un mur qui tient, c’est le début de tout. »',
   },
   uzumaki: {
-    maitre: 'Ta mère déroule un parchemin couvert de spirales. « Les Uzumaki ont toujours eu deux choses : des sceaux, et la mer. Aujourd’hui, l’eau. Les sceaux, ce sera toute ta vie. »',
+    maitre: '{Parent} déroule un parchemin couvert de spirales. « Les Uzumaki ont toujours eu deux choses : des sceaux, et la mer. Aujourd’hui, l’eau. Les sceaux, ce sera toute ta vie. »',
     effets: pouvoirEtNature('fuinjutsu_uzumaki', 'suiton_projectile'),
-    reussite: 'L’eau du seau se soulève, se roule en boule et file contre le mur avec un claquement sec. Ta mère te regarde comme si elle voyait quelqu’un d’autre derrière toi. « Ta grand-mère faisait exactement ce geste. »',
+    reussite: 'L’eau du seau se soulève, se roule en boule et file contre le mur avec un claquement sec. {Parent} te regarde comme si {parent_il} voyait quelqu’un d’autre derrière toi. « Ta grand-mère faisait exactement ce geste. »',
   },
   hozuki: {
-    maitre: 'Ton grand frère te pousse dans la baie, tout habillé·e. « Un Hōzuki apprend à nager en devenant la mer. Le reste vient après. »',
+    maitre: '{Aine} te pousse dans la baie, tout habillé·e. « Un Hōzuki apprend à nager en devenant la mer. Le reste vient après. »',
     effets: [signature('hydrification', 1, 'hozuki_suika'), { enseigner: 'suiton_projectile' }],
-    reussite: 'Ton bras devient de l’eau, s’allonge de deux pas et claque comme un fouet sur la surface. Ton frère, trempé, éclate de rire. « Ça, c’est de la famille. »',
+    reussite: 'Ton bras devient de l’eau, s’allonge de deux pas et claque comme un fouet sur la surface. {AineNom}, trempé{aine_e}, éclate de rire. « Ça, c’est de la famille. »',
   },
   kaguya: {
     maitre: 'L’ancien du clan pose sa main sur ton épaule, là où l’os affleure. « Ton corps est ton arsenal. La première lame que tu tireras de toi, tu la garderas toute ta vie. Choisis-la bien. »',
@@ -81,9 +81,9 @@ const LECON_PAR_CLAN: Record<string, { maitre: string; effets: Effect[]; reussit
     reussite: 'Ça fait mal, beaucoup. Puis un os sort de ton épaule, droit, blanc, pointu comme un poignard de camélia. Tu le tiens dans ta main sans trembler. L’ancien hoche la tête. « Elle est belle. Elle est à toi. »',
   },
   yuki: {
-    maitre: 'Ta mère t’emmène dans la grotte où le clan se cache depuis trois générations. Il y fait froid même en été. « Ici, personne ne nous voit. Ici, tu peux laisser venir la neige. »',
+    maitre: '{Parent} t’emmène dans la grotte où le clan se cache depuis trois générations. Il y fait froid même en été. « Ici, personne ne nous voit. Ici, tu peux laisser venir la neige. »',
     effets: [signature('hyoton', 1, 'yuki_sensatsu'), { enseigner: 'suiton_projectile' }],
-    reussite: 'L’humidité de la grotte gèle autour de toi en aiguilles fines, des dizaines, suspendues dans l’air. Elles tombent toutes en même temps, en tintant comme du verre. Ta mère pleure. De joie, ou de peur. Les deux, sûrement.',
+    reussite: 'L’humidité de la grotte gèle autour de toi en aiguilles fines, des dizaines, suspendues dans l’air. Elles tombent toutes en même temps, en tintant comme du verre. {Parent} pleure. De joie, ou de peur. Les deux, sûrement.',
   },
   shirakaze: {
     maitre: 'Ta grand-mère t’attend au sommet de la dune, les cheveux fouettés par le vent. « Le vent, on ne le commande pas. On lui donne une forme. Une lame, par exemple. »',
@@ -91,9 +91,9 @@ const LECON_PAR_CLAN: Record<string, { maitre: string; effets: Effect[]; reussit
     reussite: 'Tu lèves la main comme elle, et le vent se resserre en une lame invisible qui tranche net la crête de la dune. Le sable retombe en pluie. Ta grand-mère ne dit rien. Elle te tend sa propre gourde. Chez les Shirakaze, c’est le plus grand des honneurs.',
   },
   raiko: {
-    maitre: 'Ton père t’emmène au col sous l’orage. Il plante une tige de fer dans la roche. « La foudre ne tombe pas sur les peureux. Elle tombe sur ceux qui l’appellent. Appelle-la. »',
+    maitre: '{Parent} t’emmène au col sous l’orage. {Parent_il} plante une tige de fer dans la roche. « La foudre ne tombe pas sur les peureux. Elle tombe sur ceux qui l’appellent. Appelle-la. »',
     effets: pouvoirEtNature('armure_foudre', 'raiton_decharge'),
-    reussite: 'Une décharge part de ta main vers la tige de fer, bleue, crépitante. Tes cheveux se dressent. Ton père éclate de rire sous la pluie, un rire énorme qui couvre le tonnerre. « Voilà ! Voilà un Raikō ! »',
+    reussite: 'Une décharge part de ta main vers la tige de fer, bleue, crépitante. Tes cheveux se dressent. {Parent} éclate de rire sous la pluie, un rire énorme qui couvre le tonnerre. « Voilà ! Voilà un Raikō ! »',
   },
   ishikawa: {
     maitre: 'L’ancien de la carrière te fait poser les mains à plat sur la roche. « La pierre ne bouge pas parce qu’on la pousse. Elle bouge parce qu’on devient pierre. Deviens pierre. »',
@@ -111,13 +111,29 @@ const effetsLecon: Effect[] = [
   { drapeau: 'lecon_clan' },
   { stat: 'social.confianceClan', delta: 4 },
 ];
+/**
+ * Qui enseigne : le parent (ou l'aîné·e chez les Hōzuki), s'il est là. Sinon (mort, disparu), un ancien du clan prend
+ * sa place : le même texte, où le proche devient « l'ancien du clan ». Personne ne t'enseigne d'outre-tombe.
+ */
+const PARENT: Condition = { pnj: '@parent', etat: ['vivant', 'blesse'] };
+const ANCIEN: Record<string, string> = { '{Parent}': 'L’ancien du clan', '{parent}': 'l’ancien du clan', '{Parent_il}': 'Il', '{parent_il}': 'il', '{parent_e}': '', '{Aine}': 'Un cousin plus âgé', '{AineNom}': 'Ton cousin', '{aine_e}': '' };
+const parAncien = (t: string) => t.replace(/\{(?:Parent|parent|Parent_il|parent_il|parent_e|Aine|AineNom|aine_e)\}/g, (j) => ANCIEN[j]);
+const procheDe = (t: string): Condition | undefined => (/\{(?:Parent|parent)\b/.test(t) ? PARENT : /\{(?:Aine|AineNom)\b/.test(t) ? AINE : undefined);
+/** Les deux versions d'un texte de leçon : avec le proche s'il est là, avec l'ancien sinon. */
+type Segment = { si?: Condition; texte: string };
+const selonProche = (clan: string, t: string, lie: string = t): Segment[] => {
+  const proche = procheDe(lie);
+  return proche ? [{ si: { tout: [{ clan }, proche] }, texte: t }, { si: { tout: [{ clan }, { non: proche }] }, texte: parAncien(t) }] : [{ si: { clan }, texte: t }];
+};
+
 const texteLecon: Texte = [
-  ...Object.entries(LECON_PAR_CLAN).map(([clan, l]) => ({ si: { clan }, texte: l.maitre })),
+  ...Object.entries(LECON_PAR_CLAN).flatMap(([clan, l]) => selonProche(clan, l.maitre)),
   { si: { tout: [{ clan: 'sans_clan' }, { non: AINE }] }, texte: 'Personne ne t’emmène nulle part. Tu vas seul{e} au terrain vague derrière la maison, là où personne ne vient, avec ce que tu as vu par-dessus la palissade du terrain d’un clan : trois gestes, retenus de travers. Pas de clan pour t’apprendre. Alors tu apprendras en volant.' },
   { si: { tout: [{ clan: 'sans_clan' }, AINE] }, texte: '{@aine} t’emmène au terrain vague derrière la maison, là où personne ne vient. « On n’a pas de clan pour nous apprendre. Alors c’est moi qui t’apprends. Ce que je sais, je l’ai volé en regardant les autres. Regarde bien, toi aussi. »' },
 ];
 const reussiteLecon: Texte = [
-  ...Object.entries(LECON_PAR_CLAN).map(([clan, l]) => ({ si: { clan }, texte: l.reussite })),
+  // La réussite suit le même maître que la leçon (le proche nommé au début), même s'il n'est pas cité à la fin.
+  ...Object.entries(LECON_PAR_CLAN).flatMap(([clan, l]) => selonProche(clan, l.reussite, l.maitre)),
   { si: { tout: [{ clan: 'sans_clan' }, { non: AINE }] }, texte: 'Il te faut tout l’après-midi. Puis la technique sort, maladroite, imparfaite, mais à toi. Personne n’est là pour le voir. Tu ris quand même, tout seul{e}, sur le terrain vide : personne ne te l’a donnée. Tu l’as prise.' },
   { si: { tout: [{ clan: 'sans_clan' }, AINE] }, texte: 'Il te faut tout l’après-midi. Puis la technique sort, maladroite, imparfaite, mais à toi. {@aine} te frappe dans le dos si fort que tu tousses. « Personne ne nous l’a donnée. On l’a prise. Ça vaut deux fois plus. »' },
 ];
@@ -534,7 +550,11 @@ export const APPRENTISSAGE: EventDef[] = [
           type: 'competence',
           difficulte: 44,
           attributs: { agilite: 3 },
-          succes: { texte: 'Vous partez comme deux flèches à travers le village, renversant un étal de pommes au passage. Tu touches la porte de la tour une demi-seconde avant {lui:@rival}. Vous vous effondrez tous les deux sur les marches, hors d’haleine, et pour la première fois, vous riez ensemble.', effets: [{ stat: 'attributs.agilite', delta: 2 }, { relation: '@rival', delta: { amitie: 5, rivalite: 3 } }] },
+          succes: { texte: [
+            // Ce défi revient : le premier fou rire ne l'est qu'une fois.
+            { si: { relation: '@rival', axe: 'amitie', max: 29 }, texte: 'Vous partez comme deux flèches à travers le village, renversant un étal de pommes au passage. Tu touches la porte de la tour une demi-seconde avant {lui:@rival}. Vous vous effondrez tous les deux sur les marches, hors d’haleine, et pour la première fois, vous riez ensemble.' },
+            { si: { relation: '@rival', axe: 'amitie', min: 30 }, texte: 'Vous partez comme deux flèches à travers le village, renversant un étal de pommes au passage. Tu touches la porte de la tour une demi-seconde avant {lui:@rival}. Vous vous effondrez tous les deux sur les marches, hors d’haleine, et vous riez, comme chaque fois que ça finit comme ça. Le marchand de pommes, lui, ne rit plus du tout.' },
+          ], effets: [{ stat: 'attributs.agilite', delta: 2 }, { relation: '@rival', delta: { amitie: 5, rivalite: 3 } }] },
           echec: { texte: '{@rival} gagne de trois longueurs et t’attend sur les marches. « Une course, c’est encore un combat. Tu l’as perdu deux fois. »', effets: [{ stat: 'attributs.agilite', delta: 1 }, { relation: '@rival', delta: { rivalite: 4 } }] },
         },
       },

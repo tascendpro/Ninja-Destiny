@@ -199,7 +199,7 @@ export const DIALOGUES: EventDef[] = [
         ton: 'franc',
         texte: '« Vous nous dites toujours de ne pas porter les choses seuls. »',
         effets: [{ relation: '@sensei', delta: { respect: 8, confiance: 4 } }, { drapeau: 'dg_sensei', valeur: 'retourne' }],
-        resultat: '{@sensei} te fixe, puis éclate d’un vrai rire, le premier de la journée. « Tu retournes mes propres leçons contre moi. Insupportable. » {Il:@sensei} se lève. « Bon. Raccompagne ton vieux maître, alors. Et ne raconte ça à personne. »',
+        resultat: '{@sensei} te fixe, puis éclate d’un vrai rire, le premier de la journée. « Tu retournes mes propres leçons contre moi. Insupportable. » {Il:@sensei} se lève. « Bon. Raccompagne-moi, alors. Et ne raconte ça à personne. »',
       },
       {
         id: 'partir',
@@ -338,14 +338,14 @@ export const DIALOGUES: EventDef[] = [
         ton: 'franc',
         texte: '« Ça m’est arrivé aussi. Une fois. Je n’en ai parlé à personne. »',
         effets: [{ relation: '@rival', delta: { confiance: 12, hostilite: -6, respect: 4 } }, { drapeau: 'dg_rival', valeur: 'aveu_partage' }, { souvenir: 'À l’infirmerie, vous vous êtes avoué que vous vous étiez déjà figés au combat.', pnj: '@rival' }],
-        resultat: '{@rival} te dévisage, cherchant le mensonge. Il n’y en a pas. « Toi ? » « Moi. » Quelque chose change dans la pièce. Vous ne serez jamais amis comme les autres sont amis. Mais à partir de ce jour, vous êtes les deux seules personnes du village à savoir ça l’un de l’autre.',
+        resultat: '{@rival} te dévisage, cherchant le mensonge. Il n’y en a pas. « Toi ? » « Moi. » {@rival} se laisse retomber sur l’oreiller et regarde le plafond un long moment. Vous ne serez jamais amis comme les autres sont amis. Mais à partir de ce jour, vous êtes les deux seules personnes du village à savoir ça l’un de l’autre.',
       },
       {
         id: 'promettre',
         ton: 'chaleureux',
         texte: '« Je ne dirai rien. Jamais. »',
         effets: [{ relation: '@rival', delta: { confiance: 8 } }, { promesse: 'secret_rival', pnj: '@rival', texte: 'Garder le secret de l’infirmerie.' }],
-        resultat: '« Jamais, c’est long. » « Je sais. » {@rival} hoche la tête. Il n’y a rien d’autre à dire. Tu tiendras parole, ou pas ; le monde s’en souviendra.',
+        resultat: '« Jamais, c’est long. » « Je sais. » {@rival} hoche la tête. Il n’y a rien d’autre à dire. Tu tiendras parole, ou pas ; {@rival}, en tout cas, ne l’oubliera pas.',
       },
       {
         id: 'dur',
